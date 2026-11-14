@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 1100" role="img" aria-labelledby="title">
+  <title>Placeholder de vestido, vista frontal</title>
+  <rect width="900" height="1100" fill="#eee7e4"/>
+  <ellipse cx="450" cy="960" rx="220" ry="25" fill="#d6c9c5"/>
+  <path d="M365 180h170l26 150 40 95 150 465H149l150-465 40-95z" fill="#ad7881"/>
+  <path d="M365 180c0 95 170 95 170 0M450 300v170" fill="none" stroke="#e8d8d9" stroke-width="12"/>
+  <path d="M299 430h302" stroke="#865b63" stroke-width="12"/>
+</svg>

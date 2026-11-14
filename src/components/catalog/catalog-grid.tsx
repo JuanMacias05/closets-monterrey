@@ -1,0 +1,49 @@
+import Link from "next/link";
+import { buildCatalogQueryString } from "@/features/products/catalog-filters";
+import { CATALOG_PAGE_SIZE } from "@/features/products/catalog-data";
+import type { CatalogFilters, CatalogPageResult } from "@/features/products/types";
+import { ProductCard } from "@/components/catalog/product-card";
+
+export function CatalogGrid({ result, filters }: { result: CatalogPageResult; filters: CatalogFilters }) {
+  if (result.error) {
+    return (
+      <div role="alert" className="border-y border-stone-200 py-16 text-center">
+        <p className="font-serif text-2xl text-stone-800">El catálogo no está disponible por ahora.</p>
+        <p className="mx-auto mt-3 max-w-lg text-sm leading-6 text-stone-500">{result.error}</p>
+      </div>
+    );
+  }
+
+  if (result.products.length === 0) {
+    return (
+      <div className="border-y border-stone-200 py-20 text-center">
+        <p className="font-serif text-2xl text-stone-800">No encontramos prendas con estos filtros.</p>
+        <p className="mt-3 text-sm text-stone-500">Prueba con otra talla, categoría o rango de precio.</p>
+        <Link href="/" className="mt-6 inline-flex min-h-11 items-center border-b border-stone-800 text-xs uppercase tracking-[0.16em] text-stone-800">Ver todo el catálogo</Link>
+      </div>
+    );
+  }
+
+  const firstItem = (filters.page - 1) * CATALOG_PAGE_SIZE + 1;
+  const lastItem = Math.min(filters.page * CATALOG_PAGE_SIZE, result.total);
+  const nextQuery = buildCatalogQueryString(filters, filters.page + 1);
+
+  return (
+    <>
+      <div className="flex items-center justify-between py-5 text-xs text-stone-500">
+        <p>{firstItem}–{lastItem} de {result.total} prendas</p>
+        <p className="hidden sm:block">Piezas únicas · Monterrey</p>
+      </div>
+      <div data-testid="product-grid" className="grid grid-cols-2 gap-x-3 gap-y-9 sm:grid-cols-3 sm:gap-x-5 sm:gap-y-12 lg:grid-cols-4 lg:gap-x-6">
+        {result.products.map((product, index) => <ProductCard key={product.id} product={product} priority={index < 4} />)}
+      </div>
+      {lastItem < result.total && (
+        <div className="flex justify-center py-14">
+          <Link href={`/?${nextQuery}`} rel="next" className="inline-flex min-h-12 items-center border border-stone-400 px-8 text-xs uppercase tracking-[0.18em] text-stone-800 transition-colors hover:bg-stone-900 hover:text-white">
+            Cargar 24 prendas más
+          </Link>
+        </div>
+      )}
+    </>
+  );
+}

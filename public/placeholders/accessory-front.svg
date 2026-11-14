@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 1100" role="img" aria-labelledby="title">
+  <title>Placeholder de bolso, vista frontal</title>
+  <rect width="900" height="1100" fill="#eae6df"/>
+  <ellipse cx="450" cy="830" rx="190" ry="25" fill="#d1c9be"/>
+  <path d="M270 410h360l45 360H225z" fill="#a77e5b"/>
+  <path d="M345 420v-85c0-135 210-135 210 0v85" fill="none" stroke="#76573f" stroke-width="26"/>
+  <path d="M225 500h450m-225 0v130" stroke="#d3b393" stroke-width="12"/>
+  <circle cx="450" cy="640" r="18" fill="#e4c5a4"/>
+</svg>

@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 1100" role="img" aria-labelledby="title">
+  <title>Placeholder de calzado, vista frontal</title>
+  <rect width="900" height="1100" fill="#e9e7e2"/>
+  <ellipse cx="450" cy="790" rx="290" ry="30" fill="#d0ccc5"/>
+  <path d="M190 650c95-35 185-160 235-250l95 48c15 110 95 160 195 200 70 28 60 105-10 120H240c-85 0-112-80-50-118z" fill="#d9d6cf"/>
+  <path d="M192 740h525M390 535l105 78m-72-126 108 78m-65-125 99 74" fill="none" stroke="#8d8d87" stroke-width="14"/>
+</svg>

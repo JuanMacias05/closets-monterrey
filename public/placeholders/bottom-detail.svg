@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 1100" role="img" aria-labelledby="title">
+  <title>Placeholder de prenda inferior, detalle</title>
+  <rect width="900" height="1100" fill="#ebe8e2"/>
+  <path d="M305 170h290l-24 270-15 500H430l-25-500-25 500H304l-15-500z" fill="#938875"/>
+  <path d="M305 170h290M450 175v250m-120 20 62 12m136-12-62 12" fill="none" stroke="#d7cec1" stroke-width="10"/>
+  <path d="M390 210h120v90H390z" fill="none" stroke="#776d5d" stroke-width="7"/>
+</svg>

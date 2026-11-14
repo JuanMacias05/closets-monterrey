@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 1100" role="img" aria-labelledby="title">
+  <title>Placeholder de prenda exterior, detalle</title>
+  <rect width="900" height="1100" fill="#e8e3dc"/>
+  <path d="m315 220 95-42h80l95 42 122 130-82 86-60-70v540H335V364l-60 72-82-86z" fill="#b08f7d"/>
+  <path d="m410 178 40 100 40-100m-40 100v628" fill="none" stroke="#e7d8cd" stroke-width="10"/>
+  <circle cx="450" cy="430" r="11" fill="#725d51"/><circle cx="450" cy="510" r="11" fill="#725d51"/>
+</svg>

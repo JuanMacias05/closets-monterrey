@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 1100" role="img" aria-labelledby="title">
+  <title>Placeholder de prenda superior, detalle</title>
+  <rect width="900" height="1100" fill="#eee9e2"/>
+  <path d="M210 250 370 190h160l160 60 72 140-104 50-60-90v520H302V350l-60 90-104-50z" fill="#a9b2a3"/>
+  <path d="M370 190c0 105 160 105 160 0M450 290v550" fill="none" stroke="#e8e8dc" stroke-width="12"/>
+  <circle cx="450" cy="470" r="12" fill="#687362"/><circle cx="450" cy="550" r="12" fill="#687362"/><circle cx="450" cy="630" r="12" fill="#687362"/>
+</svg>

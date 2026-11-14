@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 1100" role="img" aria-labelledby="title">
+  <title>Placeholder de prenda superior, vista frontal</title>
+  <rect width="900" height="1100" fill="#e9e4dc"/>
+  <ellipse cx="450" cy="920" rx="190" ry="28" fill="#d0c8bd"/>
+  <path d="M330 240 405 205h90l75 35 110 125-90 78-48-58v435H358V385l-48 58-90-78z" fill="#b89e91"/>
+  <path d="m405 205 45 82 45-82M450 287v510" fill="none" stroke="#ede7df" stroke-width="10"/>
+  <path d="M384 610h40m72 0h40" stroke="#92786d" stroke-width="7"/>
+</svg>

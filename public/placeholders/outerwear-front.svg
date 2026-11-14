@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 1100" role="img" aria-labelledby="title">
+  <title>Placeholder de prenda exterior, vista frontal</title>
+  <rect width="900" height="1100" fill="#e9e6df"/>
+  <ellipse cx="450" cy="920" rx="220" ry="26" fill="#d1ccc3"/>
+  <path d="m330 215 90-35h60l90 35 135 140-90 90-65-70v510H350V375l-65 70-90-90z" fill="#8b8b82"/>
+  <path d="m420 180 60 100-30 605m30-605-60-100m60 100 60-100" fill="none" stroke="#d5d0c6" stroke-width="10"/>
+  <path d="M372 550h52m104 0h52" stroke="#6c6d66" stroke-width="10"/>
+</svg>

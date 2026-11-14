@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 1100" role="img" aria-labelledby="title">
+  <title>Placeholder de bolso, detalle</title>
+  <rect width="900" height="1100" fill="#eee9e1"/>
+  <path d="M250 390h400l42 400H208z" fill="#788276"/>
+  <path d="M340 400v-92c0-140 220-140 220 0v92" fill="none" stroke="#5a6659" stroke-width="24"/>
+  <path d="M210 500h480m-240 0v145" stroke="#c9d0c2" stroke-width="12"/>
+  <path d="M425 650h50v45h-50z" fill="#d8c6a4"/>
+</svg>

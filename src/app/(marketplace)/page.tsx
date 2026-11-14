@@ -1,28 +1,44 @@
-export default function HomePage() {
+import type { Metadata } from "next";
+import Link from "next/link";
+import { CatalogFiltersPanel } from "@/components/catalog/catalog-filters";
+import { CatalogGrid } from "@/components/catalog/catalog-grid";
+import { getCatalogPage } from "@/features/products/catalog-data";
+import { parseCatalogFilters, type CatalogSearchParams } from "@/features/products/catalog-filters";
+
+export const metadata: Metadata = {
+  title: "Prendas | Closets Monterrey",
+  description: "Descubre ropa de segunda mano seleccionada por vendedoras de Monterrey.",
+};
+
+export default async function HomePage({
+  searchParams,
+}: {
+  searchParams: Promise<CatalogSearchParams>;
+}) {
+  const filters = parseCatalogFilters(await searchParams);
+  const result = await getCatalogPage(filters);
+
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-6 py-10 sm:px-10">
-      <header className="border-b border-stone-200 pb-5">
-        <p className="text-xs uppercase tracking-[0.28em] text-stone-500">
-          Monterrey, México
-        </p>
-        <h1 className="mt-3 font-serif text-4xl tracking-tight sm:text-5xl">
-          Closets Monterrey
-        </h1>
+    <main className="mx-auto min-h-screen w-full max-w-[1600px] px-4 pb-12 sm:px-8 lg:px-12">
+      <header className="flex items-center justify-between border-b border-stone-200 py-5 sm:py-7">
+        <Link href="/" className="font-serif text-xl tracking-tight text-stone-900 sm:text-2xl">Closets Monterrey</Link>
+        <p className="hidden text-[10px] uppercase tracking-[0.24em] text-stone-500 sm:block">Moda circular · Nuevo León</p>
+        <Link href="/?sort=recent" className="text-[10px] uppercase tracking-[0.18em] text-stone-600 sm:text-xs">Ver novedades</Link>
       </header>
-      <section className="flex flex-1 flex-col justify-center py-20">
-        <p className="text-xs uppercase tracking-[0.24em] text-stone-500">
-          Moda circular · Fase de setup
-        </p>
-        <h2 className="mt-5 max-w-2xl font-serif text-4xl leading-tight tracking-tight sm:text-6xl">
-          Prendas especiales, listas para una nueva historia.
-        </h2>
-        <p className="mt-6 max-w-xl text-base leading-7 text-stone-600">
-          Estamos preparando un espacio para descubrir ropa de segunda mano de
-          vendedoras locales.
-        </p>
+
+      <section className="pb-8 pt-10 sm:pb-10 sm:pt-16">
+        <p className="text-[10px] uppercase tracking-[0.28em] text-stone-500 sm:text-xs">Selección de closets locales</p>
+        <div className="mt-3 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+          <h1 className="max-w-3xl font-serif text-4xl leading-[1.08] tracking-tight text-stone-900 sm:text-6xl lg:text-7xl">Piezas que merecen otra historia.</h1>
+          <p className="max-w-xs text-sm leading-6 text-stone-500 sm:text-right">Prendas únicas, cuidadosamente elegidas por vendedoras de Monterrey.</p>
+        </div>
       </section>
-      <footer className="border-t border-stone-200 pt-4 text-xs text-stone-500">
-        Hecho en Monterrey
+
+      <CatalogFiltersPanel filters={filters} />
+      <CatalogGrid result={result} filters={filters} />
+
+      <footer className="mt-10 border-t border-stone-200 py-6 text-[10px] uppercase tracking-[0.18em] text-stone-500">
+        Monterrey, Nuevo León · Moda de segunda mano
       </footer>
     </main>
   );

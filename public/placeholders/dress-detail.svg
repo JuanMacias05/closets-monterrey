@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 1100" role="img" aria-labelledby="title">
+  <title>Placeholder de vestido, detalle</title>
+  <rect width="900" height="1100" fill="#eee9e4"/>
+  <path d="M360 165h180l35 175 35 105 145 450H145l145-450 35-105z" fill="#b3a181"/>
+  <path d="M360 165c0 100 180 100 180 0M450 300v180" fill="none" stroke="#e7dfce" stroke-width="11"/>
+  <path d="M290 446h320m-355 175h390m-445 175h500" stroke="#8f8064" stroke-width="8" opacity=".8"/>
+</svg>
