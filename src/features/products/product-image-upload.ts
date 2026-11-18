@@ -1,5 +1,6 @@
 const MAX_IMAGE_SIDE = 1600;
 const MAX_COMPRESSED_BYTES = 300 * 1024;
+const IMAGE_READ_ERROR = "No pudimos leer esta foto. Prueba con otra o toma una captura.";
 
 export function buildProductImageStoragePath(sellerId: string, productId: string, imageId = crypto.randomUUID()) {
   return `sellers/${sellerId}/products/${productId}/${imageId}.jpg`;
@@ -18,7 +19,12 @@ function canvasToJpeg(canvas: HTMLCanvasElement, quality: number) {
 export async function prepareProductImage(file: File): Promise<{ file: File; width: number; height: number }> {
   if (!file.type.startsWith("image/")) throw new Error("Selecciona un archivo de imagen.");
 
-  const bitmap = await createImageBitmap(file);
+  let bitmap: ImageBitmap;
+  try {
+    bitmap = await createImageBitmap(file);
+  } catch {
+    throw new Error(IMAGE_READ_ERROR);
+  }
   try {
     const scale = Math.min(1, MAX_IMAGE_SIDE / Math.max(bitmap.width, bitmap.height));
     let width = Math.max(1, Math.round(bitmap.width * scale));

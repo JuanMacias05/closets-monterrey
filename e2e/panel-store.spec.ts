@@ -31,11 +31,7 @@ test("admin can update her own store name, WhatsApp and valid CLABE", async ({ p
   await loginWithTestPhone(page, "+528100000004");
   await page.goto("/panel/tienda");
 
-  await page.locator("#store-avatar").setInputFiles({
-    name: "store.png",
-    mimeType: "image/png",
-    buffer: Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGNgYAAAAAMAASsJTYQAAAAASUVORK5CYII=", "base64"),
-  });
+  await page.locator("#store-avatar").setInputFiles("e2e/fixtures/store-photo-800x600.jpg");
   await page.getByLabel("Nombre de la tienda").fill("Closet admin de prueba");
   await page.getByLabel("WhatsApp").fill("81 1234 5678");
   await page.getByLabel("CLABE para recibir pagos").fill("000000000000000000");
@@ -47,6 +43,10 @@ test("admin can update her own store name, WhatsApp and valid CLABE", async ({ p
   await expect(page.getByLabel("Nombre de la tienda")).toHaveValue("Closet admin de prueba");
   await expect(page.getByLabel("WhatsApp")).toHaveValue("+528112345678");
   await expect(page.getByLabel("CLABE para recibir pagos")).toHaveValue("000000000000000000");
+
+  await page.locator("#store-avatar").setInputFiles("e2e/fixtures/store-photo.png");
+  await page.getByRole("button", { name: "Guardar tienda" }).click();
+  await expect(page.getByRole("status")).toHaveText("Tienda guardada.");
 });
 
 test("store settings reject a CLABE with an invalid check digit", async ({ page }) => {
@@ -54,5 +54,5 @@ test("store settings reject a CLABE with an invalid check digit", async ({ page 
   await page.goto("/panel/tienda");
   await page.getByLabel("CLABE para recibir pagos").fill("000000000000000001");
   await page.getByRole("button", { name: "Guardar tienda" }).click();
-  await expect(page.getByRole("alert")).toHaveText("La CLABE debe tener 18 dígitos y un dígito verificador válido.");
+  await expect(page.getByText("La CLABE debe tener 18 dígitos y un dígito verificador válido.", { exact: true })).toBeVisible();
 });
