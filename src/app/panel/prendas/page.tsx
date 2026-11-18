@@ -13,7 +13,7 @@ export default async function ProductsPage() {
   if (!user) redirect("/login");
 
   const { data: rows, error } = await supabase.from("products")
-    .select("id,slug,name,price_mxn,sale_status,publication_status,images:product_images(id,source,storage_path,alt_text,position)")
+    .select("id,slug,name,price_mxn,sale_status,publication_status,hidden_by_admin,images:product_images(id,source,storage_path,alt_text,position)")
     .eq("seller_id", user.id).order("created_at", { ascending: false })
     .order("position", { foreignTable: "product_images", ascending: true });
   if (error) throw new Error("No pudimos cargar tus prendas.");
@@ -52,6 +52,7 @@ export default async function ProductsPage() {
                     {product.sale_status === "sold" ? "Vendida" : product.sale_status === "reserved" ? "Apartada" : "Disponible"}
                     {product.publication_status === "draft" ? " · Borrador" : " · Publicada"}
                   </p>
+                  {product.hidden_by_admin && <p className="mt-1 text-xs font-medium text-amber-800">Oculta por administración</p>}
                   <div className="mt-3 sm:hidden"><ProductListActions productId={product.id} saleStatus={product.sale_status} /></div>
                 </div>
                 <div className="hidden sm:block"><ProductListActions productId={product.id} saleStatus={product.sale_status} /></div>

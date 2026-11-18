@@ -1,5 +1,5 @@
 begin;
-select plan(22);
+select plan(23);
 
 insert into public.products (id, seller_id, slug, name, category, size, condition, price_mxn)
 values
@@ -54,7 +54,11 @@ select throws_ok(
   'P0001', 'Product not found or not owned', 'An admin cannot reorder a product she does not own.'
 );
 select is((select count(*)::integer from public.products where id = '30000000-0000-4000-8000-000000000002'), 1, 'An admin can read other sellers products.');
-update public.products set name = 'Edición ajena' where id = '30000000-0000-4000-8000-000000000002';
+select throws_ok(
+  $$ update public.products set name = 'Edición ajena' where id = '30000000-0000-4000-8000-000000000002' $$,
+  'P0001', 'Admins may only change hidden_by_admin on another seller product',
+  'The visibility policy lets an admin reach a foreign product row, so the trigger rejects any other edit.'
+);
 select is((select name from public.products where id = '30000000-0000-4000-8000-000000000002'), 'Prueba orden dos', 'An admin cannot edit another sellers product.');
 delete from public.products where id = '30000000-0000-4000-8000-000000000002';
 select is((select count(*)::integer from public.products where id = '30000000-0000-4000-8000-000000000002'), 1, 'An admin cannot delete another sellers product.');

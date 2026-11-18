@@ -141,8 +141,8 @@ update public.products
 set hidden_by_admin = true
 where id = '20000000-0000-4000-8000-000000000001';
 select ok(
-  not (select hidden_by_admin from public.products where id = '20000000-0000-4000-8000-000000000001'),
-  'Admin hide and show for another seller product is deferred to phase 2c.'
+  (select hidden_by_admin from public.products where id = '20000000-0000-4000-8000-000000000001'),
+  'An admin can hide any product.'
 );
 
 select * from finish();

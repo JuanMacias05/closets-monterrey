@@ -45,6 +45,7 @@ export const getProductDetail = cache(async (slug: string): Promise<CatalogProdu
     )
     .eq("slug", slug)
     .eq("publication_status", "published")
+    .eq("hidden_by_admin", false)
     .maybeSingle();
 
   if (error) throw new Error(`Could not load product details: ${error.message}`);
@@ -80,6 +81,7 @@ export const getMoreFromSeller = cache(async (sellerSlug: string, productId: str
     )
     .eq("seller_id", seller.id)
     .eq("publication_status", "published")
+    .eq("hidden_by_admin", false)
     .neq("id", productId)
     .order("created_at", { ascending: false })
     .limit(4);
