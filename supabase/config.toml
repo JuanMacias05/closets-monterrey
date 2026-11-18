@@ -278,6 +278,9 @@ max_frequency = "1s"
 528100000005 = "123456"
 # Free number for the sign-up e2e test; no seeded account uses it.
 528100000009 = "123456"
+# Free numbers for the buyer shopping e2e test.
+528100000007 = "123456"
+528100000008 = "123456"
 
 # Use pre-defined map of phone number to OTP for testing.
 # Keys are the phone number with country code and without the + prefix.

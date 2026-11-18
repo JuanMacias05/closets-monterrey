@@ -13,7 +13,7 @@ export default async function StoreSettingsPage() {
   const [{ data: profile, error: profileError }, { data: settings, error: settingsError }] = await Promise.all([
     supabase
       .from("profiles")
-      .select("store_name,avatar_path,role,status")
+      .select("store_name,avatar_path,role,status,deposit_percent")
       .eq("id", authData.user.id)
       .maybeSingle(),
     supabase
@@ -40,6 +40,7 @@ export default async function StoreSettingsPage() {
         avatarUrl={getSellerAvatarUrl(supabase, profile.avatar_path)}
         whatsapp={settings.whatsapp_e164 ?? ""}
         clabe={settings.clabe ?? ""}
+        depositPercent={profile.deposit_percent}
       />
     </section>
   );

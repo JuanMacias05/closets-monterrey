@@ -3,10 +3,13 @@ import Link from "next/link";
 import type { CatalogProduct } from "@/features/products/types";
 import { formatPriceMXN } from "@/features/products/format-price";
 import { OwnerProductActions } from "@/components/catalog/owner-product-actions";
+import { FavoriteButton } from "@/components/shop/favorite-button";
 
 const conditionLabels = { new: "Nuevo", like_new: "Como nuevo", used: "Usado" } as const;
 
-export function ProductCard({ product, priority = false, viewerId }: { product: CatalogProduct; priority?: boolean; viewerId?: string }) {
+export function ProductCard({ product, priority = false, viewerId, favorite = false, signedIn = false }: {
+  product: CatalogProduct; priority?: boolean; viewerId?: string; favorite?: boolean; signedIn?: boolean;
+}) {
   const isOwn = viewerId !== undefined && product.seller_id === viewerId;
   const firstImage = product.images[0];
   const secondImage = product.images[1];
@@ -22,6 +25,7 @@ export function ProductCard({ product, priority = false, viewerId }: { product: 
           )}
           {secondImage && <Image src={secondImage.url} alt={secondImage.alt_text || `${product.name}, segunda vista`} fill sizes="(max-width: 639px) 50vw, (max-width: 1023px) 33vw, 25vw" className="object-cover opacity-0 transition-opacity duration-500 ease-out group-hover:opacity-100 motion-reduce:transition-none" />}
         </Link>
+        {!isOwn && <FavoriteButton productId={product.id} productName={product.name} initial={favorite} signedIn={signedIn} className="absolute right-1 top-1 bg-white/70 backdrop-blur-sm" />}
         <div className="pointer-events-none absolute left-2 top-2 flex flex-col items-start gap-1 sm:left-3 sm:top-3">
           {isOwn && <span className="bg-pine px-2.5 py-1 font-condensed text-xs font-bold uppercase tracking-[0.06em] text-white">Tu prenda</span>}
           {product.sale_status !== "available" && (

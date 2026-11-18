@@ -5,6 +5,10 @@ import { notFound } from "next/navigation";
 import { ProductGallery } from "@/components/products/product-gallery";
 import { ProductCard } from "@/components/catalog/product-card";
 import { StoreHeader } from "@/components/store/store-header";
+import { AddToCartButton } from "@/components/shop/add-to-cart-button";
+import { FavoriteButton } from "@/components/shop/favorite-button";
+import { getShopState } from "@/features/shop/shop-state";
+import { getViewer } from "@/features/viewer/get-viewer";
 import { getMoreFromSeller, getProductDetail } from "@/features/products/product-detail-data";
 import { formatPriceMXN } from "@/features/products/format-price";
 import { PRODUCT_CATEGORIES } from "@/features/products/types";
@@ -90,7 +94,8 @@ export default async function ProductDetailPage({ params }: PageProps) {
   const product = await getProductDetail(slug);
   if (!product) notFound();
 
-  const related = await getMoreFromSeller(product.seller.slug, product.id);
+  const [related, shop, viewer] = await Promise.all([getMoreFromSeller(product.seller.slug, product.id), getShopState(), getViewer()]);
+  const isOwn = viewer.kind !== "guest" && product.seller_id === viewer.userId;
   const category = PRODUCT_CATEGORIES.find((item) => item.value === product.category)?.label ?? product.category;
   const saleLabel = product.sale_status === "reserved" ? "Apartada" : product.sale_status === "sold" ? "Vendida" : null;
   const unavailable = product.sale_status !== "available";
@@ -111,7 +116,10 @@ export default async function ProductDetailPage({ params }: PageProps) {
           <div className="flex flex-wrap items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-stone-500">
             <span>{category}</span><span aria-hidden="true">·</span><span>{conditionLabels[product.condition]}</span>
           </div>
-          <h1 className="mt-3 font-serif text-3xl leading-tight tracking-tight text-stone-900 sm:text-4xl">{product.name}</h1>
+          <div className="mt-3 flex items-start justify-between gap-3">
+            <h1 className="font-serif text-3xl leading-tight tracking-tight text-stone-900 sm:text-4xl">{product.name}</h1>
+            {!isOwn && <FavoriteButton productId={product.id} productName={product.name} initial={shop.favoriteIds.has(product.id)} signedIn={shop.signedIn} className="shrink-0 border border-stone-300" />}
+          </div>
           <p className="mt-4 text-lg tracking-wide text-stone-900">{formatPriceMXN(product.price_mxn)}</p>
 
           {saleLabel && (
@@ -145,11 +153,10 @@ export default async function ProductDetailPage({ params }: PageProps) {
             </div>
           </div>
 
-          <button type="button" disabled={unavailable} data-testid="buy-button" className="mt-7 min-h-14 w-full bg-stone-900 px-6 text-xs uppercase tracking-[0.2em] text-white transition-colors hover:bg-stone-700 disabled:cursor-not-allowed disabled:bg-stone-300 disabled:text-stone-600">
-            Comprar
-          </button>
-          {unavailable && <p className="mt-2 text-center text-xs text-stone-500">Esta prenda ya no está disponible para compra.</p>}
-          <p className="mt-3 text-center text-[10px] leading-5 text-stone-400">El proceso de pago estará disponible próximamente.</p>
+          <AddToCartButton productId={product.id} initial={shop.cartIds.has(product.id)} signedIn={shop.signedIn} available={!unavailable} isOwn={isOwn} />
+          {isOwn && <p className="mt-7 text-center text-sm text-stone-600">Es una prenda de tu tienda. <Link href={`/panel/prendas/${product.id}`} className="text-pine underline underline-offset-4">Editarla</Link></p>}
+          {unavailable && !isOwn && <p className="mt-2 text-center text-xs text-stone-500">Esta prenda ya no está disponible.</p>}
+          {!unavailable && !isOwn && <p className="mt-3 text-center text-xs leading-5 text-stone-600">Agregarla al carrito no la aparta. Se aparta al dar &ldquo;Apartar&rdquo; en tu carrito, con un anticipo a la vendedora.</p>}
         </section>
       </div>
 

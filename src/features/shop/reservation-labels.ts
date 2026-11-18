@@ -1,0 +1,23 @@
+export const RESERVATION_STATUS_LABELS: Record<string, string> = {
+  pending_deposit: "Esperando anticipo",
+  confirmed: "Anticipo confirmado",
+  completed: "Entregada",
+  expired: "Venció (sin anticipo)",
+  cancelled: "Cancelado",
+  no_show: "No se concretó",
+};
+
+export const TRUST_LABELS: Record<string, string> = {
+  green: "Confiable",
+  yellow: "Precaución",
+  red: "No confiable",
+  new: "Sin historial",
+};
+
+// Lightness differs, not only hue, so the light reads for color-blind sellers too.
+export const TRUST_STYLES: Record<string, string> = {
+  green: "bg-pine text-white",
+  yellow: "bg-amber-300 text-stone-900",
+  red: "bg-[#a3261b] text-white",
+  new: "border border-stone-400 text-stone-700",
+};

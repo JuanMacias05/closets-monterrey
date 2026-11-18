@@ -10,6 +10,8 @@ type StoreSettingsInput = {
   avatarPath: string | null;
   whatsapp: string;
   clabe: string;
+  // 10 or 20; optional so older callers keep the current value.
+  depositPercent?: number;
 };
 
 export async function saveStoreSettings(input: StoreSettingsInput) {
@@ -18,7 +20,8 @@ export async function saveStoreSettings(input: StoreSettingsInput) {
     typeof input.storeName !== "string" ||
     (input.avatarPath !== null && typeof input.avatarPath !== "string") ||
     typeof input.whatsapp !== "string" ||
-    typeof input.clabe !== "string"
+    typeof input.clabe !== "string" ||
+    (input.depositPercent !== undefined && ![10, 20].includes(input.depositPercent))
   ) {
     return { ok: false as const, error: "Los datos de la tienda no son válidos." };
   }
@@ -62,7 +65,7 @@ export async function saveStoreSettings(input: StoreSettingsInput) {
 
   const { error: updateProfileError } = await supabase
     .from("profiles")
-    .update({ store_name: storeName, avatar_path: avatarPath })
+    .update({ store_name: storeName, avatar_path: avatarPath, ...(input.depositPercent !== undefined ? { deposit_percent: input.depositPercent } : {}) })
     .eq("id", authData.user.id);
   if (updateProfileError) return { ok: false as const, error: "No pudimos guardar el nombre y la foto de tu tienda." };
 

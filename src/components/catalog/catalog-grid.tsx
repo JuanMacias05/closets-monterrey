@@ -4,7 +4,9 @@ import { CATALOG_PAGE_SIZE } from "@/features/products/catalog-data";
 import type { CatalogFilters, CatalogPageResult } from "@/features/products/types";
 import { ProductCard } from "@/components/catalog/product-card";
 
-export function CatalogGrid({ result, filters, viewerId }: { result: CatalogPageResult; filters: CatalogFilters; viewerId?: string }) {
+export function CatalogGrid({ result, filters, viewerId, favoriteIds, signedIn = false }: {
+  result: CatalogPageResult; filters: CatalogFilters; viewerId?: string; favoriteIds?: Set<string>; signedIn?: boolean;
+}) {
   if (result.error) {
     return (
       <div role="alert" className="border-y border-stone-200 py-16 text-center">
@@ -49,7 +51,7 @@ export function CatalogGrid({ result, filters, viewerId }: { result: CatalogPage
         <p className="hidden sm:block">Piezas únicas · Monterrey</p>
       </div>
       <div data-testid="product-grid" className="grid grid-cols-2 gap-x-3 gap-y-9 sm:grid-cols-3 sm:gap-x-5 sm:gap-y-12 lg:grid-cols-4 lg:gap-x-6">
-        {result.products.map((product, index) => <ProductCard key={product.id} product={product} priority={index < 4} viewerId={viewerId} />)}
+        {result.products.map((product, index) => <ProductCard key={product.id} product={product} priority={index < 4} viewerId={viewerId} favorite={favoriteIds?.has(product.id) ?? false} signedIn={signedIn} />)}
       </div>
       {lastItem < result.total && (
         <div className="flex justify-center py-14">

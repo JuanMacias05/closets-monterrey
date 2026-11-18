@@ -21,6 +21,10 @@ export async function getCatalogPage(filters: CatalogFilters): Promise<CatalogPa
     return { products: [], total: 0, error: "Configura la conexión con Supabase para cargar el catálogo." };
   }
 
+  // Unpaid reservations release lazily (there is no scheduler); doing it here means a
+  // garment whose 24 h ran out shows as available the next time anyone opens the catalog.
+  await supabase.rpc("release_expired_reservations");
+
   let query = supabase
     .from("products")
     .select(

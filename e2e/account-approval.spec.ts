@@ -18,8 +18,11 @@ async function deleteAccountByPhone(phone: string) {
 async function enterCode(page: Page) {
   await page.getByLabel("Código de verificación").fill("123456");
   await page.getByRole("button", { name: "Verificar código" }).click();
-  await expect(page).toHaveURL(/\/panel$/);
+  await expect(page).toHaveURL(/\/panel$/, { timeout: 20_000 });
 }
+
+// Long flows across two browsers; the dev server compiles each new page on first visit.
+test.setTimeout(120_000);
 
 test.beforeAll(async () => {
   await deleteAccountByPhone(NEW_SELLER_PHONE);

@@ -15,6 +15,7 @@ type Props = {
   avatarUrl: string | null;
   whatsapp: string;
   clabe: string;
+  depositPercent: number;
 };
 
 export function StoreSettingsForm(props: Props) {
@@ -25,6 +26,7 @@ export function StoreSettingsForm(props: Props) {
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [whatsapp, setWhatsapp] = useState(props.whatsapp);
   const [clabe, setClabe] = useState(props.clabe);
+  const [depositPercent, setDepositPercent] = useState(props.depositPercent);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -50,7 +52,7 @@ export function StoreSettingsForm(props: Props) {
         nextAvatarPath = newAvatarPath;
       }
 
-      const result = await saveStoreSettings({ storeName, avatarPath: nextAvatarPath, whatsapp, clabe });
+      const result = await saveStoreSettings({ storeName, avatarPath: nextAvatarPath, whatsapp, clabe, depositPercent });
       if (!result.ok) {
         if (newAvatarPath) {
           const supabase = createSupabaseBrowserClient();
@@ -112,7 +114,15 @@ export function StoreSettingsForm(props: Props) {
       <div>
         <label htmlFor="store-clabe" className="block text-xs uppercase tracking-[0.16em] text-stone-600">CLABE para recibir pagos</label>
         <input id="store-clabe" inputMode="numeric" autoComplete="off" maxLength={18} value={clabe} onChange={(event) => setClabe(event.target.value.replace(/\D/g, "").slice(0, 18))} className="mt-2 min-h-12 w-full border-b border-stone-400 bg-transparent px-1 text-base tracking-widest outline-none focus:border-stone-900" />
-        <p className="mt-2 text-xs leading-5 text-stone-500">Debe tener 18 dígitos y un dígito verificador válido.</p>
+        <p className="mt-2 text-xs leading-5 text-stone-500">Debe tener 18 dígitos y un dígito verificador válido. Sin CLABE, nadie puede apartarte prendas.</p>
+      </div>
+      <div>
+        <label htmlFor="store-deposit" className="block text-xs uppercase tracking-[0.16em] text-stone-600">Anticipo para apartar</label>
+        <select id="store-deposit" value={depositPercent} onChange={(event) => setDepositPercent(Number(event.target.value))} className="mt-2 min-h-12 w-full border-b border-stone-400 bg-transparent px-1 text-base">
+          <option value={10}>10 % del total</option>
+          <option value={20}>20 % del total</option>
+        </select>
+        <p className="mt-2 text-xs leading-5 text-stone-500">Lo que la clienta te transfiere para apartar. Tiene 24 horas; el resto se paga en la entrega.</p>
       </div>
 
       {error && <p role="alert" className="text-sm text-red-700">{error}</p>}

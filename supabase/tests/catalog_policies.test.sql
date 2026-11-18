@@ -49,7 +49,7 @@ insert into public.products (
   sale_status, publication_status
 )
 values (
-  '20000000-0000-4000-8000-000000000013',
+  '29000000-0000-4000-8000-000000000013',
   '10000000-0000-4000-8000-000000000003',
   'prenda-pendiente', 'Prenda no pública', 'tops', 'M', 'new', 25000,
   'available', 'published'
@@ -57,7 +57,7 @@ values (
 
 set local role anon;
 select set_config('request.jwt.claims', '{"role":"anon"}', true);
-select is((select count(*)::integer from public.products), 12, 'The public catalog excludes a pending seller.');
+select is((select count(*)::integer from public.products), 19, 'The public catalog excludes a pending seller.');
 select is(
   (select count(*)::integer from public.seller_private_settings),
   0,
@@ -67,7 +67,7 @@ select is(
 reset role;
 set local role authenticated;
 select set_config('request.jwt.claims', '{"sub":"10000000-0000-4000-8000-000000000001","role":"authenticated"}', true);
-select is((select count(*)::integer from public.products), 12, 'A seller can read the public catalog but not another pending seller product.');
+select is((select count(*)::integer from public.products), 19, 'A seller can read the public catalog but not another pending seller product.');
 select is((select count(*)::integer from public.seller_private_settings), 1, 'A seller can read only their own private settings.');
 select throws_ok(
   $$ update public.profiles set status = 'suspended' where id = '10000000-0000-4000-8000-000000000001' $$,
@@ -128,7 +128,7 @@ select matches(
 reset role;
 set local role authenticated;
 select set_config('request.jwt.claims', '{"sub":"10000000-0000-4000-8000-000000000004","role":"authenticated"}', true);
-select is((select count(*)::integer from public.products), 13, 'An admin can read every product, including pending seller products.');
+select is((select count(*)::integer from public.products), 20, 'An admin can read every product, including pending seller products.');
 select is((select count(*)::integer from public.seller_private_settings), 5, 'An admin can read every seller private settings row.');
 update public.profiles set slug = 'admin-tienda-actualizada'
 where id = '10000000-0000-4000-8000-000000000004';

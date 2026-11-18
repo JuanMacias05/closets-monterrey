@@ -53,12 +53,20 @@ export function MobileMenu({ signedIn, initialAudience }: { signedIn: boolean; i
           </nav>
 
           <div className="border-t border-stone-200 p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] font-condensed font-bold uppercase">
+            <div className="mb-3 flex justify-between">
+              <Link href="/favoritos" onClick={() => setOpen(false)} className="flex min-h-11 items-center">Favoritos</Link>
+              <Link href="/carrito" onClick={() => setOpen(false)} className="flex min-h-11 items-center">Carrito</Link>
+              {signedIn && <Link href="/cuenta" onClick={() => setOpen(false)} className="flex min-h-11 items-center">Mi cuenta</Link>}
+            </div>
             {signedIn ? (
               <form action={signOutFromPanel}>
                 <button type="submit" className="flex min-h-12 w-full items-center justify-center border-2 border-pine text-pine">Cerrar sesión</button>
               </form>
             ) : (
-              <Link href="/login" className="flex min-h-12 items-center justify-center bg-pine text-white">Soy vendedora · Entrar</Link>
+              <div className="flex gap-2">
+                <Link href="/login" className="flex min-h-12 flex-1 items-center justify-center bg-pine text-white">Iniciar sesión</Link>
+                <Link href="/registro" className="flex min-h-12 flex-1 items-center justify-center border-2 border-pine text-pine">Crear cuenta</Link>
+              </div>
             )}
           </div>
         </div>
