@@ -4,6 +4,7 @@ import { CatalogFiltersPanel } from "@/components/catalog/catalog-filters";
 import { CatalogGrid } from "@/components/catalog/catalog-grid";
 import { StoreHeader } from "@/components/store/store-header";
 import { getShopState } from "@/features/shop/shop-state";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getViewer } from "@/features/viewer/get-viewer";
 import { getCatalogPage } from "@/features/products/catalog-data";
 import { parseCatalogFilters, type CatalogSearchParams } from "@/features/products/catalog-filters";
@@ -20,7 +21,7 @@ export default async function HomePage({
   searchParams: Promise<CatalogSearchParams>;
 }) {
   const filters = parseCatalogFilters(await searchParams);
-  const [result, viewer, shop] = await Promise.all([getCatalogPage(filters), getViewer(), getShopState()]);
+  const [result, viewer, shop, deliveryPoints] = await Promise.all([getCatalogPage(filters), getViewer(), getShopState(), getDeliveryPoints()]);
   const viewerId = viewer.kind === "guest" ? undefined : viewer.userId;
 
   return (
@@ -43,7 +44,7 @@ export default async function HomePage({
         </nav>
       </section>
 
-      <CatalogFiltersPanel filters={filters} />
+      <CatalogFiltersPanel filters={filters} deliveryPoints={deliveryPoints} />
       <CatalogGrid result={result} filters={filters} viewerId={viewerId} favoriteIds={shop.favoriteIds} signedIn={shop.signedIn} />
 
       <footer className="mt-10 border-t border-stone-200 py-6 text-[10px] uppercase tracking-[0.18em] text-stone-500">
@@ -77,4 +78,12 @@ function CategoryPill({ href, active, children }: { href: string; active: boolea
       {children}
     </Link>
   );
+}
+
+async function getDeliveryPoints() {
+  if (process.env.CATALOG_DEMO_MODE === "true") return [];
+  const supabase = await createSupabaseServerClient();
+  if (!supabase) return [];
+  const { data } = await supabase.from("delivery_points").select("id,name").eq("active", true).order("sort_order");
+  return data ?? [];
 }

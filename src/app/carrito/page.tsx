@@ -14,7 +14,7 @@ export const metadata = { title: "Carrito | Closets Monterrey" };
 type CartRow = {
   product: {
     id: string; slug: string; name: string; price_mxn: number; sale_status: string; seller_id: string;
-    seller: { id: string; store_name: string; deposit_percent: number } | null;
+    seller: { id: string; store_name: string; deposit_percent: number; home_delivery_enabled: boolean; home_delivery_fee_mxn: number; home_delivery_note: string | null } | null;
     images: { source: "local_placeholder" | "storage"; storage_path: string; alt_text: string; position: number }[] | null;
   } | null;
 };
@@ -30,7 +30,7 @@ export default async function CartPage() {
   await supabase.rpc("release_expired_reservations");
   const [{ data: rows }, { data: buyer }] = await Promise.all([
     supabase.from("cart_items")
-      .select("product:products(id,slug,name,price_mxn,sale_status,seller_id,seller:profiles!products_seller_id_fkey(id,store_name,deposit_percent),images:product_images(source,storage_path,alt_text,position))")
+      .select("product:products(id,slug,name,price_mxn,sale_status,seller_id,seller:profiles!products_seller_id_fkey(id,store_name,deposit_percent,home_delivery_enabled,home_delivery_fee_mxn,home_delivery_note),images:product_images(source,storage_path,alt_text,position))")
       .order("created_at", { ascending: true }),
     supabase.from("buyer_profiles").select("id").eq("id", user.id).maybeSingle(),
   ]);
@@ -41,6 +41,16 @@ export default async function CartPage() {
     ? await supabase.rpc("sellers_accepting_reservations", { seller_ids: sellerIds })
     : { data: [] as string[] };
   const acceptingSet = new Set((accepting ?? []) as string[]);
+  const { data: pointRows } = sellerIds.length
+    ? await supabase.from("seller_delivery_points").select("seller_id,point:delivery_points(id,name,sort_order)").in("seller_id", sellerIds)
+    : { data: [] };
+  type PointRow = { seller_id: string; point: { id: string; name: string; sort_order: number } | null };
+  const pointsBySeller = new Map<string, { id: string; name: string; sort_order: number }[]>();
+  for (const row of (pointRows ?? []) as unknown as PointRow[]) {
+    // Inactive points come back as null (RLS hides them) and are skipped.
+    if (!row.point) continue;
+    pointsBySeller.set(row.seller_id, [...(pointsBySeller.get(row.seller_id) ?? []), row.point]);
+  }
 
   const groups = sellerIds.map((sellerId) => {
     const groupItems = items.filter((item) => item.seller_id === sellerId);
@@ -96,12 +106,16 @@ export default async function CartPage() {
                     );
                   })}
                 </ul>
-                <div className="mt-4 flex flex-col gap-3 bg-stone-100 p-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="mt-4 flex flex-col gap-4 bg-stone-100 p-4">
                   <dl className="text-sm text-stone-700">
                     <div className="flex gap-2"><dt>Total:</dt><dd className="font-semibold text-stone-900">{formatPriceMXN(group.total)}</dd></div>
                     <div className="flex gap-2"><dt>Anticipo ({group.seller.deposit_percent} %):</dt><dd className="font-semibold text-stone-900">{formatPriceMXN(group.deposit)}</dd></div>
                   </dl>
                   <ReserveButton
+                    options={{
+                      points: (pointsBySeller.get(group.seller.id) ?? []).toSorted((a, b) => a.sort_order - b.sort_order).map(({ id, name }) => ({ id, name })),
+                      homeDelivery: group.seller.home_delivery_enabled ? { feeLabel: group.seller.home_delivery_fee_mxn > 0 ? formatPriceMXN(group.seller.home_delivery_fee_mxn) : "sin costo", note: group.seller.home_delivery_note } : null,
+                    }}
                     sellerId={group.seller.id}
                     storeName={group.seller.store_name}
                     depositLabel={formatPriceMXN(group.deposit)}

@@ -34,6 +34,15 @@ export async function getCatalogPage(filters: CatalogFilters): Promise<CatalogPa
     .eq("publication_status", "published");
   query = query.eq("hidden_by_admin", false);
 
+  if (filters.delivery) {
+    const { data: sellers } = filters.delivery === "domicilio"
+      ? await supabase.from("profiles").select("id").eq("home_delivery_enabled", true)
+      : await supabase.from("seller_delivery_points").select("id:seller_id").eq("point_id", filters.delivery);
+    const sellerIds = (sellers ?? []).map((row) => row.id as string);
+    if (sellerIds.length === 0) return { products: [], total: 0, error: null };
+    query = query.in("seller_id", sellerIds);
+  }
+
   if (filters.audience) query = query.in("audience", [filters.audience, "unisex"]);
   if (filters.category) query = query.eq("category", filters.category);
   if (filters.size) query = query.eq("size", filters.size);

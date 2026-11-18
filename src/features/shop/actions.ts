@@ -66,14 +66,31 @@ const RESERVE_ERRORS: Record<string, string> = {
   seller_unavailable: "Esta vendedora no está disponible por ahora.",
   own_products: "No puedes apartar prendas de tu propia tienda.",
   empty_cart: "No tienes prendas de esta vendedora en tu carrito.",
+  invalid_delivery: "Elige cómo quieres recibir tus prendas (y escribe tu dirección si es envío a domicilio).",
 };
 
-export async function reserveFromSeller(sellerId: string): Promise<{ ok: true; reservationId: string } | { ok: false; error: string; code?: string }> {
-  if (!UUID.test(sellerId)) return { ok: false, error: "Vendedora no válida." };
+export type DeliveryChoice =
+  | { method: "pickup_point"; pointId: string }
+  | { method: "home_delivery"; address: string }
+  | { method: "arranged" };
+
+export async function reserveFromSeller(sellerId: string, delivery: DeliveryChoice): Promise<{ ok: true; reservationId: string } | { ok: false; error: string; code?: string }> {
+  if (!UUID.test(sellerId) || !delivery || !["pickup_point", "home_delivery", "arranged"].includes(delivery.method)) {
+    return { ok: false, error: "Datos no válidos." };
+  }
+  if (delivery.method === "pickup_point" && !UUID.test(delivery.pointId)) return { ok: false, error: RESERVE_ERRORS.invalid_delivery! };
+  if (delivery.method === "home_delivery" && (typeof delivery.address !== "string" || delivery.address.trim().length < 10 || delivery.address.length > 300)) {
+    return { ok: false, error: "Escribe tu dirección completa (calle, número, colonia y municipio)." };
+  }
   const context = await signedInClient();
   if (!context.ok) return context;
 
-  const { data, error } = await context.supabase.rpc("reserve_cart_from_seller", { target_seller: sellerId });
+  const { data, error } = await context.supabase.rpc("reserve_cart_from_seller", {
+    target_seller: sellerId,
+    method: delivery.method,
+    point: delivery.method === "pickup_point" ? delivery.pointId : null,
+    address: delivery.method === "home_delivery" ? delivery.address.trim() : null,
+  });
   if (error) {
     const code = Object.keys(RESERVE_ERRORS).find((key) => error.message.includes(key));
     return { ok: false, error: code ? RESERVE_ERRORS[code]! : "No pudimos apartar las prendas. Inténtalo de nuevo.", code };

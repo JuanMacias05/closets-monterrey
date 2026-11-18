@@ -3,18 +3,36 @@
 import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
-export type SellerReservationAction = "confirm" | "complete" | "cancel" | "no_show";
+export type SellerReservationAction = "confirm" | "on_the_way" | "cancel" | "no_show";
 
 // Thin wrapper over update_reservation: the database function checks the caller is the
 // reservation's seller (or an admin) and that the transition is allowed.
 export async function updateSellerReservation(reservationId: string, action: SellerReservationAction) {
-  if (!/^[0-9a-f-]{36}$/i.test(reservationId) || !["confirm", "complete", "cancel", "no_show"].includes(action)) {
+  if (!/^[0-9a-f-]{36}$/i.test(reservationId) || !["confirm", "on_the_way", "cancel", "no_show"].includes(action)) {
     return { ok: false as const, error: "Datos no válidos." };
   }
   const supabase = await createSupabaseServerClient();
   if (!supabase) return { ok: false as const, error: "Supabase no está configurado." };
   const { error } = await supabase.rpc("update_reservation", { target: reservationId, action });
   if (error) return { ok: false as const, error: "No se pudo hacer ese cambio; recarga la página e inténtalo de nuevo." };
+  revalidatePath("/panel/apartados");
+  revalidatePath("/panel/prendas");
+  revalidatePath("/");
+  return { ok: true as const };
+}
+
+// Delivery is proven by the 4-digit PIN only the buyer can see; the seller types what the
+// buyer tells her at hand-off.
+export async function completeWithPin(reservationId: string, pin: string) {
+  if (!/^[0-9a-f-]{36}$/i.test(reservationId) || !/^\d{4}$/.test(pin)) {
+    return { ok: false as const, error: "El código de entrega tiene 4 dígitos." };
+  }
+  const supabase = await createSupabaseServerClient();
+  if (!supabase) return { ok: false as const, error: "Supabase no está configurado." };
+  const { error } = await supabase.rpc("complete_reservation_with_pin", { target: reservationId, pin });
+  if (error) {
+    return { ok: false as const, error: error.message.includes("wrong_pin") ? "Ese código no coincide. Pídeselo de nuevo a la clienta." : "No se pudo marcar como entregada; recarga la página." };
+  }
   revalidatePath("/panel/apartados");
   revalidatePath("/panel/prendas");
   revalidatePath("/");

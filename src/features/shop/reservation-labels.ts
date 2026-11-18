@@ -21,3 +21,10 @@ export const TRUST_STYLES: Record<string, string> = {
   red: "bg-[#a3261b] text-white",
   new: "border border-stone-400 text-stone-700",
 };
+
+export const DELIVERY_STATUS_STEPS = [
+  { value: "reserved", label: "Apartada" },
+  { value: "confirmed", label: "Anticipo confirmado" },
+  { value: "on_the_way", label: "En camino" },
+  { value: "delivered", label: "Entregada" },
+] as const;

@@ -108,3 +108,16 @@ describe("categoriesForSection", () => {
     expect(categoriesForSection()).toHaveLength(6);
   });
 });
+
+describe("delivery filter", () => {
+  it("accepts a point id or home delivery and keeps it in shareable URLs", () => {
+    const point = "60000000-0000-4000-8000-000000000001";
+    expect(parseCatalogFilters({ entrega: point }).delivery).toBe(point);
+    expect(parseCatalogFilters({ entrega: "domicilio" }).delivery).toBe("domicilio");
+    expect(buildCatalogQueryString(parseCatalogFilters({ entrega: "domicilio" }))).toContain("entrega=domicilio");
+  });
+
+  it("ignores anything else", () => {
+    expect(parseCatalogFilters({ entrega: "<script>" }).delivery).toBeUndefined();
+  });
+});

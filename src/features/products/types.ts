@@ -31,6 +31,8 @@ export type CatalogSort = "recent" | "price-asc" | "price-desc";
 
 export type CatalogFilters = {
   audience?: CatalogAudience;
+  // A delivery point id, or "domicilio" for sellers who deliver home.
+  delivery?: string;
   category?: (typeof PRODUCT_CATEGORIES)[number]["value"];
   size?: (typeof PRODUCT_SIZES)[number];
   condition?: ProductCondition;

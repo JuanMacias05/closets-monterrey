@@ -1,5 +1,5 @@
 begin;
-select plan(22);
+select plan(27);
 
 -- Two buyers created the way the sign-up form does it (account_type = buyer in metadata).
 insert into auth.users (id, aud, role, phone, raw_user_meta_data)
@@ -28,12 +28,12 @@ select is((select count(*)::integer from public.buyer_profiles), 1, 'A buyer can
 
 -- A reserves first; B loses.
 select set_config('request.jwt.claims', '{"sub":"70000000-0000-4000-8000-00000000000a","role":"authenticated"}', true);
-select lives_ok($$ select public.reserve_cart_from_seller('10000000-0000-4000-8000-000000000001') $$, 'Buyer A reserves the piece.');
+select lives_ok($$ select public.reserve_cart_from_seller('10000000-0000-4000-8000-000000000001', 'pickup_point', '60000000-0000-4000-8000-000000000001') $$, 'Buyer A reserves the piece.');
 select is((select deposit_mxn from public.reservations limit 1), 7100, 'A 20% deposit on $350.50 rounds up to whole pesos ($71).');
 select is((select count(*)::integer from public.cart_items), 0, 'Reserved pieces leave the reserving buyer''s cart.');
 
 select set_config('request.jwt.claims', '{"sub":"70000000-0000-4000-8000-00000000000b","role":"authenticated"}', true);
-select throws_ok($$ select public.reserve_cart_from_seller('10000000-0000-4000-8000-000000000001') $$, 'P0001', 'items_unavailable', 'Buyer B cannot reserve a piece someone else holds.');
+select throws_ok($$ select public.reserve_cart_from_seller('10000000-0000-4000-8000-000000000001', 'pickup_point', '60000000-0000-4000-8000-000000000001') $$, 'P0001', 'items_unavailable', 'Buyer B cannot reserve a piece someone else holds.');
 select is((select count(*)::integer from public.reservations), 0, 'Buyer B cannot see Buyer A''s reservation.');
 
 -- The seller cannot flip a held piece by hand.
@@ -51,10 +51,20 @@ select is((select sale_status::text from public.products where id = '71000000-00
 -- Buyer B now gets it, the seller confirms the deposit and delivers.
 set local role authenticated;
 select set_config('request.jwt.claims', '{"sub":"70000000-0000-4000-8000-00000000000b","role":"authenticated"}', true);
-select lives_ok($$ select public.reserve_cart_from_seller('10000000-0000-4000-8000-000000000001') $$, 'Buyer B reserves the released piece from her cart.');
+select lives_ok($$ select public.reserve_cart_from_seller('10000000-0000-4000-8000-000000000001', 'pickup_point', '60000000-0000-4000-8000-000000000001') $$, 'Buyer B reserves the released piece from her cart.');
 select set_config('request.jwt.claims', '{"sub":"10000000-0000-4000-8000-000000000001","role":"authenticated"}', true);
 select lives_ok($$ select public.update_reservation((select id from public.reservations where status = 'pending_deposit'), 'confirm') $$, 'The seller confirms the deposit.');
-select lives_ok($$ select public.update_reservation((select id from public.reservations where status = 'confirmed'), 'complete') $$, 'The seller marks it delivered.');
+select throws_ok($$ select delivery_pin from public.reservations $$, '42501', NULL, 'The seller cannot read the delivery PIN.');
+select throws_ok($$ select public.update_reservation((select id from public.reservations where status = 'confirmed'), 'complete') $$, 'P0001', 'invalid_transition', 'A seller cannot complete a delivery without the PIN.');
+select lives_ok($$ select public.update_reservation((select id from public.reservations where status = 'confirmed'), 'on_the_way') $$, 'The seller marks the order on its way.');
+select throws_ok($$ select public.complete_reservation_with_pin((select id from public.reservations where status = 'confirmed'), 'xxxx') $$, 'P0001', 'wrong_pin', 'A wrong PIN does not complete the delivery.');
+
+-- The buyer reads her PIN and gives it to the seller at hand-off.
+select set_config('request.jwt.claims', '{"sub":"70000000-0000-4000-8000-00000000000b","role":"authenticated"}', true);
+select ok(public.reservation_delivery_pin((select id from public.reservations where status = 'confirmed')) ~ '^[0-9]{4}$', 'The buyer can read her 4-digit PIN.');
+create temporary table handoff as select id, public.reservation_delivery_pin(id) as pin from public.reservations where status = 'confirmed';
+select set_config('request.jwt.claims', '{"sub":"10000000-0000-4000-8000-000000000001","role":"authenticated"}', true);
+select lives_ok($$ select public.complete_reservation_with_pin((select id from handoff), (select pin from handoff)) $$, 'The seller marks it delivered with the buyer''s PIN.');
 
 reset role;
 select is((select sale_status::text from public.products where id = '71000000-0000-4000-8000-000000000001'), 'sold', 'A delivered piece is sold.');

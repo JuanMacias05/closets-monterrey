@@ -9,7 +9,7 @@ import {
   type CatalogFilters,
 } from "@/features/products/types";
 
-function FilterFields({ filters, prefix }: { filters: CatalogFilters; prefix: string }) {
+function FilterFields({ filters, prefix, deliveryPoints }: { filters: CatalogFilters; prefix: string; deliveryPoints: DeliveryPointOption[] }) {
   return (
     <>
       {/* The section comes from the Mujer/Hombre navigation; carry it so applying filters doesn't drop it. */}
@@ -19,6 +19,15 @@ function FilterFields({ filters, prefix }: { filters: CatalogFilters; prefix: st
         <select id={`${prefix}-category`} name="category" defaultValue={filters.category ?? ""} className="min-h-11 border-b border-stone-300 bg-transparent px-1 text-sm normal-case tracking-normal text-stone-800 outline-none focus:border-stone-900">
           <option value="">Todas</option>
           {PRODUCT_CATEGORIES.map((category) => <option key={category.value} value={category.value}>{category.label}</option>)}
+        </select>
+      </label>
+
+      <label className="flex flex-col gap-2 text-xs uppercase tracking-[0.15em] text-stone-500" htmlFor={`${prefix}-delivery`}>
+        ¿Dónde la recibes?
+        <select id={`${prefix}-delivery`} name="entrega" defaultValue={filters.delivery ?? ""} className="min-h-11 border-b border-stone-300 bg-transparent px-1 text-sm normal-case tracking-normal text-stone-800 outline-none focus:border-stone-900">
+          <option value="">Cualquier entrega</option>
+          {deliveryPoints.map((point) => <option key={point.id} value={point.id}>{point.name}</option>)}
+          <option value="domicilio">Envío a domicilio</option>
         </select>
       </label>
 
@@ -66,15 +75,17 @@ function FilterFields({ filters, prefix }: { filters: CatalogFilters; prefix: st
   );
 }
 
-export function CatalogFiltersPanel({ filters }: { filters: CatalogFilters }) {
+export type DeliveryPointOption = { id: string; name: string };
+
+export function CatalogFiltersPanel({ filters, deliveryPoints = [] }: { filters: CatalogFilters; deliveryPoints?: DeliveryPointOption[] }) {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
     <>
       <div className="hidden border-y border-stone-200 py-5 lg:block">
-        <form action="/" method="get" className="grid grid-cols-7 items-end gap-x-6 gap-y-5">
-          <FilterFields filters={filters} prefix="desktop" />
-          <div className="col-span-7 flex items-center justify-end gap-5">
+        <form action="/" method="get" className="grid grid-cols-4 items-end gap-x-6 gap-y-5 xl:grid-cols-8">
+          <FilterFields filters={filters} prefix="desktop" deliveryPoints={deliveryPoints} />
+          <div className="col-span-full flex items-center justify-end gap-5">
             <Link href="/" className="text-xs uppercase tracking-[0.16em] text-stone-500 underline-offset-4 hover:underline">Limpiar filtros</Link>
             <button type="submit" className="min-h-11 bg-pine px-6 font-condensed text-base font-bold uppercase text-white transition-colors hover:bg-pine-light">Aplicar filtros</button>
           </div>
@@ -97,7 +108,7 @@ export function CatalogFiltersPanel({ filters }: { filters: CatalogFilters }) {
               <button type="button" aria-label="Cerrar panel de filtros" onClick={() => setIsOpen(false)} className="grid size-11 place-items-center text-2xl text-stone-700">×</button>
             </div>
             <form action="/" method="get" className="grid gap-5">
-              <FilterFields filters={filters} prefix="mobile" />
+              <FilterFields filters={filters} prefix="mobile" deliveryPoints={deliveryPoints} />
               <div className="sticky bottom-0 flex gap-3 bg-[#faf9f6] py-3">
                 <Link href="/" className="flex min-h-12 flex-1 items-center justify-center border border-stone-300 text-xs uppercase tracking-[0.16em] text-stone-700">Limpiar</Link>
                 <button type="submit" className="min-h-12 flex-1 bg-pine font-condensed text-base font-bold uppercase text-white">Ver resultados</button>

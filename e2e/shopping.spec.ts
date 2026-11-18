@@ -2,9 +2,10 @@ import { expect, test, type Page } from "@playwright/test";
 
 // Reserved in supabase/config.toml [auth.sms.test_otp]; no seeded account uses it.
 const BUYER_PHONE = "+528100000008";
-const SELLER_PHONE = "+528100000002"; // El clóset de Sofía (seeded with a CLABE)
-const PRODUCT_ID = "20000000-0000-4000-8000-000000000011"; // Bolso bandolera caramelo, $560
-const PRODUCT_SLUG = "bolso-bandolera-caramelo";
+const SELLER_PHONE = "+528100000001"; // Closet de Renata: CLABE, Padre Mier/Cuauhtémoc and home delivery
+const PRODUCT_ID = "20000000-0000-4000-8000-000000000003"; // Jeans rectos azul medio, $420
+const PRODUCT_SLUG = "jeans-rectos-azul";
+const PRODUCT_NAME = "Jeans rectos azul medio";
 
 function adminHeaders() {
   const key = process.env.E2E_SUPABASE_SECRET_KEY;
@@ -50,21 +51,23 @@ test("a shopper saves a favorite, reserves from her cart and the seller complete
   await enterCode(page);
   await expect(page).toHaveURL(new RegExp(`/prendas/${PRODUCT_SLUG}$`));
 
-  await page.getByRole("button", { name: "Agregar Bolso bandolera caramelo a favoritos" }).click();
-  await expect(page.getByRole("button", { name: "Quitar Bolso bandolera caramelo de favoritos" })).toBeVisible();
+  await page.getByRole("button", { name: `Agregar ${PRODUCT_NAME} a favoritos` }).click();
+  await expect(page.getByRole("button", { name: `Quitar ${PRODUCT_NAME} de favoritos` })).toBeVisible();
   await page.getByRole("button", { name: "Agregar al carrito" }).click();
   await expect(page.getByRole("link", { name: /En tu carrito/ })).toBeVisible();
 
   await page.goto("/favoritos");
-  await expect(page.getByText("Bolso bandolera caramelo")).toBeVisible();
+  await expect(page.getByText(PRODUCT_NAME)).toBeVisible();
 
   await page.goto("/carrito");
-  await expect(page.getByRole("heading", { name: "El clóset de Sofía" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Closet de Renata" })).toBeVisible();
+  await page.getByRole("radio", { name: /Estación Padre Mier/ }).check();
   page.once("dialog", (dialog) => dialog.accept());
-  await page.getByRole("button", { name: /Apartar · anticipo \$112\.00 MXN/ }).click();
+  await page.getByRole("button", { name: /Apartar · anticipo \$84\.00 MXN/ }).click();
   await expect(page).toHaveURL(/\/cuenta/);
   await expect(page.getByText("Esperando anticipo")).toBeVisible();
   await expect(page.getByText("000000000000000000")).toBeVisible();
+  await expect(page.getByText("Punto fijo · Estación Padre Mier")).toBeVisible();
 
   // The seller confirms the deposit, then the delivery.
   const sellerContext = await browser.newContext();
@@ -80,11 +83,23 @@ test("a shopper saves a favorite, reserves from her cart and the seller complete
   seller.once("dialog", (dialog) => dialog.accept());
   await card.getByRole("button", { name: "Confirmar anticipo" }).click();
   await expect(card.getByText("Anticipo confirmado")).toBeVisible();
-  seller.once("dialog", (dialog) => dialog.accept());
+  await card.getByRole("button", { name: "En camino" }).click();
+  await expect(card.getByText(/En camino/)).toBeVisible();
+
+  // The buyer sees her PIN; a wrong one is refused, hers completes the delivery.
+  await page.goto("/cuenta");
+  await expect(page.getByRole("listitem").filter({ hasText: "En camino" }).first()).toBeVisible();
+  const pin = (await page.getByLabel(/Código de entrega/).textContent())?.trim() ?? "";
+  expect(pin).toMatch(/^\d{4}$/);
+
+  await card.getByLabel("Código de entrega").fill(pin === "0000" ? "1111" : "0000");
+  await card.getByRole("button", { name: "Marcar entregada" }).click();
+  await expect(card.getByText("Ese código no coincide.", { exact: false })).toBeVisible();
+  await card.getByLabel("Código de entrega").fill(pin);
   await card.getByRole("button", { name: "Marcar entregada" }).click();
   await expect(seller.getByText("No tienes apartados abiertos.")).toBeVisible();
   await sellerContext.close();
 
-  await page.goto("/cuenta");
-  await expect(page.getByText("Entregada")).toBeVisible();
+  await page.reload();
+  await expect(page.locator('[aria-current="step"]').filter({ hasText: "Entregada" })).toBeVisible();
 });

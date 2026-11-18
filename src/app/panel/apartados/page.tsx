@@ -10,6 +10,8 @@ export const metadata = { title: "Apartados | Closets Monterrey" };
 type ReservationRow = {
   id: string; buyer_id: string; status: string; items_total_mxn: number; deposit_percent: number; deposit_mxn: number;
   expires_at: string; created_at: string;
+  delivery_method: string; delivery_address: string | null; delivery_fee_mxn: number; delivery_status: string;
+  point: { name: string } | null;
   items: { price_mxn: number; product: { name: string; slug: string } | null }[] | null;
 };
 
@@ -24,7 +26,7 @@ export default async function SellerReservationsPage() {
 
   await supabase.rpc("release_expired_reservations");
   const { data: rows, error } = await supabase.from("reservations")
-    .select("id,buyer_id,status,items_total_mxn,deposit_percent,deposit_mxn,expires_at,created_at,items:reservation_items(price_mxn,product:products(name,slug))")
+    .select("id,buyer_id,status,items_total_mxn,deposit_percent,deposit_mxn,expires_at,created_at,delivery_method,delivery_address,delivery_fee_mxn,delivery_status,point:delivery_points(name),items:reservation_items(price_mxn,product:products(name,slug))")
     .eq("seller_id", user.id)
     .order("created_at", { ascending: false })
     .limit(100);
@@ -69,8 +71,15 @@ export default async function SellerReservationsPage() {
           ))}
         </ul>
         <p className="mt-2 text-sm text-stone-700">Total {formatPriceMXN(reservation.items_total_mxn)} · anticipo {reservation.deposit_percent} %: <strong className="text-stone-900">{formatPriceMXN(reservation.deposit_mxn)}</strong></p>
+        <p className="mt-1 text-sm text-stone-700">
+          <strong>Entrega:</strong>{" "}
+          {reservation.delivery_method === "pickup_point" ? `Punto fijo · ${reservation.point?.name ?? ""}`
+            : reservation.delivery_method === "home_delivery" ? `A domicilio (${formatPriceMXN(reservation.delivery_fee_mxn)}) · ${reservation.delivery_address ?? ""}`
+            : "Acordar por WhatsApp"}
+          {reservation.status === "confirmed" && reservation.delivery_status === "on_the_way" && " · En camino"}
+        </p>
         {reservation.status === "pending_deposit" && <p className="mt-1 text-sm text-stone-700">Se libera sola el {dateFormat.format(new Date(reservation.expires_at))} si no llega el anticipo.</p>}
-        <div className="mt-4"><ReservationActions reservationId={reservation.id} status={reservation.status} buyerName={buyerName} /></div>
+        <div className="mt-4"><ReservationActions reservationId={reservation.id} status={reservation.status} deliveryStatus={reservation.delivery_status} buyerName={buyerName} /></div>
       </li>
     );
   }
