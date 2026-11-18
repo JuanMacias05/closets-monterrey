@@ -25,6 +25,14 @@ El esquema actual asigna un solo rol (`admin` o `seller`). La admin aprobada pue
 
 GoTrue guarda el teléfono de Auth sin el `+`; la tabla de datos privados de vendedora conserva el formato E.164 con `+`. El trigger de la migración mantiene esa conversión automáticamente, así que el SQL de asignación por UUID no necesita consultar ni guardar el teléfono.
 
+Si cambias `supabase/config.toml`, reinicia Supabase local para que Auth y los demás servicios relean la configuración:
+
+```bash
+npx supabase stop && npx supabase start
+```
+
+`npx supabase db reset` reinicia la base de datos, pero no relee la configuración de servicios.
+
 ## SMS en producción
 
 El proveedor y sus credenciales se configuran en **Supabase Dashboard → Authentication → Providers → Phone**. La configuración local de `supabase/config.toml` no configura el proveedor del proyecto remoto. Usa las credenciales en el dashboard/gestor de secretos y nunca subas tokens al repositorio.
