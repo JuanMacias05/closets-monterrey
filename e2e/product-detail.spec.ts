@@ -4,7 +4,8 @@ test("opens a product from the catalog and navigates its photo gallery", async (
   await page.goto("/");
   await page.getByRole("link", { name: "Ver Top satinado marfil" }).click();
 
-  await expect(page).toHaveURL(/\/prendas\/top-satin-marfil$/);
+  // The dev server compiles the product page on first visit; CI runners can take a while.
+  await expect(page).toHaveURL(/\/prendas\/top-satin-marfil$/, { timeout: 20_000 });
   await expect(page.getByRole("heading", { name: "Top satinado marfil", level: 1 })).toBeVisible();
   await expect(page.getByText("$350.00 MXN").first()).toBeVisible();
   await expect(page.getByText("Closet de Renata").first()).toBeVisible();
