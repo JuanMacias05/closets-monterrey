@@ -1,5 +1,5 @@
 begin;
-select plan(20);
+select plan(22);
 
 insert into public.products (id, seller_id, slug, name, category, size, condition, price_mxn)
 values
@@ -10,7 +10,9 @@ values
   ('40000000-0000-4000-8000-000000000001', '30000000-0000-4000-8000-000000000001', 'local_placeholder', '/uno.jpg', '', 0),
   ('40000000-0000-4000-8000-000000000002', '30000000-0000-4000-8000-000000000001', 'local_placeholder', '/dos.jpg', '', 1);
 insert into storage.objects (bucket_id, name, owner, metadata)
-values ('product-images', 'sellers/10000000-0000-4000-8000-000000000001/products/30000000-0000-4000-8000-000000000001/50000000-0000-4000-8000-000000000001.jpg', '10000000-0000-4000-8000-000000000001', '{"mimetype":"image/jpeg","size":1}'::jsonb);
+values
+  ('product-images', 'sellers/10000000-0000-4000-8000-000000000001/products/30000000-0000-4000-8000-000000000001/50000000-0000-4000-8000-000000000001.jpg', '10000000-0000-4000-8000-000000000001', '{"mimetype":"image/jpeg","size":1}'::jsonb),
+  ('product-images', 'sellers/10000000-0000-4000-8000-000000000002/products/30000000-0000-4000-8000-000000000002/50000000-0000-4000-8000-000000000002.jpg', '10000000-0000-4000-8000-000000000002', '{"mimetype":"image/jpeg","size":1}'::jsonb);
 
 select ok(
   (select not condeferrable from pg_constraint where conname = 'product_images_product_position_unique'),
@@ -19,6 +21,8 @@ select ok(
 
 set local role authenticated;
 select set_config('request.jwt.claims', '{"sub":"10000000-0000-4000-8000-000000000001","role":"authenticated"}', true);
+select is((select count(*)::integer from storage.objects where bucket_id = 'product-images' and name = 'sellers/10000000-0000-4000-8000-000000000001/products/30000000-0000-4000-8000-000000000001/50000000-0000-4000-8000-000000000001.jpg'), 1, 'A seller can read her own product image object row.');
+select is((select count(*)::integer from storage.objects where bucket_id = 'product-images' and name = 'sellers/10000000-0000-4000-8000-000000000002/products/30000000-0000-4000-8000-000000000002/50000000-0000-4000-8000-000000000002.jpg'), 0, 'A seller cannot read another sellers product image object row.');
 select lives_ok(
   $$ select public.reorder_product_images(
     '30000000-0000-4000-8000-000000000001',

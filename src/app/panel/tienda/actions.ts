@@ -73,8 +73,11 @@ export async function saveStoreSettings(input: StoreSettingsInput) {
   if (updateSettingsError) return { ok: false as const, error: "No pudimos guardar el WhatsApp y la CLABE." };
 
   if (profile.avatar_path && profile.avatar_path !== avatarPath && profile.avatar_path.startsWith(avatarPrefix)) {
-    const { error: removeError } = await supabase.storage.from("product-images").remove([profile.avatar_path]);
-    if (removeError) console.error("No se pudo borrar la foto anterior de la tienda.", removeError);
+    const paths = [profile.avatar_path];
+    const { data, error: removeError } = await supabase.storage.from("product-images").remove(paths);
+    if (removeError || (data?.length ?? 0) !== paths.length) {
+      console.error("No se pudo borrar la foto anterior de la tienda.", removeError ?? { requested: paths.length, removed: data?.length ?? 0 });
+    }
   }
 
   revalidatePath("/");

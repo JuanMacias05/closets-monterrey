@@ -54,8 +54,8 @@ export function StoreSettingsForm(props: Props) {
       if (!result.ok) {
         if (newAvatarPath) {
           const supabase = createSupabaseBrowserClient();
-          const { error: removeError } = await supabase?.storage.from("product-images").remove([newAvatarPath]) ?? { error: null };
-          if (removeError) console.error("No se pudo limpiar una foto de tienda que no se guardó.", removeError);
+          const { data, error: removeError } = await supabase?.storage.from("product-images").remove([newAvatarPath]) ?? { data: null, error: null };
+          if (removeError || data?.length !== 1) console.error("No se pudo limpiar una foto de tienda que no se guardó.", removeError ?? { requested: 1, removed: data?.length ?? 0 });
         }
         setError(result.error);
         return;
@@ -69,8 +69,8 @@ export function StoreSettingsForm(props: Props) {
     } catch (cause) {
       if (newAvatarPath) {
         const supabase = createSupabaseBrowserClient();
-        const { error: removeError } = await supabase?.storage.from("product-images").remove([newAvatarPath]) ?? { error: null };
-        if (removeError) console.error("No se pudo limpiar una foto de tienda que no se guardó.", removeError);
+        const { data, error: removeError } = await supabase?.storage.from("product-images").remove([newAvatarPath]) ?? { data: null, error: null };
+        if (removeError || data?.length !== 1) console.error("No se pudo limpiar una foto de tienda que no se guardó.", removeError ?? { requested: 1, removed: data?.length ?? 0 });
       }
       setError(cause instanceof Error ? cause.message : "No pudimos guardar la tienda.");
     } finally {

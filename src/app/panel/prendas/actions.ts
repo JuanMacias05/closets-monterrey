@@ -158,8 +158,11 @@ export async function deleteProductImage(imageId: string): Promise<Result> {
   const { error: deleteError } = await context.supabase.from("product_images").delete().eq("id", imageId);
   if (deleteError) return { ok: false, error: "No pudimos borrar la foto." };
   if (image.source === "storage") {
-    const { error } = await context.supabase.storage.from("product-images").remove([image.storage_path]);
-    if (error) console.error("No se pudo borrar el archivo de una foto eliminada.", error);
+    const paths = [image.storage_path];
+    const { data, error } = await context.supabase.storage.from("product-images").remove(paths);
+    if (error || (data?.length ?? 0) !== paths.length) {
+      console.error("No se pudo borrar el archivo de una foto eliminada.", error ?? { requested: paths.length, removed: data?.length ?? 0 });
+    }
   }
   const ordered = (remaining ?? []).map((row) => row.id);
   if (ordered.length > 0) {
@@ -187,8 +190,10 @@ export async function deleteProductWithImages(productId: string): Promise<Result
   if (deleteError || !deleted) return { ok: false, error: "No pudimos borrar la prenda." };
   const paths = (images ?? []).filter((image) => image.source === "storage").map((image) => image.storage_path);
   if (paths.length > 0) {
-    const { error } = await context.supabase.storage.from("product-images").remove(paths);
-    if (error) console.error("La prenda se borró, pero no se pudieron borrar sus archivos de Storage.", error);
+    const { data, error } = await context.supabase.storage.from("product-images").remove(paths);
+    if (error || (data?.length ?? 0) !== paths.length) {
+      console.error("La prenda se borró, pero no se pudieron borrar sus archivos de Storage.", error ?? { requested: paths.length, removed: data?.length ?? 0 });
+    }
   }
   revalidateProducts();
   return { ok: true };
