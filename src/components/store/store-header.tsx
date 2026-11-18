@@ -62,6 +62,7 @@ function SellerBar({ storeName, isAdmin }: { storeName: string; isAdmin: boolean
           Agregar prenda
         </Link>
         <Link href="/panel/prendas" className="flex min-h-9 items-center px-3 hover:underline">Mis prendas</Link>
+        {isAdmin && <Link href="/panel/admin/vendedoras" className="flex min-h-9 items-center px-3 hover:underline">Vendedoras</Link>}
         {isAdmin && <Link href="/panel/admin/prendas" className="flex min-h-9 items-center px-3 hover:underline">Todas las prendas</Link>}
         <Link href="/panel" className="flex min-h-9 items-center px-3 hover:underline">Panel</Link>
       </nav>

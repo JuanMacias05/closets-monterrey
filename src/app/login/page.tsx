@@ -12,7 +12,7 @@ export default function LoginPage() {
         <h1 className="mt-3 font-serif text-3xl tracking-tight text-stone-900">Bienvenida a tu closet.</h1>
         <p className="mt-3 text-sm leading-6 text-stone-500">Inicia sesión con el celular asociado a tu cuenta.</p>
         <PhoneLoginForm />
-        <p className="mt-7 border-t border-stone-100 pt-5 text-center text-xs leading-5 text-stone-400">El acceso está disponible para cuentas habilitadas por la administración.</p>
+        <p className="mt-7 border-t border-stone-100 pt-5 text-center text-sm leading-5 text-stone-600">¿Aún no tienes cuenta? <Link href="/registro" className="font-medium text-pine underline underline-offset-4">Crear cuenta de vendedora</Link></p>
       </section>
     </main>
   );

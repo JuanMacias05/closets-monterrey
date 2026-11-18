@@ -5,9 +5,13 @@ import { useRouter } from "next/navigation";
 import { normalizePhoneE164 } from "@/features/auth/phone-number";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
-export function PhoneLoginForm() {
+// "signup" lets a new number create its account; it starts as a pending seller and can't
+// sell until an admin approves it from /panel/admin/vendedoras. "login" refuses unknown
+// numbers so a typo doesn't silently create a second account.
+export function PhoneLoginForm({ mode = "login" }: { mode?: "login" | "signup" }) {
   const router = useRouter();
   const [phoneInput, setPhoneInput] = useState("");
+  const [storeName, setStoreName] = useState("");
   const [phone, setPhone] = useState("");
   const [otp, setOtp] = useState("");
   const [step, setStep] = useState<"phone" | "otp">("phone");
@@ -22,6 +26,11 @@ export function PhoneLoginForm() {
       setError("Escribe el celular con código de país, por ejemplo +52 81 2345 6789.");
       return;
     }
+    const trimmedStoreName = storeName.trim();
+    if (mode === "signup" && (trimmedStoreName.length === 0 || trimmedStoreName.length > 60)) {
+      setError("Escribe el nombre de tu closet (máximo 60 caracteres).");
+      return;
+    }
 
     const supabase = createSupabaseBrowserClient();
     if (!supabase) {
@@ -33,10 +42,14 @@ export function PhoneLoginForm() {
     try {
       const { error: authError } = await supabase.auth.signInWithOtp({
         phone: normalizedPhone,
-        options: { shouldCreateUser: false },
+        options: mode === "signup"
+          ? { shouldCreateUser: true, data: { store_name: trimmedStoreName } }
+          : { shouldCreateUser: false },
       });
       if (authError) {
-        setError("No pudimos enviar el código. Verifica que la cuenta esté habilitada e inténtalo de nuevo.");
+        setError(mode === "signup"
+          ? "No pudimos enviar el código. Revisa el número e inténtalo de nuevo."
+          : "No pudimos enviar el código. Si aún no tienes cuenta, créala primero.");
         return;
       }
       setPhone(normalizedPhone);
@@ -82,6 +95,22 @@ export function PhoneLoginForm() {
     <div className="mt-8">
       {step === "phone" ? (
         <form onSubmit={requestCode} className="space-y-5">
+          {mode === "signup" && (
+            <>
+              <label htmlFor="store-name" className="block text-xs uppercase tracking-[0.16em] text-stone-600">Nombre de tu closet</label>
+              <input
+                id="store-name"
+                type="text"
+                autoComplete="organization"
+                placeholder="El closet de Ana"
+                value={storeName}
+                onChange={(event) => setStoreName(event.target.value)}
+                maxLength={60}
+                required
+                className="min-h-12 w-full border-b border-stone-400 bg-transparent px-1 text-base outline-none focus:border-stone-900"
+              />
+            </>
+          )}
           <label htmlFor="phone" className="block text-xs uppercase tracking-[0.16em] text-stone-600">Número de celular</label>
           <input
             id="phone"
@@ -94,8 +123,8 @@ export function PhoneLoginForm() {
             required
             className="min-h-12 w-full border-b border-stone-400 bg-transparent px-1 text-base outline-none focus:border-stone-900"
           />
-          <button type="submit" disabled={isBusy} className="min-h-12 w-full bg-stone-900 px-5 text-xs uppercase tracking-[0.18em] text-white transition-colors hover:bg-stone-700 disabled:cursor-wait disabled:opacity-60">
-            {isBusy ? "Enviando código…" : "Enviar código"}
+          <button type="submit" disabled={isBusy} className="min-h-12 w-full bg-pine px-5 font-condensed text-base font-bold uppercase text-white transition-colors hover:bg-pine-light disabled:cursor-wait disabled:opacity-60">
+            {isBusy ? "Enviando código…" : mode === "signup" ? "Crear cuenta" : "Enviar código"}
           </button>
         </form>
       ) : (
@@ -115,7 +144,7 @@ export function PhoneLoginForm() {
             required
             className="min-h-12 w-full border-b border-stone-400 bg-transparent px-1 text-center text-2xl tracking-[0.45em] outline-none focus:border-stone-900"
           />
-          <button type="submit" disabled={isBusy} className="min-h-12 w-full bg-stone-900 px-5 text-xs uppercase tracking-[0.18em] text-white transition-colors hover:bg-stone-700 disabled:cursor-wait disabled:opacity-60">
+          <button type="submit" disabled={isBusy} className="min-h-12 w-full bg-pine px-5 font-condensed text-base font-bold uppercase text-white transition-colors hover:bg-pine-light disabled:cursor-wait disabled:opacity-60">
             {isBusy ? "Verificando…" : "Verificar código"}
           </button>
           <button type="button" onClick={() => { setStep("phone"); setOtp(""); setError(null); }} className="min-h-11 w-full text-xs uppercase tracking-[0.14em] text-stone-600 underline underline-offset-4">

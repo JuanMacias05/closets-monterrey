@@ -31,6 +31,9 @@ const result = spawnSync("npx", ["playwright", "test", ...process.argv.slice(2)]
     CATALOG_DEMO_MODE: "true",
     NEXT_PUBLIC_SUPABASE_URL: supabaseUrl,
     NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: publishableKey,
+    // Local-stack admin key so specs can reset accounts they create (e.g. the sign-up flow).
+    // It only exists for `supabase start`; it is never the production key.
+    E2E_SUPABASE_SECRET_KEY: parseStatusValue(status, "SECRET_KEY") ?? parseStatusValue(status, "SERVICE_ROLE_KEY") ?? "",
   },
 });
 

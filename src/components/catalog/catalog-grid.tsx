@@ -14,6 +14,20 @@ export function CatalogGrid({ result, filters, viewerId }: { result: CatalogPage
     );
   }
 
+  // An empty store and an over-filtered search need different words: "no results for these
+  // filters" on a store with no stock reads like a bug to the visitor.
+  const hasFilters = Boolean(filters.audience || filters.category || filters.size || filters.condition
+    || filters.minPrice !== undefined || filters.maxPrice !== undefined || filters.hideSold);
+
+  if (result.products.length === 0 && !hasFilters) {
+    return (
+      <div className="border-y border-stone-200 py-20 text-center">
+        <p className="font-serif text-2xl text-stone-800">Muy pronto, nuevas prendas.</p>
+        <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-stone-600">Nuestras vendedoras están preparando sus closets. Vuelve en unos días para ver lo nuevo.</p>
+      </div>
+    );
+  }
+
   if (result.products.length === 0) {
     return (
       <div className="border-y border-stone-200 py-20 text-center">
