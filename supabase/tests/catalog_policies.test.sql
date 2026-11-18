@@ -101,21 +101,20 @@ select throws_ok(
   'new row for relation "seller_private_settings" violates check constraint "seller_clabe_format"',
   'The database rejects a CLABE with an invalid check digit.'
 );
-insert into storage.objects (bucket_id, name, owner, metadata, path_tokens)
+insert into storage.objects (bucket_id, name, owner, metadata)
 values (
   'product-images',
   'sellers/10000000-0000-4000-8000-000000000001/avatar/rls-test.jpg',
   '10000000-0000-4000-8000-000000000001',
-  '{"mimetype":"image/jpeg","size":1}'::jsonb,
-  array['sellers', '10000000-0000-4000-8000-000000000001', 'avatar']
+  '{"mimetype":"image/jpeg","size":1}'::jsonb
 );
 select ok(
   exists (select 1 from storage.objects where bucket_id = 'product-images' and name = 'sellers/10000000-0000-4000-8000-000000000001/avatar/rls-test.jpg'),
   'An approved seller can upload a store avatar in her own folder.'
 );
 select throws_ok(
-  $$ insert into storage.objects (bucket_id, name, owner, metadata, path_tokens)
-     values ('product-images', 'sellers/10000000-0000-4000-8000-000000000002/avatar/rls-test.jpg', '10000000-0000-4000-8000-000000000001', '{"mimetype":"image/jpeg","size":1}'::jsonb, array['sellers', '10000000-0000-4000-8000-000000000002', 'avatar']) $$,
+  $$ insert into storage.objects (bucket_id, name, owner, metadata)
+     values ('product-images', 'sellers/10000000-0000-4000-8000-000000000002/avatar/rls-test.jpg', '10000000-0000-4000-8000-000000000001', '{"mimetype":"image/jpeg","size":1}'::jsonb) $$,
   '42501',
   'new row violates row-level security policy for table "objects"',
   'A seller cannot upload an avatar into another seller folder.'

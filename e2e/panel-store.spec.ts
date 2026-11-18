@@ -1,8 +1,8 @@
 import { expect, test, type Page } from "@playwright/test";
 
-async function loginAsAdmin(page: Page) {
+async function loginWithTestPhone(page: Page, phone: string) {
   await page.goto("/login");
-  await page.getByLabel("Número de celular").fill("+528100000004");
+  await page.getByLabel("Número de celular").fill(phone);
   await page.getByRole("button", { name: "Enviar código" }).click();
   await page.getByLabel("Código de verificación").fill("123456");
   await page.getByRole("button", { name: "Verificar código" }).click();
@@ -28,10 +28,10 @@ test("legacy seller and admin URLs permanently redirect to panel routes", async 
 });
 
 test("admin can update her own store name, WhatsApp and valid CLABE", async ({ page }) => {
-  await loginAsAdmin(page);
+  await loginWithTestPhone(page, "+528100000004");
   await page.goto("/panel/tienda");
 
-  await page.getByLabel("Foto de tienda").setInputFiles({
+  await page.locator("#store-avatar").setInputFiles({
     name: "store.png",
     mimeType: "image/png",
     buffer: Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGNgYAAAAAMAASsJTYQAAAAASUVORK5CYII=", "base64"),
@@ -50,7 +50,7 @@ test("admin can update her own store name, WhatsApp and valid CLABE", async ({ p
 });
 
 test("store settings reject a CLABE with an invalid check digit", async ({ page }) => {
-  await loginAsAdmin(page);
+  await loginWithTestPhone(page, "+528100000001");
   await page.goto("/panel/tienda");
   await page.getByLabel("CLABE para recibir pagos").fill("000000000000000001");
   await page.getByRole("button", { name: "Guardar tienda" }).click();
