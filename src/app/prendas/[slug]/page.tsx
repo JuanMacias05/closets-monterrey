@@ -4,6 +4,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ProductGallery } from "@/components/products/product-gallery";
 import { ProductCard } from "@/components/catalog/product-card";
+import { StoreHeader } from "@/components/store/store-header";
 import { getMoreFromSeller, getProductDetail } from "@/features/products/product-detail-data";
 import { formatPriceMXN } from "@/features/products/format-price";
 import { PRODUCT_CATEGORIES } from "@/features/products/types";
@@ -95,12 +96,9 @@ export default async function ProductDetailPage({ params }: PageProps) {
   const unavailable = product.sale_status !== "available";
 
   return (
+    <>
+    <StoreHeader />
     <main className="mx-auto min-h-screen w-full max-w-[1600px] px-4 pb-14 sm:px-8 lg:px-12">
-      <header className="flex items-center justify-between border-b border-stone-200 py-5 sm:py-7">
-        <Link href="/" className="font-serif text-xl tracking-tight text-stone-900 sm:text-2xl">Closets Monterrey</Link>
-        <p className="hidden text-[10px] uppercase tracking-[0.24em] text-stone-500 sm:block">Moda circular · Nuevo León</p>
-        <Link href="/" className="text-[10px] uppercase tracking-[0.18em] text-stone-600 sm:text-xs">Volver al catálogo</Link>
-      </header>
 
       <nav aria-label="Ruta de navegación" className="py-5 text-[10px] uppercase tracking-[0.16em] text-stone-400 sm:py-7">
         <Link href="/" className="hover:text-stone-800">Catálogo</Link><span className="px-2">/</span><span className="text-stone-700">{product.name}</span>
@@ -169,5 +167,6 @@ export default async function ProductDetailPage({ params }: PageProps) {
 
       <footer className="mt-14 border-t border-stone-200 py-6 text-[10px] uppercase tracking-[0.18em] text-stone-500">Monterrey, Nuevo León · Moda de segunda mano</footer>
     </main>
+    </>
   );
 }

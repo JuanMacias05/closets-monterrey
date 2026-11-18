@@ -53,6 +53,8 @@ export type CatalogProduct = {
   sale_status: ProductSaleStatus;
   measurements?: Record<string, number>;
   created_at: string;
+  // Only the live catalog selects it; demo data and the detail page leave it out.
+  seller_id?: string;
   seller: { store_name: string; slug: string; avatar_path?: string | null };
   images: CatalogImage[];
 };

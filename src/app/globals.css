@@ -1,5 +1,14 @@
 @import "tailwindcss";
 
+/* Storefront look: condensed uppercase labels + heavy display headings; pine green is the
+   single accent so the store reads as its own brand rather than a black-and-white clone. */
+@theme inline {
+  --font-condensed: var(--font-archivo-narrow), "Arial Narrow", Arial, sans-serif;
+  --font-heavy: var(--font-archivo-black), "Arial Black", Arial, sans-serif;
+  --color-pine: #1f3a2e;
+  --color-pine-light: #2c4a3d;
+}
+
 :root {
   color-scheme: light;
   background: #faf9f6;

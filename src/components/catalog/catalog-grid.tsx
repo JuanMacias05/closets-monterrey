@@ -4,7 +4,7 @@ import { CATALOG_PAGE_SIZE } from "@/features/products/catalog-data";
 import type { CatalogFilters, CatalogPageResult } from "@/features/products/types";
 import { ProductCard } from "@/components/catalog/product-card";
 
-export function CatalogGrid({ result, filters }: { result: CatalogPageResult; filters: CatalogFilters }) {
+export function CatalogGrid({ result, filters, viewerId }: { result: CatalogPageResult; filters: CatalogFilters; viewerId?: string }) {
   if (result.error) {
     return (
       <div role="alert" className="border-y border-stone-200 py-16 text-center">
@@ -19,7 +19,7 @@ export function CatalogGrid({ result, filters }: { result: CatalogPageResult; fi
       <div className="border-y border-stone-200 py-20 text-center">
         <p className="font-serif text-2xl text-stone-800">No encontramos prendas con estos filtros.</p>
         <p className="mt-3 text-sm text-stone-500">Prueba con otra talla, categoría o rango de precio.</p>
-        <Link href="/" className="mt-6 inline-flex min-h-11 items-center border-b border-stone-800 text-xs uppercase tracking-[0.16em] text-stone-800">Ver todo el catálogo</Link>
+        <Link href="/" className="mt-6 inline-flex min-h-11 items-center border-b-2 border-pine font-condensed text-base font-bold uppercase text-pine">Ver todo el catálogo</Link>
       </div>
     );
   }
@@ -35,11 +35,11 @@ export function CatalogGrid({ result, filters }: { result: CatalogPageResult; fi
         <p className="hidden sm:block">Piezas únicas · Monterrey</p>
       </div>
       <div data-testid="product-grid" className="grid grid-cols-2 gap-x-3 gap-y-9 sm:grid-cols-3 sm:gap-x-5 sm:gap-y-12 lg:grid-cols-4 lg:gap-x-6">
-        {result.products.map((product, index) => <ProductCard key={product.id} product={product} priority={index < 4} />)}
+        {result.products.map((product, index) => <ProductCard key={product.id} product={product} priority={index < 4} viewerId={viewerId} />)}
       </div>
       {lastItem < result.total && (
         <div className="flex justify-center py-14">
-          <Link href={`/?${nextQuery}`} rel="next" className="inline-flex min-h-12 items-center border border-stone-400 px-8 text-xs uppercase tracking-[0.18em] text-stone-800 transition-colors hover:bg-stone-900 hover:text-white">
+          <Link href={`/?${nextQuery}`} rel="next" className="inline-flex min-h-12 items-center border-2 border-pine px-8 font-condensed text-base font-bold uppercase text-pine transition-colors hover:bg-pine hover:text-white">
             Cargar 24 prendas más
           </Link>
         </div>

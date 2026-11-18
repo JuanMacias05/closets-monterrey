@@ -48,7 +48,7 @@ function FilterFields({ filters, prefix }: { filters: CatalogFilters; prefix: st
       </fieldset>
 
       <label className="flex items-center gap-3 text-sm text-stone-700">
-        <input type="checkbox" name="hideSold" value="1" defaultChecked={filters.hideSold} className="size-4 accent-stone-900" />
+        <input type="checkbox" name="hideSold" value="1" defaultChecked={filters.hideSold} className="size-4 accent-pine" />
         Ocultar prendas vendidas
       </label>
 
@@ -74,7 +74,7 @@ export function CatalogFiltersPanel({ filters }: { filters: CatalogFilters }) {
           <FilterFields filters={filters} prefix="desktop" />
           <div className="col-span-7 flex items-center justify-end gap-5">
             <Link href="/" className="text-xs uppercase tracking-[0.16em] text-stone-500 underline-offset-4 hover:underline">Limpiar filtros</Link>
-            <button type="submit" className="min-h-11 bg-stone-900 px-6 text-xs uppercase tracking-[0.18em] text-white transition-colors hover:bg-stone-700">Aplicar filtros</button>
+            <button type="submit" className="min-h-11 bg-pine px-6 font-condensed text-base font-bold uppercase text-white transition-colors hover:bg-pine-light">Aplicar filtros</button>
           </div>
         </form>
       </div>
@@ -98,7 +98,7 @@ export function CatalogFiltersPanel({ filters }: { filters: CatalogFilters }) {
               <FilterFields filters={filters} prefix="mobile" />
               <div className="sticky bottom-0 flex gap-3 bg-[#faf9f6] py-3">
                 <Link href="/" className="flex min-h-12 flex-1 items-center justify-center border border-stone-300 text-xs uppercase tracking-[0.16em] text-stone-700">Limpiar</Link>
-                <button type="submit" className="min-h-12 flex-1 bg-stone-900 text-xs uppercase tracking-[0.16em] text-white">Ver resultados</button>
+                <button type="submit" className="min-h-12 flex-1 bg-pine font-condensed text-base font-bold uppercase text-white">Ver resultados</button>
               </div>
             </form>
           </section>

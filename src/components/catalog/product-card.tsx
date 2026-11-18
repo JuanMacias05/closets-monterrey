@@ -2,15 +2,17 @@ import Image from "next/image";
 import Link from "next/link";
 import type { CatalogProduct } from "@/features/products/types";
 import { formatPriceMXN } from "@/features/products/format-price";
+import { OwnerProductActions } from "@/components/catalog/owner-product-actions";
 
 const conditionLabels = { new: "Nuevo", like_new: "Como nuevo", used: "Usado" } as const;
 
-export function ProductCard({ product, priority = false }: { product: CatalogProduct; priority?: boolean }) {
+export function ProductCard({ product, priority = false, viewerId }: { product: CatalogProduct; priority?: boolean; viewerId?: string }) {
+  const isOwn = viewerId !== undefined && product.seller_id === viewerId;
   const firstImage = product.images[0];
   const secondImage = product.images[1];
 
   return (
-    <article className="group min-w-0">
+    <article className={`group min-w-0 ${isOwn ? "outline-2 outline-offset-4 outline-pine" : ""}`}>
       <div className="relative aspect-[3/4] overflow-hidden bg-stone-100">
         <Link href={`/prendas/${product.slug}`} aria-label={`Ver ${product.name}`} className="absolute inset-0">
           {firstImage ? (
@@ -20,11 +22,14 @@ export function ProductCard({ product, priority = false }: { product: CatalogPro
           )}
           {secondImage && <Image src={secondImage.url} alt={secondImage.alt_text || `${product.name}, segunda vista`} fill sizes="(max-width: 639px) 50vw, (max-width: 1023px) 33vw, 25vw" className="object-cover opacity-0 transition-opacity duration-500 ease-out group-hover:opacity-100 motion-reduce:transition-none" />}
         </Link>
-        {product.sale_status !== "available" && (
-          <span className={`absolute left-2 top-2 px-2.5 py-1 text-[10px] uppercase tracking-[0.14em] sm:left-3 sm:top-3 ${product.sale_status === "sold" ? "bg-stone-900 text-white" : "bg-[#eee4d8] text-stone-800"}`}>
-            {product.sale_status === "sold" ? "Vendida" : "Apartada"}
-          </span>
-        )}
+        <div className="pointer-events-none absolute left-2 top-2 flex flex-col items-start gap-1 sm:left-3 sm:top-3">
+          {isOwn && <span className="bg-pine px-2.5 py-1 font-condensed text-xs font-bold uppercase tracking-[0.06em] text-white">Tu prenda</span>}
+          {product.sale_status !== "available" && (
+            <span className={`px-2.5 py-1 font-condensed text-xs font-bold uppercase tracking-[0.06em] ${product.sale_status === "sold" ? "bg-stone-900 text-white" : "border border-pine bg-white text-pine"}`}>
+              {product.sale_status === "sold" ? "Vendida" : "Apartada"}
+            </span>
+          )}
+        </div>
       </div>
       <div className="flex flex-col gap-1.5 pt-3 sm:pt-4">
         <div className="flex min-w-0 items-start justify-between gap-2">
@@ -34,8 +39,9 @@ export function ProductCard({ product, priority = false }: { product: CatalogPro
         <p className="text-xs text-stone-500">{product.seller.store_name}</p>
         <div className="flex items-center justify-between gap-2 pt-1">
           <p className="text-sm tracking-wide text-stone-900">{formatPriceMXN(product.price_mxn)}</p>
-          <p className="text-[10px] text-stone-400">{conditionLabels[product.condition]}</p>
+          <p className="text-[10px] text-stone-500">{conditionLabels[product.condition]}</p>
         </div>
+        {isOwn && <OwnerProductActions productId={product.id} productName={product.name} saleStatus={product.sale_status} />}
       </div>
     </article>
   );

@@ -3,7 +3,7 @@ import { expect, test } from "@playwright/test";
 test("renders the catalog and its product cards", async ({ page }) => {
   await page.goto("/");
 
-  await expect(page.getByRole("heading", { name: "Piezas que merecen otra historia." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Nuevo en tienda" })).toBeVisible();
   await expect(page.getByTestId("product-grid").locator("article")).toHaveCount(12);
   await expect(page.getByText("Closet de Renata").first()).toBeVisible();
   await expect(page.getByText("$350.00 MXN").first()).toBeVisible();
