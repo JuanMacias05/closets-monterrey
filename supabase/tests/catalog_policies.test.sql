@@ -1,5 +1,5 @@
 begin;
-select plan(14);
+select plan(16);
 
 select ok(
   (select public from storage.buckets where id = 'product-images'),
@@ -17,32 +17,12 @@ select ok(
   'Product slugs are globally unique.'
 );
 
-insert into auth.users (
-  id, aud, role, phone, phone_confirmed_at,
-  raw_app_meta_data, raw_user_meta_data, created_at, updated_at
-)
-values
-  (
-    '10000000-0000-4000-8000-000000000003',
-    'authenticated', 'authenticated', '+520000000003', now(),
-    '{"provider":"phone","providers":["phone"]}'::jsonb,
-    '{"store_name":"Tienda pendiente"}'::jsonb,
-    now(), now()
-  ),
-  (
-    '10000000-0000-4000-8000-000000000004',
-    'authenticated', 'authenticated', '+520000000004', now(),
-    '{"provider":"phone","providers":["phone"]}'::jsonb,
-    '{"store_name":"Admin de prueba"}'::jsonb,
-    now(), now()
-  );
-
 update public.profiles
-set store_name = 'Tienda pendiente', slug = 'tienda-pendiente'
+set store_name = 'Tienda pendiente'
 where id = '10000000-0000-4000-8000-000000000003';
 
 update public.profiles
-set store_name = 'Admin de prueba', slug = 'admin-de-prueba', status = 'approved', role = 'admin'
+set store_name = 'Admin de prueba', status = 'approved', role = 'admin'
 where id = '10000000-0000-4000-8000-000000000004';
 
 insert into public.products (
@@ -83,6 +63,12 @@ select throws_ok(
   'A seller cannot promote themselves to admin.'
 );
 select throws_ok(
+  $$ update public.profiles set slug = 'new-public-slug' where id = '10000000-0000-4000-8000-000000000001' $$,
+  'P0001',
+  'Only an admin can change profile slugs',
+  'A seller cannot change their store slug.'
+);
+select throws_ok(
   $$ update public.seller_private_settings set phone_e164 = '+520000000099' where seller_id = '10000000-0000-4000-8000-000000000001' $$,
   'P0001',
   'The login phone must be changed through Supabase Auth verification',
@@ -100,7 +86,14 @@ reset role;
 set local role authenticated;
 select set_config('request.jwt.claims', '{"sub":"10000000-0000-4000-8000-000000000004","role":"authenticated"}', true);
 select is((select count(*)::integer from public.products), 13, 'An admin can read every product, including pending seller products.');
-select is((select count(*)::integer from public.seller_private_settings), 4, 'An admin can read every seller private settings row.');
+select is((select count(*)::integer from public.seller_private_settings), 5, 'An admin can read every seller private settings row.');
+update public.profiles set slug = 'admin-tienda-actualizada'
+where id = '10000000-0000-4000-8000-000000000004';
+select is(
+  (select slug from public.profiles where id = '10000000-0000-4000-8000-000000000004'),
+  'admin-tienda-actualizada',
+  'An admin can change a seller profile slug.'
+);
 update public.products
 set hidden_by_admin = true
 where id = '20000000-0000-4000-8000-000000000001';

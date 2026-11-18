@@ -1,7 +1,8 @@
 -- Datos ficticios solo para desarrollo local. No aplicar en producción.
--- Los perfiles están ligados a auth.users, por eso se crean dos identidades locales.
+-- Los perfiles están ligados a auth.users, por eso se crean cinco identidades locales.
 insert into auth.users (
   id,
+  instance_id,
   aud,
   role,
   phone,
@@ -14,9 +15,10 @@ insert into auth.users (
 values
   (
     '10000000-0000-4000-8000-000000000001',
+    '00000000-0000-0000-0000-000000000000',
     'authenticated',
     'authenticated',
-    '+520000000001',
+    '+528100000001',
     now(),
     '{"provider":"phone","providers":["phone"]}'::jsonb,
     '{"store_name":"Closet de Renata"}'::jsonb,
@@ -25,29 +27,97 @@ values
   ),
   (
     '10000000-0000-4000-8000-000000000002',
+    '00000000-0000-0000-0000-000000000000',
     'authenticated',
     'authenticated',
-    '+520000000002',
+    '+528100000002',
     now(),
     '{"provider":"phone","providers":["phone"]}'::jsonb,
     '{"store_name":"El clóset de Sofía"}'::jsonb,
     now(),
     now()
+  ),
+  (
+    '10000000-0000-4000-8000-000000000003',
+    '00000000-0000-0000-0000-000000000000',
+    'authenticated',
+    'authenticated',
+    '+528100000003',
+    now(),
+    '{"provider":"phone","providers":["phone"]}'::jsonb,
+    '{"store_name":"Tienda pendiente"}'::jsonb,
+    now(),
+    now()
+  ),
+  (
+    '10000000-0000-4000-8000-000000000004',
+    '00000000-0000-0000-0000-000000000000',
+    'authenticated',
+    'authenticated',
+    '+528100000004',
+    now(),
+    '{"provider":"phone","providers":["phone"]}'::jsonb,
+    '{"store_name":"Admin de prueba"}'::jsonb,
+    now(),
+    now()
+  ),
+  (
+    '10000000-0000-4000-8000-000000000005',
+    '00000000-0000-0000-0000-000000000000',
+    'authenticated',
+    'authenticated',
+    '+528100000005',
+    now(),
+    '{"provider":"phone","providers":["phone"]}'::jsonb,
+    '{"store_name":"Tienda suspendida"}'::jsonb,
+    now(),
+    now()
   )
 on conflict (id) do nothing;
 
+-- GoTrue looks up phone-auth users through auth.identities when issuing OTPs.
+insert into auth.identities (
+  id, provider_id, user_id, identity_data, provider, last_sign_in_at, created_at, updated_at
+)
+select
+  id,
+  id,
+  id,
+  jsonb_build_object('sub', id::text, 'phone', phone),
+  'phone',
+  now(),
+  now(),
+  now()
+from auth.users
+where phone in (
+  '+528100000001', '+528100000002', '+528100000003', '+528100000004', '+528100000005'
+)
+on conflict do nothing;
+
 update public.profiles
-set store_name = 'Closet de Renata', slug = 'closet-de-renata', status = 'approved', role = 'seller'
+set store_name = 'Closet de Renata', status = 'approved', role = 'seller'
 where id = '10000000-0000-4000-8000-000000000001';
 
 update public.profiles
-set store_name = 'El clóset de Sofía', slug = 'el-closet-de-sofia', status = 'approved', role = 'seller'
+set store_name = 'El clóset de Sofía', status = 'approved', role = 'seller'
 where id = '10000000-0000-4000-8000-000000000002';
+
+update public.profiles
+set store_name = 'Tienda pendiente', status = 'pending', role = 'seller'
+where id = '10000000-0000-4000-8000-000000000003';
+
+update public.profiles
+set store_name = 'Admin de prueba', status = 'approved', role = 'admin'
+where id = '10000000-0000-4000-8000-000000000004';
+
+update public.profiles
+set store_name = 'Tienda suspendida', status = 'suspended', role = 'seller'
+where id = '10000000-0000-4000-8000-000000000005';
 
 insert into public.seller_private_settings (seller_id, phone_e164, whatsapp_e164, clabe)
 values
-  ('10000000-0000-4000-8000-000000000001', '+520000000001', '+520000000001', '000000000000000001'),
-  ('10000000-0000-4000-8000-000000000002', '+520000000002', '+520000000002', '000000000000000002')
+  ('10000000-0000-4000-8000-000000000001', '+528100000001', '+528100000001', '000000000000000001'),
+  ('10000000-0000-4000-8000-000000000002', '+528100000002', '+528100000002', '000000000000000002')
 on conflict (seller_id) do update
 set phone_e164 = excluded.phone_e164,
     whatsapp_e164 = excluded.whatsapp_e164,

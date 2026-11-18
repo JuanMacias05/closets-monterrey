@@ -10,8 +10,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:e2e": "playwright test",
-    "test:e2e:ui": "playwright test --ui"
+    "test:e2e": "node scripts/run-e2e-local.mjs",
+    "test:e2e:ui": "node scripts/run-e2e-local.mjs --ui"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",
