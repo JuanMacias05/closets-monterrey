@@ -12,6 +12,8 @@ import {
 function FilterFields({ filters, prefix }: { filters: CatalogFilters; prefix: string }) {
   return (
     <>
+      {/* The section comes from the Mujer/Hombre navigation; carry it so applying filters doesn't drop it. */}
+      {filters.audience && <input type="hidden" name="audience" value={filters.audience} />}
       <label className="flex flex-col gap-2 text-xs uppercase tracking-[0.15em] text-stone-500" htmlFor={`${prefix}-category`}>
         Categoría
         <select id={`${prefix}-category`} name="category" defaultValue={filters.category ?? ""} className="min-h-11 border-b border-stone-300 bg-transparent px-1 text-sm normal-case tracking-normal text-stone-800 outline-none focus:border-stone-900">

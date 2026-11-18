@@ -4,7 +4,7 @@ test("renders the catalog and its product cards", async ({ page }) => {
   await page.goto("/");
 
   await expect(page.getByRole("heading", { name: "Nuevo en tienda" })).toBeVisible();
-  await expect(page.getByTestId("product-grid").locator("article")).toHaveCount(12);
+  await expect(page.getByTestId("product-grid").locator("article")).toHaveCount(19);
   await expect(page.getByText("Closet de Renata").first()).toBeVisible();
   await expect(page.getByText("$350.00 MXN").first()).toBeVisible();
   await expect(page.getByText("Apartada").first()).toBeVisible();
@@ -41,7 +41,7 @@ test("opens the mobile filter drawer and keeps a two-column catalog grid", async
   await page.getByRole("button", { name: "Ver resultados" }).click();
 
   await expect(page).toHaveURL(/category=shoes/);
-  await expect(page.getByTestId("product-grid").locator("article")).toHaveCount(2);
+  await expect(page.getByTestId("product-grid").locator("article")).toHaveCount(3);
   await expect(page.getByText("Tenis blancos minimal")).toBeVisible();
 
   await page.setViewportSize({ width: 768, height: 900 });

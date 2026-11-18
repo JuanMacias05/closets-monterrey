@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { PRODUCT_CATEGORIES, PRODUCT_CONDITIONS, PRODUCT_SIZES, type ProductCondition } from "@/features/products/types";
+import { PRODUCT_AUDIENCES, PRODUCT_CATEGORIES, PRODUCT_CONDITIONS, PRODUCT_SIZES, type ProductAudience, type ProductCondition } from "@/features/products/types";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 type Result = { ok: true } | { ok: false; error: string };
@@ -10,6 +10,8 @@ type ProductInput = {
   name: string;
   description: string;
   category: string;
+  // Optional so older callers keep working; a missing value means "women", the column default.
+  audience?: string;
   size: string;
   condition: string;
   price_mxn: number;
@@ -34,6 +36,7 @@ function validProductInput(input: ProductInput) {
   return input && typeof input.name === "string" && input.name.trim().length > 0 && input.name.trim().length <= 100
     && typeof input.description === "string" && input.description.length <= 5000
     && PRODUCT_CATEGORIES.some((item) => item.value === input.category)
+    && (input.audience === undefined || PRODUCT_AUDIENCES.some((item) => item.value === input.audience))
     && PRODUCT_SIZES.some((item) => item === input.size)
     && PRODUCT_CONDITIONS.some((item) => item.value === input.condition)
     && Number.isSafeInteger(input.price_mxn) && input.price_mxn >= 0 && input.price_mxn <= 100_000_000
@@ -43,6 +46,7 @@ function validProductInput(input: ProductInput) {
 function productValues(input: ProductInput) {
   return {
     name: input.name.trim(), description: input.description.trim(), category: input.category,
+    audience: (input.audience ?? "women") as ProductAudience,
     size: input.size, condition: input.condition as ProductCondition, price_mxn: input.price_mxn,
     measurements: input.measurements ?? {}, publication_status: "published" as const,
   };

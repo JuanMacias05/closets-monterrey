@@ -6,7 +6,7 @@ import { StoreHeader } from "@/components/store/store-header";
 import { getViewer } from "@/features/viewer/get-viewer";
 import { getCatalogPage } from "@/features/products/catalog-data";
 import { parseCatalogFilters, type CatalogSearchParams } from "@/features/products/catalog-filters";
-import { PRODUCT_CATEGORIES } from "@/features/products/types";
+import { categoriesForSection } from "@/features/products/section-categories";
 
 export const metadata: Metadata = {
   title: "Prendas | Closets Monterrey",
@@ -24,15 +24,20 @@ export default async function HomePage({
 
   return (
     <>
-    <StoreHeader />
+    <StoreHeader activeAudience={filters.audience} />
     <main className="mx-auto min-h-screen w-full max-w-[1600px] px-4 pb-12 sm:px-8 lg:px-12">
       <section className="pb-8 pt-10 text-center sm:pb-10 sm:pt-14">
         <h1 className="font-heavy text-4xl leading-none tracking-tight text-stone-900 uppercase sm:text-6xl lg:text-8xl">Nuevo en tienda</h1>
         <p className="mx-auto mt-4 max-w-md text-sm leading-6 text-stone-600">Prendas únicas, cuidadosamente elegidas por vendedoras de Monterrey.</p>
-        <nav aria-label="Categorías rápidas" className="-mx-4 mt-7 flex gap-2 overflow-x-auto px-4 pb-1 font-condensed text-sm font-bold uppercase sm:mx-0 sm:flex-wrap sm:justify-center sm:overflow-visible sm:px-0 sm:text-base">
-          <CategoryPill href="/" active={!filters.category}>Todo</CategoryPill>
-          {PRODUCT_CATEGORIES.map((category) => (
-            <CategoryPill key={category.value} href={`/?category=${category.value}`} active={filters.category === category.value}>{category.label}</CategoryPill>
+        <nav aria-label="Secciones" className="mt-7 flex justify-center gap-2 font-condensed text-base font-bold uppercase">
+          <CategoryPill href="/" active={!filters.audience}>Todo</CategoryPill>
+          <CategoryPill href="/?audience=women" active={filters.audience === "women"}>Mujer</CategoryPill>
+          <CategoryPill href="/?audience=men" active={filters.audience === "men"}>Hombre</CategoryPill>
+        </nav>
+        <nav aria-label="Categorías" className="-mx-4 mt-4 flex gap-x-5 overflow-x-auto px-4 pb-1 text-sm sm:mx-0 sm:flex-wrap sm:justify-center sm:overflow-visible sm:px-0">
+          <CategoryLink href={sectionHref(filters.audience)} active={!filters.category}>Ver todo</CategoryLink>
+          {categoriesForSection(filters.audience).map((category) => (
+            <CategoryLink key={category.value} href={sectionHref(filters.audience, category.value)} active={filters.category === category.value}>{category.label}</CategoryLink>
           ))}
         </nav>
       </section>
@@ -45,6 +50,23 @@ export default async function HomePage({
       </footer>
     </main>
     </>
+  );
+}
+
+// Category links keep the chosen section, so "Pantalones" inside Hombre stays in Hombre.
+function sectionHref(audience?: string, category?: string) {
+  const params = new URLSearchParams();
+  if (audience) params.set("audience", audience);
+  if (category) params.set("category", category);
+  const query = params.toString();
+  return query ? `/?${query}` : "/";
+}
+
+function CategoryLink({ href, active, children }: { href: string; active: boolean; children: React.ReactNode }) {
+  return (
+    <Link href={href} aria-current={active ? "page" : undefined} className={`flex min-h-11 shrink-0 items-center whitespace-nowrap ${active ? "font-semibold text-stone-900 underline decoration-pine decoration-2 underline-offset-4" : "text-stone-600 hover:text-stone-900"}`}>
+      {children}
+    </Link>
   );
 }
 

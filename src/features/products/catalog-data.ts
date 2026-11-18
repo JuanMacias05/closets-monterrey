@@ -24,12 +24,13 @@ export async function getCatalogPage(filters: CatalogFilters): Promise<CatalogPa
   let query = supabase
     .from("products")
     .select(
-      "id,slug,name,description,category,size,condition,price_mxn,sale_status,created_at,seller_id,seller:profiles!products_seller_id_fkey(store_name,slug,avatar_path),images:product_images(id,source,storage_path,alt_text,position,width,height)",
+      "id,slug,name,description,category,audience,size,condition,price_mxn,sale_status,created_at,seller_id,seller:profiles!products_seller_id_fkey(store_name,slug,avatar_path),images:product_images(id,source,storage_path,alt_text,position,width,height)",
       { count: "exact" },
     )
     .eq("publication_status", "published");
   query = query.eq("hidden_by_admin", false);
 
+  if (filters.audience) query = query.in("audience", [filters.audience, "unisex"]);
   if (filters.category) query = query.eq("category", filters.category);
   if (filters.size) query = query.eq("size", filters.size);
   if (filters.condition) query = query.eq("condition", filters.condition);

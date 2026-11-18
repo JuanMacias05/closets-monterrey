@@ -3,10 +3,12 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { signOutFromPanel } from "@/app/panel/actions";
-import { PRODUCT_CATEGORIES } from "@/features/products/types";
+import { categoriesForSection } from "@/features/products/section-categories";
+import type { CatalogAudience } from "@/features/products/types";
 
-export function MobileMenu({ signedIn }: { signedIn: boolean }) {
+export function MobileMenu({ signedIn, initialAudience }: { signedIn: boolean; initialAudience?: CatalogAudience }) {
   const [open, setOpen] = useState(false);
+  const [audience, setAudience] = useState<CatalogAudience>(initialAudience ?? "women");
 
   useEffect(() => {
     if (!open) return;
@@ -34,11 +36,19 @@ export function MobileMenu({ signedIn }: { signedIn: boolean }) {
             <span aria-hidden="true" className="size-11" />
           </div>
 
-          <nav aria-label="Categorías" className="flex flex-1 flex-col overflow-y-auto px-5 py-2 font-sans text-base font-normal normal-case tracking-normal">
+          <div className="flex border-b border-stone-200 font-condensed text-lg font-bold uppercase">
+            {(["women", "men"] as const).map((value) => (
+              <button key={value} type="button" aria-pressed={audience === value} onClick={() => setAudience(value)} className={`min-h-13 flex-1 border-b-[3px] ${audience === value ? "border-pine text-stone-900" : "border-transparent text-stone-500"}`}>
+                {value === "women" ? "Mujer" : "Hombre"}
+              </button>
+            ))}
+          </div>
+
+          <nav aria-label={audience === "women" ? "Categorías de Mujer" : "Categorías de Hombre"} className="flex flex-1 flex-col overflow-y-auto px-5 py-2 font-sans text-base font-normal normal-case tracking-normal">
             <MenuLink href="/?sort=recent" onNavigate={() => setOpen(false)}>Nuevo</MenuLink>
-            <MenuLink href="/" onNavigate={() => setOpen(false)}>Ver todo</MenuLink>
-            {PRODUCT_CATEGORIES.map((category) => (
-              <MenuLink key={category.value} href={`/?category=${category.value}`} onNavigate={() => setOpen(false)}>{category.label}</MenuLink>
+            <MenuLink href={`/?audience=${audience}`} onNavigate={() => setOpen(false)}>Ver todo</MenuLink>
+            {categoriesForSection(audience).map((category) => (
+              <MenuLink key={category.value} href={`/?audience=${audience}&category=${category.value}`} onNavigate={() => setOpen(false)}>{category.label}</MenuLink>
             ))}
           </nav>
 

@@ -211,8 +211,48 @@ on conflict (id) do update set
   sold_at = excluded.sold_at,
   created_at = excluded.created_at;
 
+-- Men's garments, so the Hombre section has something to show locally.
+insert into public.products (
+  id, seller_id, slug, name, description, audience, category, size, measurements,
+  condition, price_mxn, sale_status, publication_status, reserved_at, sold_at, created_at
+)
+values
+  ('20000000-0000-4000-8000-000000000013', '10000000-0000-4000-8000-000000000002', 'camisa-oxford-azul-hombre', 'Camisa Oxford azul', 'Camisa de algodón Oxford, manga larga y cuello con botones.', 'men', 'tops', 'M', '{"busto_cm":104,"largo_cm":76}'::jsonb, 'like_new', 38000, 'available', 'published', null, null, now() - interval '20 hours'),
+  ('20000000-0000-4000-8000-000000000014', '10000000-0000-4000-8000-000000000002', 'pantalon-chino-caqui-hombre', 'Pantalón chino caqui', 'Corte recto, gabardina ligera.', 'men', 'bottoms', 'L', '{"cintura_cm":86,"largo_cm":104}'::jsonb, 'used', 45000, 'available', 'published', null, null, now() - interval '30 hours'),
+  ('20000000-0000-4000-8000-000000000015', '10000000-0000-4000-8000-000000000002', 'playera-basica-negra-hombre', 'Playera básica negra', 'Algodón pesado, cuello redondo.', 'men', 'tops', 'L', '{"busto_cm":108,"largo_cm":72}'::jsonb, 'new', 22000, 'available', 'published', null, null, now() - interval '6 hours'),
+  ('20000000-0000-4000-8000-000000000016', '10000000-0000-4000-8000-000000000002', 'jeans-slim-oscuro-hombre', 'Jeans slim azul oscuro', 'Corte slim, mezclilla con poco elástico.', 'men', 'bottoms', '28', '{"cintura_cm":80,"largo_cm":106}'::jsonb, 'like_new', 52000, 'available', 'published', null, null, now() - interval '2 days 4 hours'),
+  ('20000000-0000-4000-8000-000000000017', '10000000-0000-4000-8000-000000000002', 'chamarra-bomber-olivo-hombre', 'Chamarra bomber olivo', 'Bomber ligera con puños de punto.', 'men', 'outerwear', 'XL', '{"busto_cm":120,"largo_cm":68}'::jsonb, 'used', 68000, 'available', 'published', null, null, now() - interval '3 days 2 hours'),
+  ('20000000-0000-4000-8000-000000000018', '10000000-0000-4000-8000-000000000002', 'tenis-piel-blancos-hombre', 'Tenis de piel blancos', 'Piel lisa, suela de goma.', 'men', 'shoes', '28', '{"largo_pie_cm":28}'::jsonb, 'like_new', 79000, 'available', 'published', null, null, now() - interval '4 days'),
+  ('20000000-0000-4000-8000-000000000019', '10000000-0000-4000-8000-000000000002', 'gorra-lona-beige-hombre', 'Gorra de lona beige', 'Ajuste trasero con hebilla.', 'men', 'accessories', 'Única', '{}'::jsonb, 'new', 18000, 'available', 'published', null, null, now() - interval '5 days')
+on conflict (id) do update set
+  audience = excluded.audience,
+  slug = excluded.slug,
+  name = excluded.name,
+  description = excluded.description,
+  category = excluded.category,
+  size = excluded.size,
+  measurements = excluded.measurements,
+  condition = excluded.condition,
+  price_mxn = excluded.price_mxn,
+  sale_status = excluded.sale_status,
+  publication_status = excluded.publication_status;
+
 insert into public.product_images (product_id, source, storage_path, alt_text, position)
 values
+  ('20000000-0000-4000-8000-000000000013', 'local_placeholder', '/placeholders/top-front.svg', 'Camisa Oxford azul, vista frontal', 0),
+  ('20000000-0000-4000-8000-000000000013', 'local_placeholder', '/placeholders/top-detail.svg', 'Detalle de la tela Oxford', 1),
+  ('20000000-0000-4000-8000-000000000014', 'local_placeholder', '/placeholders/bottom-front.svg', 'Pantalón chino caqui, vista frontal', 0),
+  ('20000000-0000-4000-8000-000000000014', 'local_placeholder', '/placeholders/bottom-detail.svg', 'Detalle de la gabardina', 1),
+  ('20000000-0000-4000-8000-000000000015', 'local_placeholder', '/placeholders/top-front.svg', 'Playera básica negra, vista frontal', 0),
+  ('20000000-0000-4000-8000-000000000015', 'local_placeholder', '/placeholders/top-detail.svg', 'Detalle de la tela de la playera', 1),
+  ('20000000-0000-4000-8000-000000000016', 'local_placeholder', '/placeholders/bottom-front.svg', 'Jeans slim azul oscuro, vista frontal', 0),
+  ('20000000-0000-4000-8000-000000000016', 'local_placeholder', '/placeholders/bottom-detail.svg', 'Detalle de la mezclilla oscura', 1),
+  ('20000000-0000-4000-8000-000000000017', 'local_placeholder', '/placeholders/outerwear-front.svg', 'Chamarra bomber olivo, vista frontal', 0),
+  ('20000000-0000-4000-8000-000000000017', 'local_placeholder', '/placeholders/outerwear-detail.svg', 'Detalle de la forro de la bomber', 1),
+  ('20000000-0000-4000-8000-000000000018', 'local_placeholder', '/placeholders/shoes-front.svg', 'Tenis de piel blancos, vista frontal', 0),
+  ('20000000-0000-4000-8000-000000000018', 'local_placeholder', '/placeholders/shoes-detail.svg', 'Detalle de la suela de los tenis', 1),
+  ('20000000-0000-4000-8000-000000000019', 'local_placeholder', '/placeholders/accessory-front.svg', 'Gorra de lona beige, vista frontal', 0),
+  ('20000000-0000-4000-8000-000000000019', 'local_placeholder', '/placeholders/accessory-detail.svg', 'Detalle de la hebilla de la gorra', 1),
   ('20000000-0000-4000-8000-000000000001', 'local_placeholder', '/placeholders/top-front.svg', 'Top satinado marfil, vista frontal', 0),
   ('20000000-0000-4000-8000-000000000001', 'local_placeholder', '/placeholders/top-detail.svg', 'Detalle del tejido satinado', 1),
   ('20000000-0000-4000-8000-000000000002', 'local_placeholder', '/placeholders/top-front.svg', 'Blusa de lino arena, vista frontal', 0),

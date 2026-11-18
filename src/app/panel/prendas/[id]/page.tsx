@@ -12,12 +12,12 @@ export default async function EditProductPage({ params }: PageProps<"/panel/pren
   if (!user) redirect("/login");
 
   const { data: row, error } = await supabase.from("products")
-    .select("id,name,description,category,size,condition,price_mxn,measurements,sale_status,images:product_images(id,source,storage_path,alt_text,position,width,height)")
+    .select("id,name,description,category,audience,size,condition,price_mxn,measurements,sale_status,images:product_images(id,source,storage_path,alt_text,position,width,height)")
     .eq("id", id).eq("seller_id", user.id)
     .order("position", { foreignTable: "product_images", ascending: true }).maybeSingle();
   if (error || !row) notFound();
   const product: EditableProduct = {
-    id: row.id, name: row.name, description: row.description, category: row.category, size: row.size,
+    id: row.id, name: row.name, description: row.description, category: row.category, audience: row.audience, size: row.size,
     condition: row.condition, price_mxn: row.price_mxn, measurements: row.measurements ?? {}, sale_status: row.sale_status,
     images: (row.images ?? []).map((image) => ({
       id: image.id, storage_path: image.storage_path, alt_text: image.alt_text, position: image.position,

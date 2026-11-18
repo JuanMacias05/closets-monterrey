@@ -41,7 +41,7 @@ export const getProductDetail = cache(async (slug: string): Promise<CatalogProdu
   const { data, error } = await supabase
     .from("products")
     .select(
-      "id,slug,name,description,category,size,measurements,condition,price_mxn,sale_status,created_at,seller:profiles!products_seller_id_fkey(store_name,slug,avatar_path),images:product_images(id,source,storage_path,alt_text,position,width,height)",
+      "id,slug,name,description,category,audience,size,measurements,condition,price_mxn,sale_status,created_at,seller:profiles!products_seller_id_fkey(store_name,slug,avatar_path),images:product_images(id,source,storage_path,alt_text,position,width,height)",
     )
     .eq("slug", slug)
     .eq("publication_status", "published")
@@ -77,7 +77,7 @@ export const getMoreFromSeller = cache(async (sellerSlug: string, productId: str
   const { data, error } = await supabase
     .from("products")
     .select(
-      "id,slug,name,description,category,size,condition,price_mxn,sale_status,created_at,seller:profiles!products_seller_id_fkey(store_name,slug,avatar_path),images:product_images(id,source,storage_path,alt_text,position,width,height)",
+      "id,slug,name,description,category,audience,size,condition,price_mxn,sale_status,created_at,seller:profiles!products_seller_id_fkey(store_name,slug,avatar_path),images:product_images(id,source,storage_path,alt_text,position,width,height)",
     )
     .eq("seller_id", seller.id)
     .eq("publication_status", "published")

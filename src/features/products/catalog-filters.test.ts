@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { categoriesForSection } from "@/features/products/section-categories";
 import { demoProducts } from "@/features/products/demo-catalog";
 import { applyCatalogFilters } from "@/features/products/filter-products";
 import { buildCatalogQueryString, parseCatalogFilters } from "@/features/products/catalog-filters";
@@ -68,7 +69,42 @@ describe("applyCatalogFilters", () => {
     const hidden = applyCatalogFilters(demoProducts, parseCatalogFilters({ hideSold: "1" }));
 
     expect(visible.products.at(-1)?.sale_status).toBe("sold");
-    expect(hidden.products).toHaveLength(9);
+    expect(hidden.products).toHaveLength(16);
     expect(hidden.products.some((product) => product.sale_status === "sold")).toBe(false);
+  });
+
+  it("splits the catalog into Mujer and Hombre", () => {
+    const men = applyCatalogFilters(demoProducts, parseCatalogFilters({ audience: "men" }));
+    const women = applyCatalogFilters(demoProducts, parseCatalogFilters({ audience: "women" }));
+
+    expect(men.total).toBe(7);
+    expect(men.products.map((product) => product.name)).toEqual(expect.arrayContaining(["Camisa Oxford azul", "Pantalón chino caqui"]));
+    expect(women.total).toBe(12);
+    expect(women.products.some((product) => product.audience === "men")).toBe(false);
+  });
+
+  it("shows unisex garments in both sections", () => {
+    const unisex = { ...demoProducts[0]!, id: "unisex", audience: "unisex" as const };
+    const catalog = [...demoProducts, unisex];
+
+    expect(applyCatalogFilters(catalog, parseCatalogFilters({ audience: "men" })).products.some((product) => product.id === "unisex")).toBe(true);
+    expect(applyCatalogFilters(catalog, parseCatalogFilters({ audience: "women" })).products.some((product) => product.id === "unisex")).toBe(true);
+  });
+
+  it("ignores an unknown section", () => {
+    expect(parseCatalogFilters({ audience: "kids" }).audience).toBeUndefined();
+  });
+});
+
+describe("categoriesForSection", () => {
+  it("uses men's labels and drops dresses under Hombre", () => {
+    const men = categoriesForSection("men");
+    expect(men.map(({ value }) => value)).not.toContain("dresses");
+    expect(men.find(({ value }) => value === "tops")?.label).toBe("Playeras y camisas");
+  });
+
+  it("keeps every category for Mujer and for the whole catalog", () => {
+    expect(categoriesForSection("women")).toHaveLength(6);
+    expect(categoriesForSection()).toHaveLength(6);
   });
 });

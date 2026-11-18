@@ -7,13 +7,14 @@ import { useState, type FormEvent } from "react";
 import { createProduct, deleteProductImage, deleteProductWithImages, registerProductImage, reorderProductImages, updateProduct } from "@/app/panel/prendas/actions";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { buildProductImageStoragePath, prepareProductImage } from "@/features/products/product-image-upload";
-import { PRODUCT_CATEGORIES, PRODUCT_CONDITIONS, PRODUCT_SIZES, type ProductCondition } from "@/features/products/types";
+import { PRODUCT_AUDIENCES, PRODUCT_CATEGORIES, PRODUCT_CONDITIONS, PRODUCT_SIZES, type ProductCondition } from "@/features/products/types";
 
 export type EditableProduct = {
   id: string;
   name: string;
   description: string;
   category: string;
+  audience: string;
   size: string;
   condition: ProductCondition;
   price_mxn: number;
@@ -43,6 +44,7 @@ export function ProductEditor({ sellerId, product }: { sellerId: string; product
   const [name, setName] = useState(product?.name ?? "");
   const [description, setDescription] = useState(product?.description ?? "");
   const [category, setCategory] = useState(product?.category ?? "tops");
+  const [audience, setAudience] = useState(product?.audience ?? "women");
   const [size, setSize] = useState(product?.size ?? "M");
   const [condition, setCondition] = useState(product?.condition ?? "like_new");
   const [price, setPrice] = useState(product ? (product.price_mxn / 100).toFixed(2) : "");
@@ -64,7 +66,7 @@ export function ProductEditor({ sellerId, product }: { sellerId: string; product
     }
     const priceInCents = Math.round(Number(normalizedPrice) * 100);
     setSaving(true);
-    const values = { name, description, category, size, condition, price_mxn: priceInCents, measurements };
+    const values = { name, description, category, audience, size, condition, price_mxn: priceInCents, measurements };
     const result = productId ? await updateProduct(productId, values) : await createProduct(values);
     if (!result.ok) setError(result.error);
     else if ("productId" in result) {
@@ -163,6 +165,12 @@ export function ProductEditor({ sellerId, product }: { sellerId: string; product
             <label htmlFor="product-category" className="block text-xs uppercase tracking-[0.14em] text-stone-600">Categoría</label>
             <select id="product-category" value={category} onChange={(event) => setCategory(event.target.value)} className="mt-2 min-h-12 w-full border-b border-stone-400 bg-transparent px-1">
               {PRODUCT_CATEGORIES.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
+            </select>
+          </div>
+          <div>
+            <label htmlFor="product-audience" className="block text-xs uppercase tracking-[0.14em] text-stone-600">Para</label>
+            <select id="product-audience" value={audience} onChange={(event) => setAudience(event.target.value)} className="mt-2 min-h-12 w-full border-b border-stone-400 bg-transparent px-1">
+              {PRODUCT_AUDIENCES.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
             </select>
           </div>
           <div>

@@ -27,6 +27,7 @@ function parsePositiveInteger(value: SearchParamValue): number | undefined {
 }
 
 export function parseCatalogFilters(params: CatalogSearchParams): CatalogFilters {
+  const audience = firstValue(params.audience);
   const category = firstValue(params.category);
   const size = firstValue(params.size);
   const condition = firstValue(params.condition);
@@ -34,6 +35,7 @@ export function parseCatalogFilters(params: CatalogSearchParams): CatalogFilters
   const requestedPage = parsePositiveInteger(params.page) ?? 1;
 
   return {
+    audience: audience === "women" || audience === "men" ? audience : undefined,
     category: category && allowedCategories.has(category)
       ? (category as CatalogFilters["category"])
       : undefined,
@@ -55,6 +57,7 @@ export function buildCatalogQueryString(
 ): string {
   const params = new URLSearchParams();
 
+  if (filters.audience) params.set("audience", filters.audience);
   if (filters.category) params.set("category", filters.category);
   if (filters.size) params.set("size", filters.size);
   if (filters.condition) params.set("condition", filters.condition);

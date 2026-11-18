@@ -2,6 +2,7 @@ import Link from "next/link";
 import { signOutFromPanel } from "@/app/panel/actions";
 import { CategoriesMenu } from "@/components/store/categories-menu";
 import { MobileMenu } from "@/components/store/mobile-menu";
+import type { CatalogAudience } from "@/features/products/types";
 import { getViewer, isSellerViewer } from "@/features/viewer/get-viewer";
 
 // Storefront header shared by the catalog and product pages. A seller (or admin) sees the
@@ -9,7 +10,7 @@ import { getViewer, isSellerViewer } from "@/features/viewer/get-viewer";
 // vendedora" bar above it holding the tools only their account has. Keeping the tools in
 // their own bar, instead of mixing them into the account links, is what makes a seller
 // account visibly different from a regular one.
-export async function StoreHeader() {
+export async function StoreHeader({ activeAudience }: { activeAudience?: CatalogAudience } = {}) {
   const viewer = await getViewer();
   const signedIn = viewer.kind !== "guest";
 
@@ -19,9 +20,9 @@ export async function StoreHeader() {
 
       <header className="relative flex items-center justify-between gap-4 border-b border-stone-200 px-2 py-1 font-condensed text-base font-bold uppercase tracking-[0.02em] text-stone-900 sm:px-6 sm:py-3 lg:text-lg">
         <div className="flex items-center gap-6">
-          <MobileMenu signedIn={signedIn} />
+          <MobileMenu signedIn={signedIn} initialAudience={activeAudience} />
           <nav aria-label="Categorías" className="hidden items-center gap-6 lg:flex">
-            <CategoriesMenu />
+            <CategoriesMenu activeAudience={activeAudience} />
             <Link href="/?sort=recent" className="hover:text-stone-600">Nuevo</Link>
           </nav>
         </div>

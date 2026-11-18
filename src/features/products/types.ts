@@ -7,6 +7,16 @@ export const PRODUCT_CATEGORIES = [
   { value: "accessories", label: "Accesorios" },
 ] as const;
 
+export const PRODUCT_AUDIENCES = [
+  { value: "women", label: "Mujer" },
+  { value: "men", label: "Hombre" },
+  { value: "unisex", label: "Unisex" },
+] as const;
+
+export type ProductAudience = (typeof PRODUCT_AUDIENCES)[number]["value"];
+// The storefront only offers the two sections; unisex garments show up in both.
+export type CatalogAudience = Exclude<ProductAudience, "unisex">;
+
 export const PRODUCT_SIZES = ["XS", "S", "M", "L", "XL", "24", "25", "26", "27", "28", "Única"] as const;
 
 export const PRODUCT_CONDITIONS = [
@@ -20,6 +30,7 @@ export type ProductSaleStatus = "available" | "reserved" | "sold";
 export type CatalogSort = "recent" | "price-asc" | "price-desc";
 
 export type CatalogFilters = {
+  audience?: CatalogAudience;
   category?: (typeof PRODUCT_CATEGORIES)[number]["value"];
   size?: (typeof PRODUCT_SIZES)[number];
   condition?: ProductCondition;
@@ -47,6 +58,7 @@ export type CatalogProduct = {
   name: string;
   description: string;
   category: string;
+  audience: ProductAudience;
   size: string;
   condition: ProductCondition;
   price_mxn: number;

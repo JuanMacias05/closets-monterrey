@@ -6,6 +6,7 @@ export function applyCatalogFilters(
   pageSize = 24,
 ) {
   const filtered = products.filter((product) => {
+    if (filters.audience && product.audience !== filters.audience && product.audience !== "unisex") return false;
     if (filters.category && product.category !== filters.category) return false;
     if (filters.size && product.size !== filters.size) return false;
     if (filters.condition && product.condition !== filters.condition) return false;
