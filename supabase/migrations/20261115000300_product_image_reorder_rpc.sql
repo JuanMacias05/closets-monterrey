@@ -155,6 +155,26 @@ using (
 );
 
 drop policy if exists "Seller and admin can upload into owned product folders" on storage.objects;
+create or replace function private.can_upload_product_image(target_product_id text)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select exists (
+    select 1
+    from public.products p
+    join public.profiles s on s.id = p.seller_id
+    where p.id::text = target_product_id
+      and p.seller_id = (select auth.uid())
+      and s.status = 'approved'::public.seller_status
+      and s.role in ('seller'::public.user_role, 'admin'::public.user_role)
+  );
+$$;
+revoke all on function private.can_upload_product_image(text) from public, anon;
+grant execute on function private.can_upload_product_image(text) to authenticated;
+
 create policy "Approved seller can upload into own product folders"
 on storage.objects for insert to authenticated
 with check (
@@ -162,12 +182,7 @@ with check (
   and split_part(name, '/', 1) = 'sellers'
   and split_part(name, '/', 2) = (select auth.uid())::text
   and split_part(name, '/', 3) = 'products'
-  and exists (
-    select 1 from public.products p join public.profiles s on s.id = p.seller_id
-    where p.id::text = split_part(name, '/', 4) and p.seller_id = (select auth.uid())
-      and s.status = 'approved'::public.seller_status
-      and s.role in ('seller'::public.user_role, 'admin'::public.user_role)
-  )
+  and private.can_upload_product_image(split_part(name, '/', 4))
 );
 
 drop policy if exists "Seller and admin can update objects in owned product folders" on storage.objects;
@@ -178,24 +193,14 @@ using (
   and split_part(name, '/', 1) = 'sellers'
   and split_part(name, '/', 2) = (select auth.uid())::text
   and split_part(name, '/', 3) = 'products'
-  and exists (
-    select 1 from public.products p join public.profiles s on s.id = p.seller_id
-    where p.id::text = split_part(name, '/', 4) and p.seller_id = (select auth.uid())
-      and s.status = 'approved'::public.seller_status
-      and s.role in ('seller'::public.user_role, 'admin'::public.user_role)
-  )
+  and private.can_upload_product_image(split_part(name, '/', 4))
 )
 with check (
   bucket_id = 'product-images'
   and split_part(name, '/', 1) = 'sellers'
   and split_part(name, '/', 2) = (select auth.uid())::text
   and split_part(name, '/', 3) = 'products'
-  and exists (
-    select 1 from public.products p join public.profiles s on s.id = p.seller_id
-    where p.id::text = split_part(name, '/', 4) and p.seller_id = (select auth.uid())
-      and s.status = 'approved'::public.seller_status
-      and s.role in ('seller'::public.user_role, 'admin'::public.user_role)
-  )
+  and private.can_upload_product_image(split_part(name, '/', 4))
 );
 
 drop policy if exists "Seller and admin can delete objects in owned product folders" on storage.objects;

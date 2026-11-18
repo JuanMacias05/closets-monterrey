@@ -9,7 +9,16 @@ async function loginAsSeller(page: Page) {
   await expect(page).toHaveURL(/\/panel$/);
 }
 
-test("seller creates, manages photos, sells, restores and deletes her product", async ({ page }) => {
+test("seller creates, manages photos, sells, restores and deletes her product", async ({ page, request }) => {
+  const uploadedObjectPaths: string[] = [];
+  page.on("request", (request) => {
+    const marker = "/object/product-images/";
+    const objectPathStart = request.url().indexOf(marker);
+    if (request.method() === "POST" && objectPathStart >= 0) {
+      uploadedObjectPaths.push(request.url().slice(objectPathStart + marker.length));
+    }
+  });
+
   await loginAsSeller(page);
   await page.goto("/panel/prendas");
   await page.getByRole("link", { name: "Agregar prenda" }).click();
@@ -28,11 +37,19 @@ test("seller creates, manages photos, sells, restores and deletes her product", 
     "e2e/fixtures/store-photo.png",
   ]);
   await expect(page.getByText("Fotos agregadas.")).toBeVisible();
+  expect(uploadedObjectPaths).toHaveLength(2);
+  const storageBaseUrl = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? "http://127.0.0.1:54321").replace(/\/$/, "");
+  const publicPhotoUrls = uploadedObjectPaths.map((path) =>
+    `${storageBaseUrl}/storage/v1/object/public/product-images/${path}`,
+  );
+  for (const url of publicPhotoUrls) expect((await request.get(url)).status()).toBe(200);
   await expect(page.getByText("Principal", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Hacer principal" }).click();
   await expect(page.getByRole("button", { name: "Subir foto 2" })).toBeVisible();
   await page.getByRole("button", { name: "Borrar", exact: true }).first().click();
   await expect(page.getByRole("button", { name: "Hacer principal" })).toHaveCount(0);
+  const remainingPhotoStatuses = await Promise.all(publicPhotoUrls.map(async (url) => (await request.get(url)).status()));
+  expect(remainingPhotoStatuses.filter((status) => status === 200)).toHaveLength(1);
 
   await page.goto("/panel/prendas");
   const product = page.locator("li").filter({ hasText: "Prenda de prueba E2E" });
@@ -51,4 +68,5 @@ test("seller creates, manages photos, sells, restores and deletes her product", 
   await page.getByRole("button", { name: "Borrar prenda y fotos" }).click();
   await expect(page).toHaveURL(/\/panel\/prendas$/);
   await expect(page.getByText("Prenda de prueba E2E", { exact: true })).toHaveCount(0);
+  for (const url of publicPhotoUrls) expect((await request.get(url)).ok()).toBe(false);
 });

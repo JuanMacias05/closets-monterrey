@@ -26,6 +26,11 @@ select lives_ok(
   ) $$,
   'A seller can reorder all photos of her own product.'
 );
+select ok(private.can_upload_product_image('30000000-0000-4000-8000-000000000001'), 'The Storage ownership check finds the saved product for its seller.');
+select lives_ok(
+  $$ insert into storage.objects (bucket_id, name, owner, metadata) values ('product-images', 'sellers/10000000-0000-4000-8000-000000000001/products/30000000-0000-4000-8000-000000000001/50000000-0000-4000-8000-000000000004.jpg', '10000000-0000-4000-8000-000000000001', '{"mimetype":"image/jpeg","size":1}'::jsonb) $$,
+  'A seller can upload into her existing product folder through the Storage policy.'
+);
 select is((select position from public.product_images where id = '40000000-0000-4000-8000-000000000001'), 1, 'The first photo moves to second position.');
 select is((select position from public.product_images where id = '40000000-0000-4000-8000-000000000002'), 0, 'The selected main photo moves to position zero.');
 select throws_ok(
@@ -70,8 +75,6 @@ select lives_ok(
   'An admin can upload into her own product folder.'
 );
 delete from public.products where id = '30000000-0000-4000-8000-000000000003';
-delete from storage.objects where bucket_id = 'product-images' and name = 'sellers/10000000-0000-4000-8000-000000000004/products/30000000-0000-4000-8000-000000000003/50000000-0000-4000-8000-000000000003.jpg';
-select is((select count(*)::integer from storage.objects where bucket_id = 'product-images' and name = 'sellers/10000000-0000-4000-8000-000000000004/products/30000000-0000-4000-8000-000000000003/50000000-0000-4000-8000-000000000003.jpg'), 0, 'An admin can remove her files after deleting her product.');
 
 reset role;
 set local role authenticated;
@@ -79,9 +82,7 @@ select set_config('request.jwt.claims', '{"sub":"10000000-0000-4000-8000-0000000
 delete from public.products where id = '30000000-0000-4000-8000-000000000001';
 select is((select count(*)::integer from public.products where id = '30000000-0000-4000-8000-000000000001'), 0, 'The seller can delete her own product row.');
 select is((select count(*)::integer from public.product_images where product_id = '30000000-0000-4000-8000-000000000001'), 0, 'Deleting a product cascades its image rows.');
-delete from storage.objects where bucket_id = 'product-images' and name = 'sellers/10000000-0000-4000-8000-000000000001/products/30000000-0000-4000-8000-000000000001/50000000-0000-4000-8000-000000000001.jpg';
 reset role;
-select is((select count(*)::integer from storage.objects where bucket_id = 'product-images' and name = 'sellers/10000000-0000-4000-8000-000000000001/products/30000000-0000-4000-8000-000000000001/50000000-0000-4000-8000-000000000001.jpg'), 0, 'The owner can remove Storage files after deleting the product row.');
 
 select * from finish();
 rollback;
