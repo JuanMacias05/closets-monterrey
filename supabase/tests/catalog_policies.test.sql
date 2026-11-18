@@ -1,6 +1,17 @@
 begin;
 select plan(24);
 
+-- E2E runs can leave unrelated products in the local database. Capture this fixture's
+-- baseline so the assertions still prove full visibility while remaining repeatable.
+select set_config(
+  'test.catalog_public_product_count',
+  (select count(*)::text from public.products p
+   join public.profiles s on s.id = p.seller_id
+   where p.publication_status = 'published' and not p.hidden_by_admin and s.status = 'approved'),
+  true
+);
+select set_config('test.catalog_total_product_count', (select count(*)::text from public.products), true);
+
 select ok(private.is_valid_clabe('000000000000000000'), 'The CLABE checksum accepts an all-zero test CLABE.');
 select ok(not private.is_valid_clabe('000000000000000001'), 'The CLABE checksum rejects a wrong check digit.');
 
@@ -57,7 +68,11 @@ values (
 
 set local role anon;
 select set_config('request.jwt.claims', '{"role":"anon"}', true);
-select is((select count(*)::integer from public.products), 19, 'The public catalog excludes a pending seller.');
+select is(
+  (select count(*)::integer from public.products),
+  current_setting('test.catalog_public_product_count')::integer,
+  'The public catalog excludes a pending seller.'
+);
 select is(
   (select count(*)::integer from public.seller_private_settings),
   0,
@@ -67,7 +82,11 @@ select is(
 reset role;
 set local role authenticated;
 select set_config('request.jwt.claims', '{"sub":"10000000-0000-4000-8000-000000000001","role":"authenticated"}', true);
-select is((select count(*)::integer from public.products), 19, 'A seller can read the public catalog but not another pending seller product.');
+select is(
+  (select count(*)::integer from public.products),
+  current_setting('test.catalog_public_product_count')::integer,
+  'A seller can read the public catalog but not another pending seller product.'
+);
 select is((select count(*)::integer from public.seller_private_settings), 1, 'A seller can read only their own private settings.');
 select throws_ok(
   $$ update public.profiles set status = 'suspended' where id = '10000000-0000-4000-8000-000000000001' $$,
@@ -128,7 +147,11 @@ select matches(
 reset role;
 set local role authenticated;
 select set_config('request.jwt.claims', '{"sub":"10000000-0000-4000-8000-000000000004","role":"authenticated"}', true);
-select is((select count(*)::integer from public.products), 20, 'An admin can read every product, including pending seller products.');
+select is(
+  (select count(*)::integer from public.products),
+  current_setting('test.catalog_total_product_count')::integer + 1,
+  'An admin can read every product, including pending seller products.'
+);
 select is((select count(*)::integer from public.seller_private_settings), 5, 'An admin can read every seller private settings row.');
 update public.profiles set slug = 'admin-tienda-actualizada'
 where id = '10000000-0000-4000-8000-000000000004';

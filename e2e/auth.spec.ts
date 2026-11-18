@@ -20,7 +20,6 @@ test("allows an approved admin to enter the panel with a local test OTP", async 
   await loginWithTestOtp(page, "+528100000004");
 
   await expect(page.getByText("Administración", { exact: true })).toBeVisible();
-  await expect(page.getByText("Admin de prueba", { exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Mi tienda" })).toBeVisible();
 });
 

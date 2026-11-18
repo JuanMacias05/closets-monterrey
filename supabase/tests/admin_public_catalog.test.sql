@@ -1,6 +1,11 @@
 begin;
 select plan(3);
 
+-- Set a canonical store name inside this transaction; local runs may have changed it in an e2e.
+update public.profiles
+set store_name = 'Admin de prueba', status = 'approved', role = 'admin'
+where id = '10000000-0000-4000-8000-000000000004';
+
 insert into public.products (id, seller_id, slug, name, description, category, size, condition, price_mxn, publication_status)
 values (
   '71000000-0000-4000-8000-000000000001',
