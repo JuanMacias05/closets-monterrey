@@ -5,6 +5,7 @@ import { PRODUCT_CATEGORIES, PRODUCT_CONDITIONS, PRODUCT_SIZES, type ProductCond
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 type Result = { ok: true } | { ok: false; error: string };
+type CreateProductResult = { ok: true; productId: string } | { ok: false; error: string };
 type ProductInput = {
   name: string;
   description: string;
@@ -52,7 +53,7 @@ function revalidateProducts() {
   revalidatePath("/");
 }
 
-export async function createProduct(input: ProductInput): Promise<Result & { productId?: string }> {
+export async function createProduct(input: ProductInput): Promise<CreateProductResult> {
   const context = await getSellerContext();
   if (!context.ok) return context;
   if (!validProductInput(input)) return { ok: false, error: "Revisa los datos de la prenda." };

@@ -13,8 +13,8 @@ insert into storage.objects (bucket_id, name, owner, metadata)
 values ('product-images', 'sellers/10000000-0000-4000-8000-000000000001/products/30000000-0000-4000-8000-000000000001/50000000-0000-4000-8000-000000000001.jpg', '10000000-0000-4000-8000-000000000001', '{"mimetype":"image/jpeg","size":1}'::jsonb);
 
 select ok(
-  (select condeferrable from pg_constraint where conname = 'product_images_product_position_unique'),
-  'Image positions can be swapped in one deferred transaction.'
+  (select not condeferrable from pg_constraint where conname = 'product_images_product_position_unique'),
+  'Image positions remain immediately unique so seed upserts keep working.'
 );
 
 set local role authenticated;

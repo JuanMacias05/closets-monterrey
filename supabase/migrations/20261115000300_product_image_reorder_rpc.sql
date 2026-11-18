@@ -1,8 +1,6 @@
 alter table public.product_images
   drop constraint product_images_product_position_unique,
-  add constraint product_images_product_position_unique
-    unique (product_id, position)
-    deferrable initially deferred;
+  add constraint product_images_product_position_unique unique (product_id, position);
 
 create or replace function public.reorder_product_images(
   target_product_id uuid,
@@ -15,6 +13,7 @@ as $$
 declare
   caller_id uuid := auth.uid();
   current_count integer;
+  temporary_base integer;
 begin
   if caller_id is null or not exists (
     select 1 from public.profiles p
@@ -46,6 +45,18 @@ begin
      ) then
     raise exception 'Image order must contain every product image exactly once';
   end if;
+
+  select coalesce(max(i.position), -1) + current_count + 1
+    into temporary_base
+  from public.product_images i
+  where i.product_id = target_product_id;
+
+  -- Move positions above the current range first, then compact to 0..N-1.
+  -- The unique constraint stays immediate, so seed upserts remain supported.
+  update public.product_images i
+  set position = temporary.position::integer - 1 + temporary_base
+  from unnest(ordered_image_ids) with ordinality temporary(image_id, position)
+  where i.id = temporary.image_id and i.product_id = target_product_id;
 
   update public.product_images i
   set position = requested.position::integer - 1

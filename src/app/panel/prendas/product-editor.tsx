@@ -67,10 +67,15 @@ export function ProductEditor({ sellerId, product }: { sellerId: string; product
     const values = { name, description, category, size, condition, price_mxn: priceInCents, measurements };
     const result = productId ? await updateProduct(productId, values) : await createProduct(values);
     if (!result.ok) setError(result.error);
-    else if ("productId" in result && result.productId) {
-      setProductId(result.productId);
-      router.replace(`/panel/prendas/${result.productId}`);
-      router.refresh();
+    else if ("productId" in result) {
+      const createdProductId = result.productId;
+      if (typeof createdProductId !== "string" || createdProductId.length === 0) {
+        setError("La prenda se creó, pero no pudimos abrir su ficha. Actualiza la página.");
+      } else {
+        setProductId(createdProductId);
+        router.replace(`/panel/prendas/${createdProductId}`);
+        router.refresh();
+      }
     } else {
       setNotice("Cambios guardados.");
       router.refresh();
@@ -168,7 +173,10 @@ export function ProductEditor({ sellerId, product }: { sellerId: string; product
           </div>
           <div>
             <label htmlFor="product-condition" className="block text-xs uppercase tracking-[0.14em] text-stone-600">Condición</label>
-            <select id="product-condition" value={condition} onChange={(event) => setCondition(event.target.value)} className="mt-2 min-h-12 w-full border-b border-stone-400 bg-transparent px-1">
+            <select id="product-condition" value={condition} onChange={(event) => {
+              const selected = PRODUCT_CONDITIONS.find((item) => item.value === event.target.value);
+              if (selected) setCondition(selected.value);
+            }} className="mt-2 min-h-12 w-full border-b border-stone-400 bg-transparent px-1">
               {PRODUCT_CONDITIONS.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
             </select>
           </div>
