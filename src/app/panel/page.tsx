@@ -30,6 +30,7 @@ export default async function PanelHomePage() {
         <Link href="/panel/prendas" className={linkClass}>Administrar prendas</Link>
         {role === "admin" && <Link href="/panel/admin/vendedoras" className={linkClass}>Vendedoras</Link>}
         {role === "admin" && <Link href="/panel/admin/clientas" className={linkClass}>Clientas</Link>}
+        {role === "admin" && <Link href="/panel/admin/recolectoras" className={linkClass}>Recolectoras</Link>}
         {role === "admin" && <Link href="/panel/admin/prendas" className={linkClass}>Administrar catálogo</Link>}
       </nav>
     </section>

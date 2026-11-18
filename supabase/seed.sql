@@ -292,3 +292,29 @@ on conflict do nothing;
 update public.profiles
 set home_delivery_enabled = true, home_delivery_fee_mxn = 6000, home_delivery_note = 'Monterrey, San Nicolás y Guadalupe'
 where id = '10000000-0000-4000-8000-000000000001';
+
+-- A verified courier: collects at Padre Mier and delivers in Monterrey and San Nicolás for $45.
+insert into auth.users (
+  id, instance_id, aud, role, confirmation_token, recovery_token, email_change_token_new,
+  email_change_token_current, email_change, phone_change, phone_change_token, reauthentication_token,
+  email_change_confirm_status, phone, phone_confirmed_at, raw_app_meta_data, raw_user_meta_data, created_at, updated_at
+) values (
+  '10000000-0000-4000-8000-000000000006', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated',
+  '', '', '', '', '', '', '', '', 0, '528100000006', now(),
+  '{"provider":"phone","providers":["phone"]}'::jsonb,
+  '{"account_type":"courier","full_name":"Lupita Recolectora"}'::jsonb, now(), now()
+) on conflict (id) do nothing;
+
+insert into auth.identities (id, provider_id, user_id, identity_data, provider, last_sign_in_at, created_at, updated_at)
+select id, id, id, jsonb_build_object('sub', id::text, 'phone', phone), 'phone', now(), now(), now()
+from auth.users where phone = '528100000006'
+on conflict do nothing;
+
+update public.couriers
+set status = 'approved', municipalities = array['Monterrey', 'San Nicolás de los Garza'],
+    days = array[2, 5]::smallint[], time_window = '5:00 a 9:00 PM', fee_mxn = 4500
+where id = '10000000-0000-4000-8000-000000000006';
+
+insert into public.courier_pickup_points (courier_id, point_id)
+values ('10000000-0000-4000-8000-000000000006', '60000000-0000-4000-8000-000000000001')
+on conflict do nothing;

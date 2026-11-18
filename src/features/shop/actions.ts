@@ -72,15 +72,21 @@ const RESERVE_ERRORS: Record<string, string> = {
 export type DeliveryChoice =
   | { method: "pickup_point"; pointId: string }
   | { method: "home_delivery"; address: string }
+  | { method: "courier"; courierId: string; municipality: string; address: string; feePayment: "on_delivery" | "with_deposit" }
   | { method: "arranged" };
 
 export async function reserveFromSeller(sellerId: string, delivery: DeliveryChoice): Promise<{ ok: true; reservationId: string } | { ok: false; error: string; code?: string }> {
-  if (!UUID.test(sellerId) || !delivery || !["pickup_point", "home_delivery", "arranged"].includes(delivery.method)) {
+  if (!UUID.test(sellerId) || !delivery || !["pickup_point", "home_delivery", "courier", "arranged"].includes(delivery.method)) {
     return { ok: false, error: "Datos no válidos." };
   }
   if (delivery.method === "pickup_point" && !UUID.test(delivery.pointId)) return { ok: false, error: RESERVE_ERRORS.invalid_delivery! };
   if (delivery.method === "home_delivery" && (typeof delivery.address !== "string" || delivery.address.trim().length < 10 || delivery.address.length > 300)) {
     return { ok: false, error: "Escribe tu dirección completa (calle, número, colonia y municipio)." };
+  }
+  if (delivery.method === "courier" && (!UUID.test(delivery.courierId) || typeof delivery.municipality !== "string"
+    || !["on_delivery", "with_deposit"].includes(delivery.feePayment)
+    || typeof delivery.address !== "string" || delivery.address.trim().length < 10 || delivery.address.length > 300)) {
+    return { ok: false, error: "Elige tu municipio, una recolectora, cómo pagas su tarifa y escribe tu dirección." };
   }
   const context = await signedInClient();
   if (!context.ok) return context;
@@ -89,7 +95,10 @@ export async function reserveFromSeller(sellerId: string, delivery: DeliveryChoi
     target_seller: sellerId,
     method: delivery.method,
     point: delivery.method === "pickup_point" ? delivery.pointId : null,
-    address: delivery.method === "home_delivery" ? delivery.address.trim() : null,
+    address: delivery.method === "home_delivery" || delivery.method === "courier" ? delivery.address.trim() : null,
+    courier: delivery.method === "courier" ? delivery.courierId : null,
+    municipality: delivery.method === "courier" ? delivery.municipality : null,
+    fee_payment: delivery.method === "courier" ? delivery.feePayment : null,
   });
   if (error) {
     const code = Object.keys(RESERVE_ERRORS).find((key) => error.message.includes(key));
@@ -128,5 +137,16 @@ export async function saveBuyerProfile(input: { fullName: string; facebookUrl: s
   if (error) return { ok: false, error: "No pudimos guardar tus datos." };
   revalidatePath("/cuenta");
   revalidatePath("/carrito");
+  return { ok: true };
+}
+
+export async function rateCourier(reservationId: string, stars: number): Promise<Result> {
+  if (!UUID.test(reservationId) || !Number.isInteger(stars) || stars < 1 || stars > 5) return { ok: false, error: "Calificación no válida." };
+  const context = await signedInClient();
+  if (!context.ok) return context;
+  const { error } = await context.supabase.rpc("rate_courier", { target: reservationId, stars });
+  if (error) return { ok: false, error: "Ya calificaste esta entrega." };
+  revalidatePath("/cuenta");
+  revalidatePath("/recolectoras");
   return { ok: true };
 }

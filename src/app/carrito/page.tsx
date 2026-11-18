@@ -5,6 +5,7 @@ import { StoreHeader } from "@/components/store/store-header";
 import { BuyerProfileForm } from "@/components/shop/buyer-profile-form";
 import { RemoveFromCartButton } from "@/components/shop/remove-from-cart-button";
 import { ReserveButton } from "@/components/shop/reserve-button";
+import { getCourierDirectory } from "@/features/couriers/directory";
 import { formatPriceMXN } from "@/features/products/format-price";
 import { getProductImageUrl } from "@/features/products/public-images";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -45,6 +46,7 @@ export default async function CartPage() {
     ? await supabase.from("seller_delivery_points").select("seller_id,point:delivery_points(id,name,sort_order)").in("seller_id", sellerIds)
     : { data: [] };
   type PointRow = { seller_id: string; point: { id: string; name: string; sort_order: number } | null };
+  const couriers = await getCourierDirectory();
   const pointsBySeller = new Map<string, { id: string; name: string; sort_order: number }[]>();
   for (const row of (pointRows ?? []) as unknown as PointRow[]) {
     // Inactive points come back as null (RLS hides them) and are skipped.
@@ -115,10 +117,14 @@ export default async function CartPage() {
                     options={{
                       points: (pointsBySeller.get(group.seller.id) ?? []).toSorted((a, b) => a.sort_order - b.sort_order).map(({ id, name }) => ({ id, name })),
                       homeDelivery: group.seller.home_delivery_enabled ? { feeLabel: group.seller.home_delivery_fee_mxn > 0 ? formatPriceMXN(group.seller.home_delivery_fee_mxn) : "sin costo", note: group.seller.home_delivery_note } : null,
+                      // A courier fits this seller only if she collects at a point the seller reaches.
+                      couriers: couriers
+                        .filter((courier) => courier.pointIds.some((id) => (pointsBySeller.get(group.seller.id) ?? []).some((point) => point.id === id)))
+                        .map((courier) => ({ id: courier.id, fullName: courier.fullName, municipalities: courier.municipalities, feeMxn: courier.feeMxn, feeLabel: formatPriceMXN(courier.feeMxn), pointNames: courier.pointNames, rating: courier.rating, deliveries: courier.deliveries })),
                     }}
                     sellerId={group.seller.id}
                     storeName={group.seller.store_name}
-                    depositLabel={formatPriceMXN(group.deposit)}
+                    depositMxn={group.deposit}
                     disabled={!buyer || !group.accepting || group.availableCount === 0 || group.unavailableCount > 0}
                   />
                 </div>

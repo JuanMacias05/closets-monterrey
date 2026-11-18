@@ -7,13 +7,21 @@ export const metadata = { title: "Crear cuenta | Closets Monterrey" };
 export default async function SignUpPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const params = await searchParams;
   const isSeller = params.tipo === "vendedora";
+  const isCourier = params.tipo === "recolectora";
   const nextPath = safeNextPath(params.next);
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-[#faf9f6] px-4 py-12">
       <section className="w-full max-w-md border border-stone-200 bg-white px-6 py-9 sm:px-10 sm:py-12">
         <Link href="/" className="font-serif text-lg tracking-tight text-stone-800">Closets Monterrey</Link>
-        {isSeller ? (
+        {isCourier ? (
+          <>
+            <p className="mt-10 text-[11px] uppercase tracking-[0.24em] text-stone-600">Nueva recolectora</p>
+            <h1 className="mt-3 font-serif text-3xl tracking-tight text-stone-900">Entrega prendas en tu ruta.</h1>
+            <p className="mt-3 text-sm leading-6 text-stone-600">Te mandamos un código por SMS. Para verificarte, la administración revisa tu identificación en persona; después apareces como recolectora verificada.</p>
+            <PhoneLoginForm mode="courier-signup" />
+          </>
+        ) : isSeller ? (
           <>
             <p className="mt-10 text-[11px] uppercase tracking-[0.24em] text-stone-600">Nueva vendedora</p>
             <h1 className="mt-3 font-serif text-3xl tracking-tight text-stone-900">Abre tu closet.</h1>

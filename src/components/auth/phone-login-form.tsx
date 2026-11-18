@@ -10,7 +10,7 @@ import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 // "buyer-signup" creates a shopper (name + Facebook link, no approval needed).
 // "seller-signup" creates a pending seller who can't sell until an admin approves her from
 // /panel/admin/vendedoras.
-export function PhoneLoginForm({ mode = "login", nextPath }: { mode?: "login" | "buyer-signup" | "seller-signup"; nextPath?: string }) {
+export function PhoneLoginForm({ mode = "login", nextPath }: { mode?: "login" | "buyer-signup" | "seller-signup" | "courier-signup"; nextPath?: string }) {
   const router = useRouter();
   const [phoneInput, setPhoneInput] = useState("");
   const [storeName, setStoreName] = useState("");
@@ -37,6 +37,10 @@ export function PhoneLoginForm({ mode = "login", nextPath }: { mode?: "login" | 
     }
     const trimmedFullName = fullName.trim();
     const normalizedFacebook = normalizeFacebookUrl(facebookUrl);
+    if (mode === "courier-signup" && (trimmedFullName.length < 2 || trimmedFullName.length > 80)) {
+      setError("Escribe tu nombre (2 a 80 caracteres).");
+      return;
+    }
     if (mode === "buyer-signup") {
       if (trimmedFullName.length < 2 || trimmedFullName.length > 80) {
         setError("Escribe tu nombre (2 a 80 caracteres).");
@@ -60,6 +64,8 @@ export function PhoneLoginForm({ mode = "login", nextPath }: { mode?: "login" | 
         phone: normalizedPhone,
         options: mode === "seller-signup"
           ? { shouldCreateUser: true, data: { store_name: trimmedStoreName } }
+          : mode === "courier-signup"
+            ? { shouldCreateUser: true, data: { account_type: "courier", full_name: trimmedFullName } }
           : mode === "buyer-signup"
             ? { shouldCreateUser: true, data: { account_type: "buyer", full_name: trimmedFullName, facebook_url: normalizedFacebook } }
             : { shouldCreateUser: false },
@@ -106,10 +112,13 @@ export function PhoneLoginForm({ mode = "login", nextPath }: { mode?: "login" | 
       let destination = nextPath;
       const userId = verified.user?.id;
       if (!destination) {
-        const { data: buyer } = userId
-          ? await supabase.from("buyer_profiles").select("id").eq("id", userId).maybeSingle()
-          : { data: null };
-        destination = buyer ? "/cuenta" : "/panel";
+        const [{ data: buyer }, { data: courier }] = userId
+          ? await Promise.all([
+            supabase.from("buyer_profiles").select("id").eq("id", userId).maybeSingle(),
+            supabase.from("couriers").select("id").eq("id", userId).maybeSingle(),
+          ])
+          : [{ data: null }, { data: null }];
+        destination = courier ? "/recolectora" : buyer ? "/cuenta" : "/panel";
       }
       router.replace(destination);
       router.refresh();
@@ -131,6 +140,12 @@ export function PhoneLoginForm({ mode = "login", nextPath }: { mode?: "login" | 
               <label htmlFor="facebook-url" className="block text-xs uppercase tracking-[0.16em] text-stone-600">Link de tu perfil de Facebook</label>
               <input id="facebook-url" type="text" inputMode="url" autoCapitalize="none" autoCorrect="off" placeholder="https://facebook.com/tu.nombre" value={facebookUrl} onChange={(event) => setFacebookUrl(event.target.value)} required className="min-h-12 w-full border-b border-stone-400 bg-transparent px-1 text-base outline-none focus:border-stone-900" />
               <p className="text-xs leading-5 text-stone-600">Las vendedoras lo ven solo cuando les apartas una prenda, para saber con quién tratan.</p>
+            </>
+          )}
+          {mode === "courier-signup" && (
+            <>
+              <label htmlFor="courier-name" className="block text-xs uppercase tracking-[0.16em] text-stone-600">Tu nombre completo</label>
+              <input id="courier-name" type="text" autoComplete="name" placeholder="Guadalupe Martínez" value={fullName} onChange={(event) => setFullName(event.target.value)} maxLength={80} required className="min-h-12 w-full border-b border-stone-400 bg-transparent px-1 text-base outline-none focus:border-stone-900" />
             </>
           )}
           {mode === "seller-signup" && (

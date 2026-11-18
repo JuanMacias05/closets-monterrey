@@ -36,7 +36,7 @@ export async function StoreHeader({ activeAudience }: { activeAudience?: Catalog
           <Link href="/carrito" className="hover:text-stone-600">{cartLabel}</Link>
           {signedIn ? (
             <>
-              <Link href="/cuenta" className="hover:text-stone-600">Mi cuenta</Link>
+              <Link href={viewer.kind === "courier" ? "/recolectora" : "/cuenta"} className="hover:text-stone-600">{viewer.kind === "courier" ? "Mis entregas" : "Mi cuenta"}</Link>
               <form action={signOutFromPanel}>
                 <button type="submit" className="min-h-11 font-condensed font-bold uppercase hover:text-stone-600">Cerrar sesión</button>
               </form>
@@ -75,6 +75,7 @@ function SellerBar({ storeName, isAdmin }: { storeName: string; isAdmin: boolean
         <Link href="/panel/apartados" className="flex min-h-9 items-center px-3 hover:underline">Apartados</Link>
         {isAdmin && <Link href="/panel/admin/vendedoras" className="flex min-h-9 items-center px-3 hover:underline">Vendedoras</Link>}
         {isAdmin && <Link href="/panel/admin/clientas" className="flex min-h-9 items-center px-3 hover:underline">Clientas</Link>}
+        {isAdmin && <Link href="/panel/admin/recolectoras" className="flex min-h-9 items-center px-3 hover:underline">Recolectoras</Link>}
         {isAdmin && <Link href="/panel/admin/prendas" className="flex min-h-9 items-center px-3 hover:underline">Todas las prendas</Link>}
         <Link href="/panel" className="flex min-h-9 items-center px-3 hover:underline">Panel</Link>
       </nav>

@@ -281,6 +281,9 @@ max_frequency = "1s"
 # Free numbers for the buyer shopping e2e test.
 528100000007 = "123456"
 528100000008 = "123456"
+# Seeded courier (Lupita Recolectora) and a free number for courier sign-up tests.
+528100000006 = "123456"
+528100000010 = "123456"
 
 # Use pre-defined map of phone number to OTP for testing.
 # Keys are the phone number with country code and without the + prefix.

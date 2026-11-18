@@ -12,8 +12,6 @@ type StoreSettingsInput = {
   clabe: string;
   // 10 or 20; optional so older callers keep the current value.
   depositPercent?: number;
-  // Optional so older callers leave delivery settings untouched.
-  delivery?: { pointIds: string[]; homeDelivery: boolean; homeFee: string; homeNote: string };
 };
 
 export async function saveStoreSettings(input: StoreSettingsInput) {
@@ -65,21 +63,9 @@ export async function saveStoreSettings(input: StoreSettingsInput) {
     return { ok: false as const, error: "La ruta de la foto de tienda no es válida." };
   }
 
-  let deliveryUpdate: { home_delivery_enabled: boolean; home_delivery_fee_mxn: number; home_delivery_note: string | null } | null = null;
-  if (input.delivery) {
-    const { pointIds, homeDelivery, homeFee, homeNote } = input.delivery;
-    if (!Array.isArray(pointIds) || pointIds.some((id) => typeof id !== "string" || !/^[0-9a-f-]{36}$/i.test(id)) || typeof homeDelivery !== "boolean") {
-      return { ok: false as const, error: "Las opciones de entrega no son válidas." };
-    }
-    const fee = homeDelivery ? Number(String(homeFee).trim() || "0") : 0;
-    if (!Number.isFinite(fee) || fee < 0 || fee > 1000) return { ok: false as const, error: "El costo del envío debe estar entre $0 y $1,000." };
-    const note = typeof homeNote === "string" ? homeNote.trim().slice(0, 200) : "";
-    deliveryUpdate = { home_delivery_enabled: homeDelivery, home_delivery_fee_mxn: Math.round(fee * 100), home_delivery_note: note || null };
-  }
-
   const { error: updateProfileError } = await supabase
     .from("profiles")
-    .update({ store_name: storeName, avatar_path: avatarPath, ...(input.depositPercent !== undefined ? { deposit_percent: input.depositPercent } : {}), ...(deliveryUpdate ?? {}) })
+    .update({ store_name: storeName, avatar_path: avatarPath, ...(input.depositPercent !== undefined ? { deposit_percent: input.depositPercent } : {}) })
     .eq("id", authData.user.id);
   if (updateProfileError) return { ok: false as const, error: "No pudimos guardar el nombre y la foto de tu tienda." };
 
@@ -89,15 +75,6 @@ export async function saveStoreSettings(input: StoreSettingsInput) {
     .eq("seller_id", authData.user.id);
   if (updateSettingsError) return { ok: false as const, error: "No pudimos guardar el WhatsApp y la CLABE." };
 
-  if (input.delivery) {
-    // Replace the whole set: simpler than diffing, and the table is a handful of rows per seller.
-    const { error: clearError } = await supabase.from("seller_delivery_points").delete().eq("seller_id", authData.user.id);
-    const uniqueIds = [...new Set(input.delivery.pointIds)];
-    const { error: insertError } = clearError || uniqueIds.length === 0
-      ? { error: clearError }
-      : await supabase.from("seller_delivery_points").insert(uniqueIds.map((pointId) => ({ seller_id: authData.user.id, point_id: pointId })));
-    if (clearError || insertError) return { ok: false as const, error: "No pudimos guardar tus puntos de entrega." };
-  }
 
   if (profile.avatar_path && profile.avatar_path !== avatarPath && profile.avatar_path.startsWith(avatarPrefix)) {
     const paths = [profile.avatar_path];
@@ -109,5 +86,44 @@ export async function saveStoreSettings(input: StoreSettingsInput) {
 
   revalidatePath("/");
   revalidatePath("/panel/tienda");
+  return { ok: true as const };
+}
+
+type DeliverySettingsInput = { pointIds: string[]; homeDelivery: boolean; homeFee: string; homeNote: string };
+
+// Where a seller delivers. Store-wide, not per garment: it applies to every piece she lists.
+// Editable from "Editar tienda" and from each garment's edit screen, where sellers look for it.
+export async function saveDeliverySettings(input: DeliverySettingsInput) {
+  if (!input || !Array.isArray(input.pointIds) || input.pointIds.some((id) => typeof id !== "string" || !/^[0-9a-f-]{36}$/i.test(id))
+    || typeof input.homeDelivery !== "boolean" || typeof input.homeFee !== "string" || typeof input.homeNote !== "string") {
+    return { ok: false as const, error: "Las opciones de entrega no son válidas." };
+  }
+  const fee = input.homeDelivery ? Number(input.homeFee.trim() || "0") : 0;
+  if (!Number.isFinite(fee) || fee < 0 || fee > 1000) return { ok: false as const, error: "El costo del envío debe estar entre $0 y $1,000." };
+
+  const supabase = await createSupabaseServerClient();
+  if (!supabase) return { ok: false as const, error: "No está configurada la conexión con Supabase." };
+  const { data: authData, error: authError } = await supabase.auth.getUser();
+  if (authError || !authData.user) return { ok: false as const, error: "Inicia sesión para guardar tus entregas." };
+  const sellerId = authData.user.id;
+
+  const { error: profileError } = await supabase.from("profiles").update({
+    home_delivery_enabled: input.homeDelivery,
+    home_delivery_fee_mxn: Math.round(fee * 100),
+    home_delivery_note: input.homeNote.trim().slice(0, 200) || null,
+  }).eq("id", sellerId);
+  if (profileError) return { ok: false as const, error: "No pudimos guardar el envío a domicilio." };
+
+  // Replace the whole set: simpler than diffing, and it's a handful of rows per seller.
+  const { error: clearError } = await supabase.from("seller_delivery_points").delete().eq("seller_id", sellerId);
+  const ids = [...new Set(input.pointIds)];
+  const { error: insertError } = clearError || ids.length === 0
+    ? { error: clearError }
+    : await supabase.from("seller_delivery_points").insert(ids.map((pointId) => ({ seller_id: sellerId, point_id: pointId })));
+  if (clearError || insertError) return { ok: false as const, error: "No pudimos guardar tus puntos de entrega." };
+
+  revalidatePath("/panel/tienda");
+  revalidatePath("/carrito");
+  revalidatePath("/");
   return { ok: true as const };
 }

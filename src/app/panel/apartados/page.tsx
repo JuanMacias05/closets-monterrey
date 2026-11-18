@@ -12,6 +12,8 @@ type ReservationRow = {
   expires_at: string; created_at: string;
   delivery_method: string; delivery_address: string | null; delivery_fee_mxn: number; delivery_status: string;
   point: { name: string } | null;
+  courier_fee_payment: string | null; courier_whatsapp: string | null; buyer_municipality: string | null;
+  courier: { full_name: string } | null;
   items: { price_mxn: number; product: { name: string; slug: string } | null }[] | null;
 };
 
@@ -26,7 +28,7 @@ export default async function SellerReservationsPage() {
 
   await supabase.rpc("release_expired_reservations");
   const { data: rows, error } = await supabase.from("reservations")
-    .select("id,buyer_id,status,items_total_mxn,deposit_percent,deposit_mxn,expires_at,created_at,delivery_method,delivery_address,delivery_fee_mxn,delivery_status,point:delivery_points(name),items:reservation_items(price_mxn,product:products(name,slug))")
+    .select("id,buyer_id,status,items_total_mxn,deposit_percent,deposit_mxn,expires_at,created_at,delivery_method,delivery_address,delivery_fee_mxn,delivery_status,point:delivery_points(name),courier_fee_payment,courier_whatsapp,buyer_municipality,courier:couriers(full_name),items:reservation_items(price_mxn,product:products(name,slug))")
     .eq("seller_id", user.id)
     .order("created_at", { ascending: false })
     .limit(100);
@@ -75,8 +77,11 @@ export default async function SellerReservationsPage() {
           <strong>Entrega:</strong>{" "}
           {reservation.delivery_method === "pickup_point" ? `Punto fijo · ${reservation.point?.name ?? ""}`
             : reservation.delivery_method === "home_delivery" ? `A domicilio (${formatPriceMXN(reservation.delivery_fee_mxn)}) · ${reservation.delivery_address ?? ""}`
+            : reservation.delivery_method === "courier" ? `Recolectora ${reservation.courier?.full_name ?? ""} la recoge contigo en un punto fijo y la lleva a ${reservation.buyer_municipality ?? ""}${reservation.courier_fee_payment === "with_deposit" ? `; su tarifa (${formatPriceMXN(reservation.delivery_fee_mxn)}) viene en el anticipo: págasela tú` : ""}`
             : "Acordar por WhatsApp"}
+          {reservation.status === "confirmed" && reservation.delivery_status === "picked_up" && " · Con la recolectora"}
           {reservation.status === "confirmed" && reservation.delivery_status === "on_the_way" && " · En camino"}
+          {reservation.delivery_method === "courier" && reservation.courier_whatsapp && <> · <a href={`https://wa.me/${reservation.courier_whatsapp.replace("+", "")}`} className="text-pine underline underline-offset-4">WhatsApp de la recolectora</a></>}
         </p>
         {reservation.status === "pending_deposit" && <p className="mt-1 text-sm text-stone-700">Se libera sola el {dateFormat.format(new Date(reservation.expires_at))} si no llega el anticipo.</p>}
         <div className="mt-4"><ReservationActions reservationId={reservation.id} status={reservation.status} deliveryStatus={reservation.delivery_status} buyerName={buyerName} /></div>

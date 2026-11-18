@@ -19,6 +19,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
         <div className="mt-7 space-y-2 border-t border-stone-100 pt-5 text-center text-sm leading-5 text-stone-600">
           <p>¿Aún no tienes cuenta? <Link href={signUpHref} className="font-medium text-pine underline underline-offset-4">Crear cuenta</Link></p>
           <p>¿Quieres vender? <Link href="/registro?tipo=vendedora" className="font-medium text-pine underline underline-offset-4">Crear cuenta de vendedora</Link></p>
+          <p>¿Haces entregas? <Link href="/registro?tipo=recolectora" className="font-medium text-pine underline underline-offset-4">Ser recolectora</Link></p>
         </div>
       </section>
     </main>

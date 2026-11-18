@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { StoreHeader } from "@/components/store/store-header";
 import { BuyerProfileForm } from "@/components/shop/buyer-profile-form";
 import { CancelReservationButton } from "@/components/shop/cancel-reservation-button";
+import { RateCourier } from "@/components/shop/rate-courier";
 import { formatPriceMXN } from "@/features/products/format-price";
 import { DELIVERY_STATUS_STEPS, RESERVATION_STATUS_LABELS } from "@/features/shop/reservation-labels";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -14,6 +15,8 @@ type ReservationRow = {
   deposit_clabe: string; seller_whatsapp: string | null; expires_at: string; created_at: string;
   delivery_method: string; delivery_address: string | null; delivery_fee_mxn: number; delivery_status: string;
   point: { name: string } | null;
+  courier_fee_payment: string | null; courier_whatsapp: string | null; buyer_municipality: string | null; courier_rating: number | null;
+  courier: { full_name: string } | null;
   seller: { store_name: string } | null;
   items: { price_mxn: number; product: { name: string; slug: string } | null }[] | null;
 };
@@ -30,7 +33,7 @@ export default async function AccountPage() {
   const [{ data: buyer }, { data: rows }] = await Promise.all([
     supabase.from("buyer_profiles").select("full_name,facebook_url").eq("id", user.id).maybeSingle(),
     supabase.from("reservations")
-      .select("id,status,items_total_mxn,deposit_percent,deposit_mxn,deposit_clabe,seller_whatsapp,expires_at,created_at,delivery_method,delivery_address,delivery_fee_mxn,delivery_status,point:delivery_points(name),seller:profiles!reservations_seller_id_fkey(store_name),items:reservation_items(price_mxn,product:products(name,slug))")
+      .select("id,status,items_total_mxn,deposit_percent,deposit_mxn,deposit_clabe,seller_whatsapp,expires_at,created_at,delivery_method,delivery_address,delivery_fee_mxn,delivery_status,point:delivery_points(name),courier_fee_payment,courier_whatsapp,buyer_municipality,courier_rating,courier:couriers(full_name),seller:profiles!reservations_seller_id_fkey(store_name),items:reservation_items(price_mxn,product:products(name,slug))")
       .eq("buyer_id", user.id)
       .order("created_at", { ascending: false }),
   ]);
@@ -75,9 +78,10 @@ export default async function AccountPage() {
                       <strong>Entrega:</strong>{" "}
                       {reservation.delivery_method === "pickup_point" ? `Punto fijo · ${reservation.point?.name ?? ""}`
                         : reservation.delivery_method === "home_delivery" ? `A domicilio · ${reservation.delivery_address ?? ""} (envío ${formatPriceMXN(reservation.delivery_fee_mxn)}, se paga al recibir)`
+                        : reservation.delivery_method === "courier" ? `Recolectora ✓ ${reservation.courier?.full_name ?? ""} · ${reservation.delivery_address ?? ""} (tarifa ${formatPriceMXN(reservation.delivery_fee_mxn)}, ${reservation.courier_fee_payment === "with_deposit" ? "incluida en tu anticipo" : "se la pagas al recibir"})`
                         : "La acuerdas con la vendedora por WhatsApp"}
                     </p>
-                    {!["expired", "cancelled", "no_show"].includes(reservation.status) && <TrackingSteps current={trackingStep(reservation)} />}
+                    {!["expired", "cancelled", "no_show"].includes(reservation.status) && <TrackingSteps steps={trackingSteps(reservation)} current={trackingStep(reservation)} />}
                     <p className="mt-2 text-sm text-stone-700">Total {formatPriceMXN(reservation.items_total_mxn)} · anticipo {reservation.deposit_percent} %: <strong className="text-stone-900">{formatPriceMXN(reservation.deposit_mxn)}</strong></p>
 
                     {pending && (
@@ -95,6 +99,13 @@ export default async function AccountPage() {
                         <p className="mt-1 font-mono text-3xl tracking-[0.4em] text-stone-900" aria-label={`Código de entrega ${pins.get(reservation.id)!.split("").join(" ")}`}>{pins.get(reservation.id)}</p>
                         <p className="mt-1 text-xs text-stone-600">Dáselo a quien te entregue <strong>solo cuando tengas tus prendas</strong>. Con él se marca como entregada.</p>
                       </div>
+                    )}
+                    {reservation.status === "completed" && reservation.delivery_method === "courier" && reservation.courier && reservation.courier_rating === null && (
+                      <RateCourier reservationId={reservation.id} courierName={reservation.courier.full_name} />
+                    )}
+                    {reservation.status === "completed" && reservation.courier_rating !== null && <p className="mt-2 text-sm text-stone-600">Calificaste a la recolectora con {reservation.courier_rating} ★</p>}
+                    {reservation.status === "confirmed" && reservation.delivery_method === "courier" && reservation.courier_whatsapp && (
+                      <p className="mt-3 text-sm text-stone-700">Tu recolectora: <a href={`https://wa.me/${reservation.courier_whatsapp.replace("+", "")}`} className="text-pine underline underline-offset-4">WhatsApp {reservation.courier_whatsapp}</a></p>
                     )}
                     {reservation.status === "confirmed" && reservation.seller_whatsapp && (
                       <p className="mt-3 text-sm text-stone-700">La vendedora confirmó tu anticipo. Acuerden la entrega por WhatsApp: <a href={`https://wa.me/${reservation.seller_whatsapp.replace("+", "")}`} className="text-pine underline underline-offset-4">{reservation.seller_whatsapp}</a>. El resto se paga en la entrega.</p>
@@ -116,19 +127,29 @@ export default async function AccountPage() {
   );
 }
 
-function trackingStep(reservation: ReservationRow): number {
-  if (reservation.status === "completed") return 3;
-  if (reservation.status === "confirmed") return reservation.delivery_status === "on_the_way" ? 2 : 1;
-  return 0;
+// With a courier the hand-off to her is its own visible step ("Con la recolectora").
+function trackingSteps(reservation: ReservationRow): string[] {
+  const steps: string[] = DELIVERY_STATUS_STEPS.map((step) => step.label);
+  if (reservation.delivery_method === "courier") steps.splice(2, 0, "Con la recolectora");
+  return steps;
 }
 
-function TrackingSteps({ current }: { current: number }) {
+function trackingStep(reservation: ReservationRow): number {
+  const courier = reservation.delivery_method === "courier";
+  if (reservation.status === "completed") return courier ? 4 : 3;
+  if (reservation.status !== "confirmed") return 0;
+  if (reservation.delivery_status === "on_the_way") return courier ? 3 : 2;
+  if (reservation.delivery_status === "picked_up") return 2;
+  return 1;
+}
+
+function TrackingSteps({ steps, current }: { steps: string[]; current: number }) {
   return (
     <ol aria-label="Seguimiento" className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
-      {DELIVERY_STATUS_STEPS.map((step, index) => (
-        <li key={step.value} aria-current={index === current ? "step" : undefined} className="flex items-center gap-2">
-          <span className={`px-2 py-1 font-condensed font-bold uppercase ${index < current ? "bg-stone-200 text-stone-700" : index === current ? "bg-pine text-white" : "border border-stone-300 text-stone-500"}`}>{step.label}</span>
-          {index < DELIVERY_STATUS_STEPS.length - 1 && <span aria-hidden="true" className="text-stone-400">→</span>}
+      {steps.map((label, index) => (
+        <li key={label} aria-current={index === current ? "step" : undefined} className="flex items-center gap-2">
+          <span className={`px-2 py-1 font-condensed font-bold uppercase ${index < current ? "bg-stone-200 text-stone-700" : index === current ? "bg-pine text-white" : "border border-stone-300 text-stone-500"}`}>{label}</span>
+          {index < steps.length - 1 && <span aria-hidden="true" className="text-stone-400">→</span>}
         </li>
       ))}
     </ol>
