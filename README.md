@@ -33,6 +33,10 @@ npx supabase stop && npx supabase start
 
 `npx supabase db reset` reinicia la base de datos, pero no relee la configuración de servicios.
 
+### Seed local únicamente
+
+`supabase/seed.sql` contiene usuarios y prendas ficticios con UUID fijos y solo se usa en la base local. Nunca ejecutes contra un proyecto remoto `npx supabase db push --include-seed`, `npx supabase db reset --linked` ni `npx supabase db reset --remote`. Ejecuta `npx supabase db reset` únicamente con el stack local iniciado y sin opciones `--linked` o `--remote`. Para producción, aplica solo migraciones con `npx supabase db push --linked`, sin `--include-seed`.
+
 ## SMS en producción
 
 El proveedor y sus credenciales se configuran en **Supabase Dashboard → Authentication → Providers → Phone**. La configuración local de `supabase/config.toml` no configura el proveedor del proyecto remoto. Usa las credenciales en el dashboard/gestor de secretos y nunca subas tokens al repositorio.

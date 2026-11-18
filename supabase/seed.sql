@@ -1,4 +1,5 @@
--- Datos ficticios solo para desarrollo local. No aplicar en producción.
+-- Datos ficticios solo para desarrollo local. Nunca ejecutar contra un remoto.
+-- No usar `supabase db push --include-seed` ni `supabase db reset --linked/--remote`.
 -- Los perfiles están ligados a auth.users, por eso se crean cinco identidades locales.
 insert into auth.users (
   id,
@@ -170,8 +171,8 @@ where id = '10000000-0000-4000-8000-000000000005';
 
 insert into public.seller_private_settings (seller_id, phone_e164, whatsapp_e164, clabe)
 values
-  ('10000000-0000-4000-8000-000000000001', '+528100000001', '+528100000001', '000000000000000001'),
-  ('10000000-0000-4000-8000-000000000002', '+528100000002', '+528100000002', '000000000000000002')
+  ('10000000-0000-4000-8000-000000000001', '+528100000001', '+528100000001', '000000000000000000'),
+  ('10000000-0000-4000-8000-000000000002', '+528100000002', '+528100000002', '000000000000000000')
 on conflict (seller_id) do update
 set phone_e164 = excluded.phone_e164,
     whatsapp_e164 = excluded.whatsapp_e164,

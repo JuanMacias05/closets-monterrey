@@ -1,5 +1,8 @@
 begin;
-select plan(19);
+select plan(24);
+
+select ok(private.is_valid_clabe('000000000000000000'), 'The CLABE checksum accepts an all-zero test CLABE.');
+select ok(not private.is_valid_clabe('000000000000000001'), 'The CLABE checksum rejects a wrong check digit.');
 
 select is(
   (select phone from auth.users where id = '10000000-0000-4000-8000-000000000004'),
@@ -92,6 +95,31 @@ select throws_ok(
 );
 update public.products set name = 'Nombre editado', slug = 'slug-manual'
 where id = '20000000-0000-4000-8000-000000000001';
+select throws_ok(
+  $$ update public.seller_private_settings set clabe = '000000000000000001' where seller_id = '10000000-0000-4000-8000-000000000001' $$,
+  '23514',
+  'new row for relation "seller_private_settings" violates check constraint "seller_clabe_format"',
+  'The database rejects a CLABE with an invalid check digit.'
+);
+insert into storage.objects (bucket_id, name, owner, metadata, path_tokens)
+values (
+  'product-images',
+  'sellers/10000000-0000-4000-8000-000000000001/avatar/rls-test.jpg',
+  '10000000-0000-4000-8000-000000000001',
+  '{"mimetype":"image/jpeg","size":1}'::jsonb,
+  array['sellers', '10000000-0000-4000-8000-000000000001', 'avatar']
+);
+select ok(
+  exists (select 1 from storage.objects where bucket_id = 'product-images' and name = 'sellers/10000000-0000-4000-8000-000000000001/avatar/rls-test.jpg'),
+  'An approved seller can upload a store avatar in her own folder.'
+);
+select throws_ok(
+  $$ insert into storage.objects (bucket_id, name, owner, metadata, path_tokens)
+     values ('product-images', 'sellers/10000000-0000-4000-8000-000000000002/avatar/rls-test.jpg', '10000000-0000-4000-8000-000000000001', '{"mimetype":"image/jpeg","size":1}'::jsonb, array['sellers', '10000000-0000-4000-8000-000000000002', 'avatar']) $$,
+  '42501',
+  'new row violates row-level security policy for table "objects"',
+  'A seller cannot upload an avatar into another seller folder.'
+);
 select matches(
   (select slug from public.products where id = '20000000-0000-4000-8000-000000000001'),
   '^top-satinado-marfil-[0-9a-f]{4}$',
