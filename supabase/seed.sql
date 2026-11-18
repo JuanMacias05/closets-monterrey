@@ -18,7 +18,7 @@ values
     '00000000-0000-0000-0000-000000000000',
     'authenticated',
     'authenticated',
-    '+528100000001',
+    '528100000001',
     now(),
     '{"provider":"phone","providers":["phone"]}'::jsonb,
     '{"store_name":"Closet de Renata"}'::jsonb,
@@ -30,7 +30,7 @@ values
     '00000000-0000-0000-0000-000000000000',
     'authenticated',
     'authenticated',
-    '+528100000002',
+    '528100000002',
     now(),
     '{"provider":"phone","providers":["phone"]}'::jsonb,
     '{"store_name":"El clóset de Sofía"}'::jsonb,
@@ -42,7 +42,7 @@ values
     '00000000-0000-0000-0000-000000000000',
     'authenticated',
     'authenticated',
-    '+528100000003',
+    '528100000003',
     now(),
     '{"provider":"phone","providers":["phone"]}'::jsonb,
     '{"store_name":"Tienda pendiente"}'::jsonb,
@@ -54,7 +54,7 @@ values
     '00000000-0000-0000-0000-000000000000',
     'authenticated',
     'authenticated',
-    '+528100000004',
+    '528100000004',
     now(),
     '{"provider":"phone","providers":["phone"]}'::jsonb,
     '{"store_name":"Admin de prueba"}'::jsonb,
@@ -66,7 +66,7 @@ values
     '00000000-0000-0000-0000-000000000000',
     'authenticated',
     'authenticated',
-    '+528100000005',
+    '528100000005',
     now(),
     '{"provider":"phone","providers":["phone"]}'::jsonb,
     '{"store_name":"Tienda suspendida"}'::jsonb,
@@ -90,7 +90,7 @@ select
   now()
 from auth.users
 where phone in (
-  '+528100000001', '+528100000002', '+528100000003', '+528100000004', '+528100000005'
+  '528100000001', '528100000002', '528100000003', '528100000004', '528100000005'
 )
 on conflict do nothing;
 

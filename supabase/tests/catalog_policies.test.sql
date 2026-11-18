@@ -1,5 +1,21 @@
 begin;
-select plan(16);
+select plan(19);
+
+select is(
+  (select phone from auth.users where id = '10000000-0000-4000-8000-000000000004'),
+  '528100000004',
+  'Auth test users store phone numbers without the leading plus.'
+);
+select is(
+  (select identity_data ->> 'phone' from auth.identities where user_id = '10000000-0000-4000-8000-000000000004' and provider = 'phone'),
+  '528100000004',
+  'Phone identity data uses GoTrue normalized format.'
+);
+select is(
+  (select phone_e164 from public.seller_private_settings where seller_id = '10000000-0000-4000-8000-000000000004'),
+  '+528100000004',
+  'The seller phone mirror remains E.164.'
+);
 
 select ok(
   (select public from storage.buckets where id = 'product-images'),
