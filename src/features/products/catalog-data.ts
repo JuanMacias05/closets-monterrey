@@ -1,5 +1,6 @@
 import type { CatalogFilters, CatalogImage, CatalogPageResult, CatalogProduct } from "@/features/products/types";
 import { getDemoCatalogPage } from "@/features/products/demo-catalog";
+import { getProductImageUrl } from "@/features/products/public-images";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export const CATALOG_PAGE_SIZE = 24;
@@ -9,10 +10,6 @@ type ProductRow = Omit<CatalogProduct, "seller" | "images"> & {
   seller: CatalogProduct["seller"] | null;
   images: ProductImageRow[] | null;
 };
-
-function localImageUrl(image: ProductImageRow) {
-  return image.source === "local_placeholder" ? image.storage_path : "";
-}
 
 export async function getCatalogPage(filters: CatalogFilters): Promise<CatalogPageResult> {
   if (process.env.CATALOG_DEMO_MODE === "true") {
@@ -27,7 +24,7 @@ export async function getCatalogPage(filters: CatalogFilters): Promise<CatalogPa
   let query = supabase
     .from("products")
     .select(
-      "id,slug,name,description,category,size,condition,price_mxn,sale_status,created_at,seller:profiles!products_seller_id_fkey(store_name,slug),images:product_images(id,source,storage_path,alt_text,position)",
+      "id,slug,name,description,category,size,condition,price_mxn,sale_status,created_at,seller:profiles!products_seller_id_fkey(store_name,slug,avatar_path),images:product_images(id,source,storage_path,alt_text,position,width,height)",
       { count: "exact" },
     )
     .eq("publication_status", "published");
@@ -54,23 +51,6 @@ export async function getCatalogPage(filters: CatalogFilters): Promise<CatalogPa
   }
 
   const rows = (data ?? []) as unknown as ProductRow[];
-  const storagePaths = rows.flatMap((product) =>
-    (product.images ?? [])
-      .filter((image) => image.source === "storage")
-      .map((image) => image.storage_path),
-  );
-  const signedUrls = new Map<string, string>();
-
-  if (storagePaths.length > 0) {
-    const { data: signedData } = await supabase.storage
-      .from("product-images")
-      .createSignedUrls(storagePaths, 3600);
-
-    for (const item of signedData ?? []) {
-      if (item.path && item.signedUrl) signedUrls.set(item.path, item.signedUrl);
-    }
-  }
-
   const products = rows.flatMap((row): CatalogProduct[] => {
     if (!row.seller) return [];
 
@@ -78,7 +58,7 @@ export async function getCatalogPage(filters: CatalogFilters): Promise<CatalogPa
       .toSorted((left, right) => left.position - right.position)
       .map((image): CatalogImage => ({
         ...image,
-        url: localImageUrl(image) || signedUrls.get(image.storage_path) || "/placeholders/top-front.svg",
+        url: getProductImageUrl(supabase, image),
       }));
 
     return [{ ...row, seller: row.seller, images }];

@@ -36,6 +36,8 @@ export type CatalogImage = {
   storage_path: string;
   alt_text: string;
   position: number;
+  width?: number | null;
+  height?: number | null;
   url: string;
 };
 
@@ -49,8 +51,9 @@ export type CatalogProduct = {
   condition: ProductCondition;
   price_mxn: number;
   sale_status: ProductSaleStatus;
+  measurements?: Record<string, number>;
   created_at: string;
-  seller: { store_name: string; slug: string };
+  seller: { store_name: string; slug: string; avatar_path?: string | null };
   images: CatalogImage[];
 };
 

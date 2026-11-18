@@ -1,0 +1,122 @@
+"use client";
+
+import Image from "next/image";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { useState } from "react";
+import type { CatalogImage } from "@/features/products/types";
+
+const fallbackImage: CatalogImage = {
+  id: "fallback",
+  source: "local_placeholder",
+  storage_path: "/placeholders/top-front.svg",
+  alt_text: "Fotografía no disponible",
+  position: 0,
+  width: 900,
+  height: 1100,
+  url: "/placeholders/top-front.svg",
+};
+
+export function ProductGallery({ productName, images }: { productName: string; images: CatalogImage[] }) {
+  const photos = images.length ? images : [fallbackImage];
+  const [selectedIndex, setSelectedIndex] = useState(0);
+  const [zoomOpen, setZoomOpen] = useState(false);
+  const reduceMotion = useReducedMotion();
+  const selected = photos[selectedIndex] ?? photos[0];
+
+  function moveBy(delta: number) {
+    setSelectedIndex((index) => (index + delta + photos.length) % photos.length);
+  }
+
+  return (
+    <section aria-label="Galería de fotos" className="min-w-0">
+      <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_72px] sm:gap-4">
+        <motion.div
+          data-testid="product-gallery-stage"
+          className="group relative aspect-[4/5] overflow-hidden bg-stone-100 sm:order-2"
+          drag={photos.length > 1 ? "x" : false}
+          dragConstraints={{ left: 0, right: 0 }}
+          dragElastic={0.12}
+          onDragEnd={(_, info) => {
+            if (info.offset.x < -45) moveBy(1);
+            if (info.offset.x > 45) moveBy(-1);
+          }}
+          whileHover={reduceMotion ? undefined : { scale: 1.006 }}
+          transition={{ duration: reduceMotion ? 0 : 0.4 }}
+        >
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.button
+              key={selected.id}
+              type="button"
+              aria-label={`Ampliar foto ${selectedIndex + 1} de ${photos.length}`}
+              className="absolute inset-0 size-full cursor-zoom-in"
+              onClick={() => setZoomOpen(true)}
+              initial={reduceMotion ? false : { opacity: 0.45 }}
+              animate={{ opacity: 1 }}
+              exit={reduceMotion ? undefined : { opacity: 0 }}
+              transition={{ duration: reduceMotion ? 0 : 0.28 }}
+            >
+              <Image
+                src={selected.url}
+                alt={selected.alt_text || productName}
+                fill
+                priority
+                sizes="(max-width: 639px) 100vw, (max-width: 1023px) 75vw, 58vw"
+                className="pointer-events-none object-cover transition-transform duration-700 group-hover:scale-[1.08] motion-reduce:transition-none"
+              />
+            </motion.button>
+          </AnimatePresence>
+          {photos.length > 1 && (
+            <div className="pointer-events-none absolute inset-x-3 bottom-3 flex items-center justify-between sm:hidden">
+              <span className="bg-white/90 px-2.5 py-1 text-[10px] tracking-widest text-stone-700">{String(selectedIndex + 1).padStart(2, "0")} / {String(photos.length).padStart(2, "0")}</span>
+              <span className="bg-white/90 px-2.5 py-1 text-[10px] uppercase tracking-widest text-stone-700">Desliza para ver</span>
+            </div>
+          )}
+        </motion.div>
+
+        {photos.length > 1 && (
+          <div aria-label="Elegir foto" className="order-2 flex gap-2 overflow-x-auto sm:order-1 sm:flex-col sm:overflow-visible">
+            {photos.map((photo, index) => (
+              <button
+                key={photo.id}
+                type="button"
+                aria-label={`Ver foto ${index + 1}`}
+                aria-pressed={selectedIndex === index}
+                onClick={() => setSelectedIndex(index)}
+                className={`relative aspect-[4/5] w-[68px] shrink-0 overflow-hidden bg-stone-100 sm:w-full ${selectedIndex === index ? "ring-1 ring-stone-900 ring-offset-2" : "opacity-65 hover:opacity-100"}`}
+              >
+                <Image src={photo.url} alt="" fill sizes="72px" className="object-cover" />
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <AnimatePresence>
+        {zoomOpen && (
+          <motion.div
+            role="dialog"
+            aria-modal="true"
+            aria-label={`Foto ampliada de ${productName}`}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-3 sm:p-8"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: reduceMotion ? 0 : 0.2 }}
+            onKeyDown={(event) => {
+              if (event.key === "Escape") setZoomOpen(false);
+              if (event.key === "ArrowRight") moveBy(1);
+              if (event.key === "ArrowLeft") moveBy(-1);
+            }}
+          >
+            <button type="button" autoFocus onClick={() => setZoomOpen(false)} aria-label="Cerrar foto ampliada" className="absolute right-4 top-4 z-10 grid size-11 place-items-center bg-white text-xl text-stone-900">×</button>
+            {photos.length > 1 && <button type="button" onClick={() => moveBy(-1)} aria-label="Foto anterior" className="absolute left-2 z-10 grid size-11 place-items-center rounded-full bg-white/90 text-2xl sm:left-6">‹</button>}
+            <div className="relative h-full max-h-[92vh] w-full max-w-5xl">
+              <Image src={selected.url} alt={selected.alt_text || productName} fill sizes="100vw" className="object-contain" />
+            </div>
+            {photos.length > 1 && <button type="button" onClick={() => moveBy(1)} aria-label="Foto siguiente" className="absolute right-2 z-10 grid size-11 place-items-center rounded-full bg-white/90 text-2xl sm:right-6">›</button>}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </section>
+  );
+}

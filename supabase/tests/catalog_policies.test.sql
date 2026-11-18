@@ -1,5 +1,21 @@
 begin;
-select plan(10);
+select plan(14);
+
+select ok(
+  (select public from storage.buckets where id = 'product-images'),
+  'The product-images bucket is public for direct image URLs.'
+);
+select is(
+  (select count(*)::integer from pg_policies
+   where schemaname = 'storage' and tablename = 'objects' and cmd = 'SELECT'
+     and (roles && array['anon'::name, 'public'::name])),
+  0,
+  'No anonymous or PUBLIC SELECT policy can list objects.'
+);
+select ok(
+  exists (select 1 from pg_constraint where conname = 'products_slug_global_unique'),
+  'Product slugs are globally unique.'
+);
 
 insert into auth.users (
   id, aud, role, phone, phone_confirmed_at,
@@ -71,6 +87,13 @@ select throws_ok(
   'P0001',
   'The login phone must be changed through Supabase Auth verification',
   'A seller cannot change the login phone without verification.'
+);
+update public.products set name = 'Nombre editado', slug = 'slug-manual'
+where id = '20000000-0000-4000-8000-000000000001';
+select matches(
+  (select slug from public.products where id = '20000000-0000-4000-8000-000000000001'),
+  '^top-satinado-marfil-[0-9a-f]{4}$',
+  'Product slugs are normalized and remain stable after a name edit.'
 );
 
 reset role;

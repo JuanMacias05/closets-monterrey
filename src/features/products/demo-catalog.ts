@@ -8,6 +8,8 @@ const localImages = (kind: string, alt: string): CatalogProduct["images"] => [
     storage_path: `/placeholders/${kind}-front.svg`,
     alt_text: `${alt}, vista frontal`,
     position: 0,
+    width: 900,
+    height: 1100,
     url: `/placeholders/${kind}-front.svg`,
   },
   {
@@ -16,15 +18,17 @@ const localImages = (kind: string, alt: string): CatalogProduct["images"] => [
     storage_path: `/placeholders/${kind}-detail.svg`,
     alt_text: `Detalle de ${alt.toLowerCase()}`,
     position: 1,
+    width: 900,
+    height: 1100,
     url: `/placeholders/${kind}-detail.svg`,
   },
 ];
 
-const renata = { store_name: "Closet de Renata", slug: "closet-de-renata" };
-const sofia = { store_name: "El clóset de Sofía", slug: "el-closet-de-sofia" };
+const renata = { store_name: "Closet de Renata", slug: "closet-de-renata", avatar_path: null };
+const sofia = { store_name: "El clóset de Sofía", slug: "el-closet-de-sofia", avatar_path: null };
 
 export const demoProducts: CatalogProduct[] = [
-  { id: "20000000-0000-4000-8000-000000000001", slug: "top-satin-marfil", name: "Top satinado marfil", description: "Corte fluido y tirantes ajustables.", category: "tops", size: "S", condition: "like_new", price_mxn: 35000, sale_status: "available", created_at: "2026-11-13T10:00:00.000Z", seller: renata, images: localImages("top", "Top satinado marfil") },
+  { id: "20000000-0000-4000-8000-000000000001", slug: "top-satin-marfil", name: "Top satinado marfil", description: "Corte fluido y tirantes ajustables.", category: "tops", size: "S", condition: "like_new", price_mxn: 35000, sale_status: "available", measurements: { busto_cm: 88, largo_cm: 52 }, created_at: "2026-11-13T10:00:00.000Z", seller: renata, images: localImages("top", "Top satinado marfil") },
   { id: "20000000-0000-4000-8000-000000000002", slug: "blusa-lino-arena", name: "Blusa de lino arena", description: "Lino ligero con botones nacarados.", category: "tops", size: "M", condition: "new", price_mxn: 48000, sale_status: "available", created_at: "2026-11-12T10:00:00.000Z", seller: renata, images: localImages("top", "Blusa de lino arena") },
   { id: "20000000-0000-4000-8000-000000000003", slug: "jeans-rectos-azul", name: "Jeans rectos azul medio", description: "Denim de tiro alto, corte recto.", category: "bottoms", size: "28", condition: "used", price_mxn: 42000, sale_status: "available", created_at: "2026-11-11T10:00:00.000Z", seller: renata, images: localImages("bottom", "Jeans rectos azul medio") },
   { id: "20000000-0000-4000-8000-000000000004", slug: "falda-midi-oliva", name: "Falda midi oliva", description: "Silueta en A con cintura elástica.", category: "bottoms", size: "M", condition: "like_new", price_mxn: 29000, sale_status: "reserved", created_at: "2026-11-10T10:00:00.000Z", seller: renata, images: localImages("bottom", "Falda midi oliva") },
