@@ -12,7 +12,14 @@ export default function DataDeletionPage() {
     <LegalPage title="Borrar mis datos">
       <p>Puedes pedir que borremos tu cuenta y tus datos personales cuando quieras.</p>
 
-      <LegalSection title="Cómo pedirlo">
+      <LegalSection title="Si eres compradora">
+        <p>
+          Entra a <Link href="/cuenta" className="text-pine underline underline-offset-4">Mi cuenta</Link> y usa &ldquo;Borrar mi cuenta&rdquo;, al final de la página. Se borra al momento.
+          Si tienes un apartado abierto, o algún apartado que no se concretó, el botón te pedirá hacerlo por correo como se explica abajo.
+        </p>
+      </LegalSection>
+
+      <LegalSection title="Cómo pedirlo por correo (vendedoras, recolectoras y cualquier caso)">
         <ol className="list-decimal space-y-2 pl-5">
           <li>Escríbenos a <a href={`mailto:${LEGAL_CONTACT.email}?subject=Borrar%20mi%20cuenta`} className="text-pine underline underline-offset-4">{LEGAL_CONTACT.email}</a> con el asunto &ldquo;Borrar mi cuenta&rdquo;.</li>
           <li>Incluye el número de celular con el que entras a la tienda, para encontrar tu cuenta.</li>
@@ -28,6 +35,10 @@ export default function DataDeletionPage() {
           <li>Si eres recolectora: tu perfil y tu ruta.</li>
           <li>Si entraste con Facebook: lo que recibimos de Facebook (nombre, foto y correo).</li>
         </ul>
+        <p>
+          Lo único que se queda es el registro de que hubo una venta (prenda, monto y fecha), sin tu nombre, celular ni dirección,
+          para que la vendedora y la recolectora conserven su historial.
+        </p>
       </LegalSection>
 
       <LegalSection title="Antes de borrar">

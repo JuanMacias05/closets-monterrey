@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { StoreHeader } from "@/components/store/store-header";
 import { BuyerProfileForm } from "@/components/shop/buyer-profile-form";
 import { CancelReservationButton } from "@/components/shop/cancel-reservation-button";
+import { DeleteAccountButton } from "@/components/shop/delete-account-button";
 import { RateCourier } from "@/components/shop/rate-courier";
 import { formatPriceMXN } from "@/features/products/format-price";
 import { DELIVERY_STATUS_STEPS, RESERVATION_STATUS_LABELS } from "@/features/shop/reservation-labels";
@@ -48,7 +49,8 @@ export default async function AccountPage() {
   return (
     <>
       <StoreHeader />
-      <main className="mx-auto min-h-screen w-full max-w-4xl px-4 pb-16 pt-8 sm:px-8">
+      <main className="mx-auto min-h-screen w-full max-w-4xl px-4 pb-16 pt-6 sm:px-8">
+        <Link href="/" className="mb-3 inline-flex min-h-11 items-center gap-1 text-sm text-stone-700 underline-offset-4 hover:underline"><span aria-hidden="true">←</span> Seguir comprando</Link>
         <h1 className="font-heavy text-4xl uppercase tracking-tight text-stone-900 sm:text-5xl">Mi cuenta</h1>
         <nav aria-label="Mi cuenta" className="mt-4 flex gap-6 text-sm">
           <Link href="/favoritos" className="flex min-h-11 items-center text-pine underline underline-offset-4">Mis favoritos</Link>
@@ -122,6 +124,14 @@ export default async function AccountPage() {
           <p className="mt-1 mb-4 text-sm text-stone-600">Las vendedoras ven tu nombre, tu Facebook y tu celular solo cuando les apartas.</p>
           <BuyerProfileForm fullName={buyer?.full_name ?? ""} facebookUrl={buyer?.facebook_url ?? ""} />
         </section>
+
+        {buyer && (
+          <section className="mt-12 border-t border-stone-200 pt-8" aria-labelledby="borrar-cuenta">
+            <h2 id="borrar-cuenta" className="font-condensed text-2xl font-bold uppercase text-stone-900">Borrar mi cuenta</h2>
+            <p className="mt-1 mb-4 text-sm text-stone-600">Si ya no quieres usar Closets Monterrey, puedes borrar tu cuenta y tus datos.</p>
+            <DeleteAccountButton />
+          </section>
+        )}
       </main>
     </>
   );

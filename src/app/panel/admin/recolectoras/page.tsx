@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { CourierStatusActions } from "@/app/panel/admin/recolectoras/courier-status-actions";
 import { formatPriceMXN } from "@/features/products/format-price";
@@ -30,7 +29,6 @@ export default async function AdminCouriersPage() {
           <h1 className="font-serif text-3xl tracking-tight text-stone-900">Recolectoras</h1>
           <p className="mt-2 max-w-xl text-sm text-stone-600">Verifica a cada recolectora revisando su INE y comprobante de domicilio <strong>en persona</strong>. No subas identificaciones a la app.</p>
         </div>
-        <Link href="/panel" className="flex min-h-11 items-center text-sm text-stone-700 underline underline-offset-4">Volver al panel</Link>
       </div>
       {sorted.length === 0 ? <p className="py-6 text-sm text-stone-600">Aún no hay recolectoras registradas.</p> : (
         <ul className="divide-y divide-stone-200">

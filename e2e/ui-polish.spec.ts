@@ -57,6 +57,13 @@ test("a seller does not see the admin group, and Cerrar sesión fits at 375 and 
     expect(box!.x + box!.width).toBeLessThanOrEqual(width);
     expect(await button.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
   }
+
+  // Inner panel pages have a way back: a garment goes back to "Mis prendas".
+  await page.goto("/panel/prendas/nueva");
+  await page.getByRole("link", { name: "Volver a Mis prendas" }).click();
+  await expect(page).toHaveURL(/\/panel\/prendas$/);
+  await page.getByRole("link", { name: "Volver a Panel" }).click();
+  await expect(page).toHaveURL(/\/panel$/);
 });
 
 test("on a 1366×768 laptop the first garment shows without scrolling", async ({ page }) => {

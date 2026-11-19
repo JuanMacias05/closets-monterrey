@@ -31,12 +31,15 @@ test("seller creates, manages photos, sells, restores and deletes her product", 
   await page.getByRole("button", { name: "Crear prenda" }).click();
   await expect(page).toHaveURL(/\/panel\/prendas\/[0-9a-f-]+$/);
   await expect(page.getByRole("heading", { name: "Fotos" })).toBeVisible();
+  // No photo yet: the garment is a draft and stays out of the catalog.
+  await expect(page.getByText("Borrador: tu prenda se publica en cuanto le subas al menos una foto.")).toBeVisible();
 
   await page.locator("#product-photos").setInputFiles([
     "e2e/fixtures/store-photo-800x600.jpg",
     "e2e/fixtures/store-photo.png",
   ]);
   await expect(page.getByText("Fotos agregadas.")).toBeVisible();
+  await expect(page.getByText("Publicada en el catálogo.")).toBeVisible();
   expect(uploadedObjectPaths).toHaveLength(2);
   const storageBaseUrl = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? "http://127.0.0.1:54321").replace(/\/$/, "");
   const publicPhotoUrls = uploadedObjectPaths.map((path) =>

@@ -54,13 +54,17 @@ export const getProductDetail = cache(async (slug: string): Promise<CatalogProdu
   return mapProductRow(supabase, data as unknown as ProductRow);
 });
 
-export const getMoreFromSeller = cache(async (sellerSlug: string, productId: string) => {
+export const getMoreFromSeller = cache(async (sellerSlug: string, productId: string) =>
+  getSellerProducts(sellerSlug, { excludeId: productId, limit: 4 }));
+
+// Every public garment of one seller: her storefront page lists them all, the product page
+// shows four. Same visibility rules as the catalog (published, not hidden by an admin).
+export const getSellerProducts = cache(async (sellerSlug: string, options: { excludeId?: string; limit?: number } = {}) => {
+  const limit = options.limit ?? 120;
   if (process.env.CATALOG_DEMO_MODE === "true") {
-    const current = demoProducts.find((product) => product.id === productId);
-    if (!current) return [];
     return demoProducts
-      .filter((product) => product.seller.slug === sellerSlug && product.id !== productId)
-      .slice(0, 4);
+      .filter((product) => product.seller.slug === sellerSlug && product.id !== options.excludeId)
+      .slice(0, limit);
   }
 
   const supabase = await createSupabaseServerClient();
@@ -74,17 +78,16 @@ export const getMoreFromSeller = cache(async (sellerSlug: string, productId: str
 
   if (sellerError || !seller) return [];
 
-  const { data, error } = await supabase
+  let query = supabase
     .from("products")
     .select(
       "id,slug,name,description,category,audience,size,condition,price_mxn,sale_status,created_at,seller:profiles!products_seller_id_fkey(store_name,slug,avatar_path),images:product_images(id,source,storage_path,alt_text,position,width,height)",
     )
     .eq("seller_id", seller.id)
     .eq("publication_status", "published")
-    .eq("hidden_by_admin", false)
-    .neq("id", productId)
-    .order("created_at", { ascending: false })
-    .limit(4);
+    .eq("hidden_by_admin", false);
+  if (options.excludeId) query = query.neq("id", options.excludeId);
+  const { data, error } = await query.order("created_at", { ascending: false }).limit(limit);
 
   if (error) return [];
   return (data ?? [])

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ProductGallery } from "@/components/products/product-gallery";
 import { ProductCard } from "@/components/catalog/product-card";
+import { SellerDeliveryList } from "@/components/sellers/seller-delivery";
 import { StoreFooter } from "@/components/store/store-footer";
 import { StoreHeader } from "@/components/store/store-header";
 import { AddToCartButton } from "@/components/shop/add-to-cart-button";
@@ -11,6 +12,7 @@ import { FavoriteButton } from "@/components/shop/favorite-button";
 import { getShopState } from "@/features/shop/shop-state";
 import { getViewer } from "@/features/viewer/get-viewer";
 import { getMoreFromSeller, getProductDetail } from "@/features/products/product-detail-data";
+import { getSellerPublicProfile } from "@/features/sellers/seller-storefront";
 import { formatPriceMXN } from "@/features/products/format-price";
 import { PRODUCT_CATEGORIES } from "@/features/products/types";
 
@@ -95,7 +97,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
   const product = await getProductDetail(slug);
   if (!product) notFound();
 
-  const [related, shop, viewer] = await Promise.all([getMoreFromSeller(product.seller.slug, product.id), getShopState(), getViewer()]);
+  const [related, shop, viewer, sellerProfile] = await Promise.all([getMoreFromSeller(product.seller.slug, product.id), getShopState(), getViewer(), getSellerPublicProfile(product.seller.slug)]);
   const isOwn = viewer.kind !== "guest" && product.seller_id === viewer.userId;
   const category = PRODUCT_CATEGORIES.find((item) => item.value === product.category)?.label ?? product.category;
   const saleLabel = product.sale_status === "reserved" ? "Apartada" : product.sale_status === "sold" ? "Vendida" : null;
@@ -145,15 +147,23 @@ export default async function ProductDetailPage({ params }: PageProps) {
           )}
 
           <div className="border-t border-stone-200 pt-5">
-            <div className="flex items-center gap-3">
+            <Link href={`/tiendas/${product.seller.slug}`} className="group flex items-center gap-3">
               {product.seller.avatar_path ? (
                 <Image src={product.seller.avatar_path} alt={`Foto de ${product.seller.store_name}`} width={48} height={48} className="size-12 rounded-full object-cover" />
               ) : (
                 <span aria-hidden="true" className="grid size-12 place-items-center rounded-full bg-stone-200 font-serif text-lg text-stone-700">{product.seller.store_name.slice(0, 1).toUpperCase()}</span>
               )}
-              <span><span className="block text-[10px] uppercase tracking-[0.18em] text-stone-500">Vendido por</span><span className="mt-1 block text-sm text-stone-900">{product.seller.store_name}</span></span>
-            </div>
+              <span><span className="block text-[10px] uppercase tracking-[0.18em] text-stone-500">Vendido por</span><span className="mt-1 block text-sm text-stone-900 underline-offset-4 group-hover:underline">{product.seller.store_name}</span><span className="mt-0.5 block text-xs text-pine">Ver su tienda →</span></span>
+            </Link>
           </div>
+
+          {/* Before reserving, a shopper needs to know whether this seller reaches her. */}
+          {sellerProfile && (
+            <section aria-labelledby="entrega-title" className="mt-5 border-t border-stone-200 pt-5">
+              <h2 id="entrega-title" className="text-[10px] uppercase tracking-[0.2em] text-stone-500">Entrega</h2>
+              <div className="mt-3"><SellerDeliveryList delivery={sellerProfile.delivery} /></div>
+            </section>
+          )}
 
           <AddToCartButton productId={product.id} initial={shop.cartIds.has(product.id)} signedIn={shop.signedIn} available={!unavailable} isOwn={isOwn} />
           {isOwn && <p className="mt-7 text-center text-sm text-stone-600">Es una prenda de tu tienda. <Link href={`/panel/prendas/${product.id}`} className="text-pine underline underline-offset-4">Editarla</Link></p>}
@@ -166,7 +176,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
         <section className="mt-16 border-t border-stone-200 pt-10 sm:mt-24 sm:pt-14">
           <div className="mb-7 flex items-end justify-between gap-4">
             <div><p className="text-[10px] uppercase tracking-[0.22em] text-stone-500">Explora su selección</p><h2 className="mt-2 font-serif text-2xl text-stone-900 sm:text-3xl">Más prendas de {product.seller.store_name}</h2></div>
-            <span className="hidden text-xs text-stone-400 sm:block">Piezas únicas</span>
+            <Link href={`/tiendas/${product.seller.slug}`} className="inline-flex min-h-11 items-center text-sm text-pine underline underline-offset-4">Ver toda su tienda</Link>
           </div>
           <div className="grid grid-cols-2 gap-x-3 gap-y-9 sm:grid-cols-3 sm:gap-x-5 lg:grid-cols-4 lg:gap-x-6">
             {related.map((item) => <ProductCard key={item.id} product={item} />)}

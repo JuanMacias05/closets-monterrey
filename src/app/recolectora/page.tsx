@@ -9,7 +9,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 export const metadata = { title: "Mis entregas | Closets Monterrey" };
 
 type Assignment = {
-  id: string; buyer_id: string; delivery_status: string; delivery_address: string | null; buyer_municipality: string | null;
+  id: string; buyer_id: string | null; delivery_status: string; delivery_address: string | null; buyer_municipality: string | null;
   delivery_fee_mxn: number; courier_fee_payment: string | null; seller_whatsapp: string | null;
   seller: { store_name: string } | null;
   items: { product: { name: string } | null }[] | null;
@@ -37,7 +37,7 @@ export default async function CourierPage() {
       .order("created_at", { ascending: true }),
   ]);
   const assignments = (rows ?? []) as unknown as Assignment[];
-  const buyerIds = [...new Set(assignments.map((a) => a.buyer_id))];
+  const buyerIds = [...new Set(assignments.map((a) => a.buyer_id).filter((id): id is string => id !== null))];
   const { data: buyers } = buyerIds.length
     ? await supabase.from("buyer_profiles").select("id,full_name,phone_e164").in("id", buyerIds)
     : { data: [] };
@@ -63,7 +63,7 @@ export default async function CourierPage() {
           ) : (
             <ul className="mt-4 space-y-4">
               {assignments.map((assignment) => {
-                const buyer = buyerById.get(assignment.buyer_id);
+                const buyer = assignment.buyer_id ? buyerById.get(assignment.buyer_id) : undefined;
                 return (
                   <li key={assignment.id} className="border border-stone-200 bg-white p-5">
                     <div className="flex flex-wrap items-center justify-between gap-2">

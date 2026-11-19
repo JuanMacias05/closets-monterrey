@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { signOutFromPanel } from "@/app/panel/actions";
+import { PanelBackLink } from "@/components/panel/panel-back-link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export default async function PanelLayout({ children }: { children: ReactNode }) {
@@ -46,7 +47,7 @@ export default async function PanelLayout({ children }: { children: ReactNode })
       <main className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-8 sm:py-12">
         <p className="text-[10px] uppercase tracking-[0.22em] text-stone-500">{profile.role === "admin" ? "Administración" : "Panel de vendedora"}</p>
         <p className="mt-2 font-serif text-2xl text-stone-900">{profile.store_name}</p>
-        <div className="mt-8">{children}</div>
+        <div className="mt-6"><PanelBackLink />{children}</div>
       </main>
     </div>
   );

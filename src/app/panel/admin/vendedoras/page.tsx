@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { AccountActions } from "@/app/panel/admin/vendedoras/account-actions";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -45,7 +44,6 @@ export default async function AdminAccountsPage() {
             {pendingCount > 0 ? `${pendingCount} ${pendingCount === 1 ? "cuenta espera" : "cuentas esperan"} aprobación.` : "No hay cuentas pendientes."}
           </p>
         </div>
-        <Link href="/panel" className="flex min-h-11 items-center text-sm text-stone-700 underline underline-offset-4">Volver al panel</Link>
       </div>
 
       <ul className="divide-y divide-stone-200">

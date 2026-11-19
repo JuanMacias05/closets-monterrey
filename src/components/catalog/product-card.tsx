@@ -40,7 +40,7 @@ export function ProductCard({ product, priority = false, viewerId, favorite = fa
           <h2 className="min-w-0 text-sm font-normal leading-5 text-stone-900 sm:text-base"><Link href={`/prendas/${product.slug}`} className="focus-visible:underline">{product.name}</Link></h2>
           <span className="shrink-0 text-xs text-stone-500 sm:text-sm">Talla {product.size}</span>
         </div>
-        <p className="text-xs text-stone-500">{product.seller.store_name}</p>
+        <p className="text-xs text-stone-500"><Link href={`/tiendas/${product.seller.slug}`} className="hover:text-stone-900 hover:underline">{product.seller.store_name}</Link></p>
         <div className="flex items-center justify-between gap-2 pt-1">
           <p className="text-sm tracking-wide text-stone-900">{formatPriceMXN(product.price_mxn)}</p>
           <p className="text-[10px] text-stone-500">{conditionLabels[product.condition]}</p>

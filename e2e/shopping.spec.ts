@@ -102,8 +102,10 @@ test("a shopper saves a favorite, reserves from her cart and the seller complete
   await card.getByLabel("Código de entrega").fill(pin);
   await card.getByRole("button", { name: "Marcar entregada" }).click();
   await expect(seller.getByText("No tienes apartados abiertos.")).toBeVisible({ timeout: SERVER_ACTION_TIMEOUT });
-  await seller.getByText(/^Historial \(1\)$/).click();
-  await expect(seller.getByRole("listitem").filter({ hasText: "Compradora Prueba" }).getByText("Entregada")).toBeVisible();
+  // Not "(1)": other specs delete their test buyers, and a deleted buyer's completed sale now
+  // stays in the seller's history, anonymous (20261119000100_buyer_self_delete).
+  await seller.getByText(/^Historial \(\d+\)$/).click();
+  await expect(seller.getByRole("listitem").filter({ hasText: "Compradora Prueba" }).first().getByText("Entregada")).toBeVisible();
   await sellerContext.close();
 
   await page.reload();

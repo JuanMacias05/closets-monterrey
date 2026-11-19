@@ -9,7 +9,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 export const metadata = { title: "Apartados | Closets Monterrey" };
 
 type ReservationRow = {
-  id: string; buyer_id: string; status: string; items_total_mxn: number; deposit_percent: number; deposit_mxn: number;
+  id: string; buyer_id: string | null; status: string; items_total_mxn: number; deposit_percent: number; deposit_mxn: number;
   expires_at: string; created_at: string;
   delivery_method: string; delivery_address: string | null; delivery_fee_mxn: number; delivery_status: string;
   point: { name: string } | null;
@@ -40,7 +40,8 @@ export default async function SellerReservationsPage({ searchParams }: { searchP
 
   // Buyers aren't joinable from reservations (buyer_id points at auth.users), so they and
   // their trust lights load in a second step.
-  const buyerIds = [...new Set(reservations.map((reservation) => reservation.buyer_id))];
+  // buyer_id is null once a shopper deleted her account; the sale stays, anonymous.
+  const buyerIds = [...new Set(reservations.map((reservation) => reservation.buyer_id).filter((id): id is string => id !== null))];
   const [{ data: buyers }, lights] = await Promise.all([
     buyerIds.length ? supabase.from("buyer_profiles").select("id,full_name,facebook_url,phone_e164").in("id", buyerIds) : Promise.resolve({ data: [] }),
     Promise.all(buyerIds.map(async (id) => [id, (await supabase.rpc("buyer_trust_light", { target: id })).data as string | null] as const)),
@@ -60,9 +61,9 @@ export default async function SellerReservationsPage({ searchParams }: { searchP
   const closed = reservations.filter((reservation) => !OPEN.includes(reservation.status));
 
   function renderReservation(reservation: ReservationRow) {
-    const buyer = buyerById.get(reservation.buyer_id);
-    const light = lightById.get(reservation.buyer_id) ?? "new";
-    const buyerName = buyer?.full_name ?? "Compradora";
+    const buyer = reservation.buyer_id ? buyerById.get(reservation.buyer_id) : undefined;
+    const light = (reservation.buyer_id && lightById.get(reservation.buyer_id)) || "new";
+    const buyerName = buyer?.full_name ?? (reservation.buyer_id ? "Compradora" : "Cuenta borrada");
     return (
       <li key={reservation.id} className="border border-stone-200 bg-white p-5">
         <div className="flex flex-wrap items-center justify-between gap-2">
@@ -110,7 +111,6 @@ export default async function SellerReservationsPage({ searchParams }: { searchP
           <h1 className="font-serif text-3xl tracking-tight text-stone-900">Apartados</h1>
           <p className="mt-2 text-sm text-stone-600">Confirma el anticipo cuando lo veas en tu banco y marca la entrega cuando cobres el resto.</p>
         </div>
-        <Link href="/panel" className="flex min-h-11 items-center text-sm text-stone-700 underline underline-offset-4">Volver al panel</Link>
       </div>
       {groups.size > 1 && (
         <nav aria-label="Filtrar por entrega" className="mt-5 flex flex-wrap gap-2">

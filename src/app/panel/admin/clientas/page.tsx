@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { TrustOverrideSelect } from "@/app/panel/admin/clientas/trust-override-select";
 import { TRUST_LABELS, TRUST_STYLES } from "@/features/shop/reservation-labels";
@@ -28,7 +27,6 @@ export default async function AdminBuyersPage() {
           <h1 className="font-serif text-3xl tracking-tight text-stone-900">Clientas</h1>
           <p className="mt-2 max-w-xl text-sm text-stone-600">El semáforo es automático: verde con compras cumplidas, amarillo si dejó vencer un apartado, rojo si una vendedora reportó que le quedó mal. Puedes fijarlo a mano.</p>
         </div>
-        <Link href="/panel" className="flex min-h-11 items-center text-sm text-stone-700 underline underline-offset-4">Volver al panel</Link>
       </div>
       {(buyers ?? []).length === 0 ? (
         <p className="py-6 text-sm text-stone-600">Aún no hay clientas registradas.</p>

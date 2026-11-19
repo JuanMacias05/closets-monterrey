@@ -48,7 +48,7 @@ function productValues(input: ProductInput) {
     name: input.name.trim(), description: input.description.trim(), category: input.category,
     audience: (input.audience ?? "women") as ProductAudience,
     size: input.size, condition: input.condition as ProductCondition, price_mxn: input.price_mxn,
-    measurements: input.measurements ?? {}, publication_status: "published" as const,
+    measurements: input.measurements ?? {},
   };
 }
 
@@ -63,7 +63,10 @@ export async function createProduct(input: ProductInput): Promise<CreateProductR
   if (!validProductInput(input)) return { ok: false, error: "Revisa los datos de la prenda." };
 
   const { data, error } = await context.supabase.from("products").insert({
-    ...productValues(input), seller_id: context.userId, sale_status: "available", hidden_by_admin: false,
+    // IMPORTANT: a new garment starts as a draft and goes public with its first photo
+    // (registerProductImage). Publishing on create let garments reach the catalog with no
+    // photo at all, as a grey box, whenever the seller never got to the upload step.
+    ...productValues(input), publication_status: "draft", seller_id: context.userId, sale_status: "available", hidden_by_admin: false,
   }).select("id").single();
   if (error || !data) return { ok: false, error: "No pudimos crear la prenda." };
   revalidateProducts();
@@ -146,7 +149,11 @@ export async function registerProductImage(input: {
     alt_text: input.altText, position: count ?? 0, width: input.width, height: input.height,
   }).select("id").single();
   if (error || !data) return { ok: false, error: "No pudimos guardar los datos de la foto." };
+  const { error: publishError } = await context.supabase.from("products").update({ publication_status: "published" })
+    .eq("id", input.productId).eq("seller_id", context.userId).eq("publication_status", "draft");
+  if (publishError) console.error("No se pudo publicar la prenda tras su primera foto.", publishError);
   revalidatePath(`/panel/prendas/${input.productId}`);
+  revalidateProducts();
   return { ok: true, imageId: data.id };
 }
 
@@ -189,6 +196,13 @@ export async function deleteProductImage(imageId: string): Promise<Result> {
     }
   }
   const ordered = (remaining ?? []).map((row) => row.id);
+  if (ordered.length === 0) {
+    // Last photo gone: back to draft, so the garment leaves the catalog instead of showing a grey box.
+    const { error } = await context.supabase.from("products").update({ publication_status: "draft" })
+      .eq("id", image.product_id).eq("seller_id", context.userId);
+    if (error) console.error("No se pudo pasar a borrador una prenda sin fotos.", error);
+    revalidatePath("/panel/prendas");
+  }
   if (ordered.length > 0) {
     const { error } = await context.supabase.rpc("reorder_product_images", { target_product_id: image.product_id, ordered_image_ids: ordered });
     if (error) console.error("No se pudieron compactar las posiciones de las fotos.", error);

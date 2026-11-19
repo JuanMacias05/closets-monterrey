@@ -216,6 +216,10 @@ export function ProductEditor({ sellerId, product }: { sellerId: string; product
       {productId && <section aria-labelledby="product-photos-title" className="border-t border-stone-200 pt-7">
         <h2 id="product-photos-title" className="font-serif text-2xl">Fotos</h2>
         <p className="mt-2 text-sm leading-6 text-stone-600">Agrega varias fotos. La primera será la principal; puedes cambiar el orden cuando quieras.</p>
+        {/* Mirrors the server rule: a garment is public only while it has at least one photo. */}
+        {images.length === 0
+          ? <p role="status" className="mt-3 border border-amber-700 bg-amber-50 p-3 text-sm text-stone-800">Borrador: tu prenda se publica en cuanto le subas al menos una foto.</p>
+          : <p className="mt-3 text-sm text-green-800">Publicada en el catálogo.</p>}
         <label htmlFor="product-photos" className="mt-5 flex min-h-14 cursor-pointer items-center justify-center border border-dashed border-stone-400 bg-white px-4 text-center text-xs uppercase tracking-[0.12em] text-stone-700">{uploading ? "Procesando y subiendo fotos…" : "Elegir fotos desde el teléfono"}</label>
         <input id="product-photos" type="file" accept="image/*" multiple disabled={uploading} onChange={(event) => { void uploadImages(event.target.files); event.target.value = ""; }} className="sr-only" />
         {images.length > 0 && <ol className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3">
