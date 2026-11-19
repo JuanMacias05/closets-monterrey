@@ -3,6 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getProductImageUrl } from "@/features/products/public-images";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { PRIMARY_BUTTON_CLASS } from "@/components/panel/panel-styles";
 import { ProductListActions } from "@/app/panel/prendas/product-list-actions";
 import { ProductPriceEditor } from "@/app/panel/prendas/product-price-editor";
 
@@ -29,13 +30,14 @@ export default async function ProductsPage() {
           <p className="text-[10px] uppercase tracking-[0.22em] text-stone-500">Mi catálogo</p>
           <h1 className="mt-2 font-serif text-3xl tracking-tight text-stone-900">Mis prendas</h1>
         </div>
-        <Link href="/panel/prendas/nueva" className="inline-flex min-h-11 shrink-0 items-center bg-stone-900 px-4 text-xs uppercase tracking-[0.14em] text-white">Agregar prenda</Link>
+        <Link href="/panel/prendas/nueva" className={`${PRIMARY_BUTTON_CLASS} shrink-0`}>Subir prenda</Link>
       </div>
       {products.length === 0 ? (
-        <div className="py-14 text-center">
-          <p className="font-serif text-xl">Todavía no tienes prendas</p>
-          <p className="mt-2 text-sm text-stone-600">Agrega tu primera prenda para mostrarla en tu tienda.</p>
-        </div>
+        <Link href="/panel/prendas/nueva" className="mt-8 flex flex-col items-center border border-dashed border-stone-400 bg-white px-6 py-12 text-center hover:border-stone-700">
+          <span className="font-serif text-xl text-stone-900">Todavía no tienes prendas</span>
+          <span className="mt-2 text-sm text-stone-600">Toma unas fotos, ponle precio y aparece en la tienda.</span>
+          <span className="mt-4 text-xs uppercase tracking-[0.14em] text-stone-800 underline underline-offset-4">Sube tu primera prenda</span>
+        </Link>
       ) : (
         <ul className="divide-y divide-stone-200">
           {products.map((product) => {

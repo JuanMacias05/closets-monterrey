@@ -45,9 +45,9 @@ export default async function PanelLayout({ children }: { children: ReactNode })
         </nav>
       </header>
       <main className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-8 sm:py-12">
-        <p className="text-[10px] uppercase tracking-[0.22em] text-stone-500">{profile.role === "admin" ? "Administración" : "Panel de vendedora"}</p>
-        <p className="mt-2 font-serif text-2xl text-stone-900">{profile.store_name}</p>
-        <div className="mt-6"><PanelBackLink />{children}</div>
+        {/* Which store is signed in shows once, on the panel home. Repeated above every inner
+            page it pushed each screen's own title down and read as a second heading. */}
+        <PanelBackLink />{children}
       </main>
     </div>
   );

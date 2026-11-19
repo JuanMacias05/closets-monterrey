@@ -3,10 +3,11 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { createProduct, deleteProductImage, deleteProductWithImages, registerProductImage, reorderProductImages, updateProduct } from "@/app/panel/prendas/actions";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { buildProductImageStoragePath, prepareProductImage } from "@/features/products/product-image-upload";
+import { PRIMARY_BUTTON_CLASS } from "@/components/panel/panel-styles";
 import { PRODUCT_AUDIENCES, PRODUCT_CATEGORIES, PRODUCT_CONDITIONS, PRODUCT_SIZES, type ProductCondition } from "@/features/products/types";
 
 export type EditableProduct = {
@@ -54,6 +55,26 @@ export function ProductEditor({ sellerId, product }: { sellerId: string; product
   const [notice, setNotice] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  // A new garment has no id yet, so its photos can't be stored. They wait here (with a local
+  // preview) and go up right after the garment is created, so the seller picks photos and
+  // details on one screen instead of saving first and finding the photo step afterwards.
+  const [pendingPhotos, setPendingPhotos] = useState<{ file: File; previewUrl: string }[]>([]);
+  const pendingRef = useRef(pendingPhotos);
+  useEffect(() => { pendingRef.current = pendingPhotos; }, [pendingPhotos]);
+  useEffect(() => () => pendingRef.current.forEach((photo) => URL.revokeObjectURL(photo.previewUrl)), []);
+
+  function addPendingPhotos(files: FileList | null) {
+    if (!files?.length) return;
+    const added = Array.from(files).map((file) => ({ file, previewUrl: URL.createObjectURL(file) }));
+    setPendingPhotos((current) => [...current, ...added]);
+  }
+
+  function removePendingPhoto(index: number) {
+    setPendingPhotos((current) => {
+      URL.revokeObjectURL(current[index].previewUrl);
+      return current.filter((_, position) => position !== index);
+    });
+  }
 
   async function saveDetails(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -75,8 +96,19 @@ export function ProductEditor({ sellerId, product }: { sellerId: string; product
         setError("La prenda se creó, pero no pudimos abrir su ficha. Actualiza la página.");
       } else {
         setProductId(createdProductId);
+        const photos = pendingPhotos.map((photo) => photo.file);
+        const uploadError = photos.length ? await uploadFiles(photos, createdProductId) : null;
+        if (uploadError) {
+          // The garment exists (as a draft) and its photo section now works in edit mode, so the
+          // seller can retry from here instead of starting over.
+          setError(`Tu prenda se guardó como borrador, pero ${uploadError.charAt(0).toLowerCase()}${uploadError.slice(1)}`);
+          setPendingPhotos([]);
+          setSaving(false);
+          return;
+        }
         router.replace(`/panel/prendas/${createdProductId}`);
         router.refresh();
+        return;
       }
     } else {
       setNotice("Cambios guardados.");
@@ -87,13 +119,24 @@ export function ProductEditor({ sellerId, product }: { sellerId: string; product
 
   async function uploadImages(files: FileList | null) {
     if (!files?.length || !productId) return;
-    const supabase = createSupabaseBrowserClient();
-    if (!supabase) { setError("Supabase no está configurado."); return; }
     setError(null);
     setNotice(null);
+    const uploadError = await uploadFiles(Array.from(files), productId);
+    if (uploadError) setError(uploadError);
+    else {
+      setNotice("Fotos agregadas.");
+      router.refresh();
+    }
+  }
+
+  // Uploads each file and registers it on the garment. Returns the error to show, or null.
+  async function uploadFiles(files: File[], targetProductId: string): Promise<string | null> {
+    const supabase = createSupabaseBrowserClient();
+    if (!supabase) return "Supabase no está configurado.";
+    const productId = targetProductId;
     setUploading(true);
     try {
-      for (const originalFile of Array.from(files)) {
+      for (const originalFile of files) {
         const prepared = await prepareProductImage(originalFile);
         const storagePath = buildProductImageStoragePath(sellerId, productId);
         const { error: uploadError } = await supabase.storage.from("product-images")
@@ -113,10 +156,9 @@ export function ProductEditor({ sellerId, product }: { sellerId: string; product
           position: current.length, width: prepared.width, height: prepared.height, url: publicData.publicUrl,
         }]);
       }
-      setNotice("Fotos agregadas.");
-      router.refresh();
+      return null;
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "No pudimos procesar las fotos.");
+      return cause instanceof Error ? cause.message : "No pudimos procesar las fotos.";
     } finally {
       setUploading(false);
     }
@@ -149,80 +191,46 @@ export function ProductEditor({ sellerId, product }: { sellerId: string; product
     router.refresh();
   }
 
+  const label = "block text-xs uppercase tracking-[0.14em] text-stone-600";
+  const field = "mt-2 min-h-12 w-full border-b border-stone-400 bg-transparent px-1 text-base outline-none focus:border-stone-900";
+  const isNew = !productId;
+  const photoCount = isNew ? pendingPhotos.length : images.length;
+  const submitLabel = saving
+    ? (uploading ? "Subiendo fotos…" : "Guardando…")
+    : !isNew ? "Guardar cambios" : pendingPhotos.length ? "Publicar prenda" : "Guardar como borrador";
+
   return (
     <div className="space-y-10">
-      <form onSubmit={saveDetails} className="space-y-6">
-        <div>
-          <label htmlFor="product-name" className="block text-xs uppercase tracking-[0.14em] text-stone-600">Nombre</label>
-          <input id="product-name" value={name} onChange={(event) => setName(event.target.value)} maxLength={100} required className="mt-2 min-h-12 w-full border-b border-stone-400 bg-transparent px-1 text-base" />
-        </div>
-        <div>
-          <label htmlFor="product-description" className="block text-xs uppercase tracking-[0.14em] text-stone-600">Descripción</label>
-          <textarea id="product-description" value={description} onChange={(event) => setDescription(event.target.value)} maxLength={5000} rows={4} className="mt-2 w-full border border-stone-300 bg-white p-3 text-sm leading-6" />
-        </div>
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-          <div>
-            <label htmlFor="product-category" className="block text-xs uppercase tracking-[0.14em] text-stone-600">Categoría</label>
-            <select id="product-category" value={category} onChange={(event) => setCategory(event.target.value)} className="mt-2 min-h-12 w-full border-b border-stone-400 bg-transparent px-1">
-              {PRODUCT_CATEGORIES.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
-            </select>
-          </div>
-          <div>
-            <label htmlFor="product-audience" className="block text-xs uppercase tracking-[0.14em] text-stone-600">Para</label>
-            <select id="product-audience" value={audience} onChange={(event) => setAudience(event.target.value)} className="mt-2 min-h-12 w-full border-b border-stone-400 bg-transparent px-1">
-              {PRODUCT_AUDIENCES.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
-            </select>
-          </div>
-          <div>
-            <label htmlFor="product-size" className="block text-xs uppercase tracking-[0.14em] text-stone-600">Talla</label>
-            <select id="product-size" value={size} onChange={(event) => setSize(event.target.value)} className="mt-2 min-h-12 w-full border-b border-stone-400 bg-transparent px-1">
-              {PRODUCT_SIZES.map((item) => <option key={item} value={item}>{item}</option>)}
-            </select>
-          </div>
-          <div>
-            <label htmlFor="product-condition" className="block text-xs uppercase tracking-[0.14em] text-stone-600">Condición</label>
-            <select id="product-condition" value={condition} onChange={(event) => {
-              const selected = PRODUCT_CONDITIONS.find((item) => item.value === event.target.value);
-              if (selected) setCondition(selected.value);
-            }} className="mt-2 min-h-12 w-full border-b border-stone-400 bg-transparent px-1">
-              {PRODUCT_CONDITIONS.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
-            </select>
-          </div>
-          <div>
-            <label htmlFor="product-price" className="block text-xs uppercase tracking-[0.14em] text-stone-600">Precio (MXN)</label>
-            <input id="product-price" type="number" inputMode="decimal" min="0" step="0.01" value={price} onChange={(event) => setPrice(event.target.value)} required className="mt-2 min-h-12 w-full border-b border-stone-400 bg-transparent px-1" />
-          </div>
-        </div>
-        <fieldset>
-          <legend className="text-xs uppercase tracking-[0.14em] text-stone-600">Medidas (opcional, cm)</legend>
-          <div className="mt-3 grid grid-cols-2 gap-4">
-            {measurementFields.map(([key, label]) => (
-              <label key={key} className="text-xs text-stone-600">{label}
-                <input type="number" min="0" step="0.1" value={measurements[key] ?? ""} onChange={(event) => setMeasurements((current) => {
-                  const next = { ...current };
-                  if (event.target.value === "") delete next[key];
-                  else next[key] = Number(event.target.value);
-                  return next;
-                })} className="mt-1 min-h-11 w-full border-b border-stone-400 bg-transparent px-1 text-base text-stone-900" />
-              </label>
-            ))}
-          </div>
-        </fieldset>
-        {error && <p role="alert" className="text-sm text-red-700">{error}</p>}
-        {notice && <p role="status" className="text-sm text-green-800">{notice}</p>}
-        <button type="submit" disabled={saving} className="min-h-12 w-full bg-stone-900 px-5 text-xs uppercase tracking-[0.16em] text-white disabled:opacity-50">{saving ? "Guardando…" : productId ? "Guardar cambios" : "Crear prenda"}</button>
-      </form>
-
-      {productId && <section aria-labelledby="product-photos-title" className="border-t border-stone-200 pt-7">
+      {/* Photos come first: they're what sells the garment, and a garment without one stays a
+          draft. Before this section sat below the form and only appeared after saving. */}
+      <section aria-labelledby="product-photos-title">
         <h2 id="product-photos-title" className="font-serif text-2xl">Fotos</h2>
-        <p className="mt-2 text-sm leading-6 text-stone-600">Agrega varias fotos. La primera será la principal; puedes cambiar el orden cuando quieras.</p>
+        <p className="mt-2 text-sm leading-6 text-stone-600">La primera será la principal; puedes cambiar el orden cuando quieras.</p>
         {/* Mirrors the server rule: a garment is public only while it has at least one photo. */}
-        {images.length === 0
-          ? <p role="status" className="mt-3 border border-amber-700 bg-amber-50 p-3 text-sm text-stone-800">Borrador: tu prenda se publica en cuanto le subas al menos una foto.</p>
-          : <p className="mt-3 text-sm text-green-800">Publicada en el catálogo.</p>}
-        <label htmlFor="product-photos" className="mt-5 flex min-h-14 cursor-pointer items-center justify-center border border-dashed border-stone-400 bg-white px-4 text-center text-xs uppercase tracking-[0.12em] text-stone-700">{uploading ? "Procesando y subiendo fotos…" : "Elegir fotos desde el teléfono"}</label>
-        <input id="product-photos" type="file" accept="image/*" multiple disabled={uploading} onChange={(event) => { void uploadImages(event.target.files); event.target.value = ""; }} className="sr-only" />
-        {images.length > 0 && <ol className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3">
+        {isNew
+          ? (pendingPhotos.length === 0 && <p className="mt-3 text-sm text-stone-600">Sin fotos tu prenda se guarda como borrador y no aparece en la tienda.</p>)
+          : images.length === 0
+            ? <p role="status" className="mt-3 border border-amber-700 bg-amber-50 p-3 text-sm text-stone-800">Borrador: tu prenda se publica en cuanto le subas al menos una foto.</p>
+            : <p className="mt-3 text-sm text-green-800">Publicada en el catálogo.</p>}
+        <label htmlFor="product-photos" className="mt-5 flex min-h-14 cursor-pointer items-center justify-center border border-dashed border-stone-400 bg-white px-4 text-center text-xs uppercase tracking-[0.12em] text-stone-700 hover:border-stone-700">
+          {uploading ? "Procesando y subiendo fotos…" : photoCount ? "Agregar más fotos" : "Elegir fotos desde el teléfono"}
+        </label>
+        <input id="product-photos" type="file" accept="image/*" multiple disabled={uploading || saving} onChange={(event) => {
+          if (isNew) addPendingPhotos(event.target.files);
+          else void uploadImages(event.target.files);
+          event.target.value = "";
+        }} className="sr-only" />
+        {isNew && pendingPhotos.length > 0 && <ol className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3">
+          {pendingPhotos.map((photo, index) => <li key={photo.previewUrl} className="min-w-0 border border-stone-200 bg-white p-2">
+            <div className="relative aspect-[3/4] overflow-hidden bg-stone-100">
+              {/* eslint-disable-next-line @next/next/no-img-element -- a local blob: preview, nothing for next/image to optimize */}
+              <img src={photo.previewUrl} alt={`Foto ${index + 1} por subir`} className="absolute inset-0 size-full object-cover" />
+              {index === 0 && <span className="absolute left-2 top-2 bg-stone-900 px-2 py-1 text-[9px] uppercase tracking-wider text-white">Principal</span>}
+            </div>
+            <button type="button" onClick={() => removePendingPhoto(index)} disabled={saving} className="mt-2 min-h-9 w-full border border-stone-300 px-2 text-[10px] uppercase tracking-wide text-red-800">Quitar</button>
+          </li>)}
+        </ol>}
+        {!isNew && images.length > 0 && <ol className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3">
           {images.map((image, index) => <li key={image.id} className="min-w-0 border border-stone-200 bg-white p-2">
             <div className="relative aspect-[3/4] overflow-hidden bg-stone-100">
               <Image src={image.url} alt={image.alt_text || name} fill sizes="(max-width: 639px) 45vw, 200px" unoptimized className="object-cover" />
@@ -236,7 +244,72 @@ export function ProductEditor({ sellerId, product }: { sellerId: string; product
             </div>
           </li>)}
         </ol>}
-      </section>}
+      </section>
+
+      <form onSubmit={saveDetails} aria-label="Datos de la prenda" className="space-y-6 border-t border-stone-200 pt-7">
+        <div>
+          <label htmlFor="product-name" className={label}>Nombre</label>
+          <input id="product-name" value={name} onChange={(event) => setName(event.target.value)} maxLength={100} required placeholder="Ej. Blusa de lino blanca" className={field} />
+        </div>
+        <div>
+          <label htmlFor="product-description" className={label}>Descripción</label>
+          <textarea id="product-description" value={description} onChange={(event) => setDescription(event.target.value)} maxLength={5000} rows={4} placeholder="Tela, cómo le queda, si tiene algún detalle…" className="mt-2 w-full border border-stone-300 bg-white p-3 text-sm leading-6 outline-none focus:border-stone-900" />
+        </div>
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+          <div>
+            <label htmlFor="product-category" className={label}>Categoría</label>
+            <select id="product-category" value={category} onChange={(event) => setCategory(event.target.value)} className={field}>
+              {PRODUCT_CATEGORIES.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
+            </select>
+          </div>
+          <div>
+            <label htmlFor="product-audience" className={label}>Para</label>
+            <select id="product-audience" value={audience} onChange={(event) => setAudience(event.target.value)} className={field}>
+              {PRODUCT_AUDIENCES.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
+            </select>
+          </div>
+          <div>
+            <label htmlFor="product-size" className={label}>Talla</label>
+            <select id="product-size" value={size} onChange={(event) => setSize(event.target.value)} className={field}>
+              {PRODUCT_SIZES.map((item) => <option key={item} value={item}>{item}</option>)}
+            </select>
+          </div>
+          <div>
+            <label htmlFor="product-condition" className={label}>Condición</label>
+            <select id="product-condition" value={condition} onChange={(event) => {
+              const selected = PRODUCT_CONDITIONS.find((item) => item.value === event.target.value);
+              if (selected) setCondition(selected.value);
+            }} className={field}>
+              {PRODUCT_CONDITIONS.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
+            </select>
+          </div>
+          <div>
+            <label htmlFor="product-price" className={label}>Precio (MXN)</label>
+            <div className="mt-2 flex min-h-12 items-center border-b border-stone-400 focus-within:border-stone-900">
+              <span aria-hidden="true" className="pl-1 pr-1 text-base text-stone-500">$</span>
+              <input id="product-price" type="number" inputMode="decimal" min="0" step="0.01" value={price} onChange={(event) => setPrice(event.target.value)} required placeholder="350" className="min-h-12 w-full bg-transparent px-1 text-base outline-none" />
+            </div>
+          </div>
+        </div>
+        <fieldset>
+          <legend className={label}>Medidas (opcional, cm)</legend>
+          <div className="mt-3 grid grid-cols-2 gap-4">
+            {measurementFields.map(([key, measurementLabel]) => (
+              <label key={key} className="text-xs text-stone-600">{measurementLabel}
+                <input type="number" min="0" step="0.1" value={measurements[key] ?? ""} onChange={(event) => setMeasurements((current) => {
+                  const next = { ...current };
+                  if (event.target.value === "") delete next[key];
+                  else next[key] = Number(event.target.value);
+                  return next;
+                })} className="mt-1 min-h-11 w-full border-b border-stone-400 bg-transparent px-1 text-base text-stone-900 outline-none focus:border-stone-900" />
+              </label>
+            ))}
+          </div>
+        </fieldset>
+        {error && <p role="alert" className="text-sm text-red-700">{error}</p>}
+        {notice && <p role="status" className="text-sm text-green-800">{notice}</p>}
+        <button type="submit" disabled={saving || uploading} className={`${PRIMARY_BUTTON_CLASS} w-full`}>{submitLabel}</button>
+      </form>
 
       {productId && <div className="flex flex-col gap-4 border-t border-stone-200 pt-5 sm:flex-row sm:items-center sm:justify-between">
         <Link href={`/prendas/${product?.id ?? productId}`} className="text-xs text-stone-600 underline underline-offset-4">Ver publicación pública</Link>

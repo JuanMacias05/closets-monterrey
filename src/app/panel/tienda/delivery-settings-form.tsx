@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { saveDeliverySettings } from "@/app/panel/tienda/actions";
+import { PRIMARY_BUTTON_CLASS } from "@/components/panel/panel-styles";
 
 export type DeliverySettingsProps = {
   points: { id: string; name: string }[];
@@ -10,6 +11,10 @@ export type DeliverySettingsProps = {
   homeDeliveryEnabled: boolean;
   homeDeliveryFeeMxn: number;
   homeDeliveryNote: string;
+  // On the garment screens the settings are store-wide, not part of the garment being edited.
+  // Shown in full there, its own save button sat under "Crear prenda" and it wasn't clear which
+  // button saved what; compact shows one summary line and opens the form on "Cambiar".
+  compact?: boolean;
 };
 
 export function DeliverySettingsForm(props: DeliverySettingsProps) {
@@ -20,6 +25,7 @@ export function DeliverySettingsForm(props: DeliverySettingsProps) {
   const [homeNote, setHomeNote] = useState(props.homeDeliveryNote);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
+  const [expanded, setExpanded] = useState(!props.compact);
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -27,8 +33,26 @@ export function DeliverySettingsForm(props: DeliverySettingsProps) {
     setMessage(null);
     const result = await saveDeliverySettings({ pointIds, homeDelivery, homeFee, homeNote });
     setMessage(result.ok ? { ok: true, text: "Entregas guardadas." } : { ok: false, text: result.error });
-    if (result.ok) router.refresh();
+    if (result.ok) {
+      router.refresh();
+      if (props.compact) setExpanded(false);
+    }
     setBusy(false);
+  }
+
+  if (!expanded) {
+    const savedPoints = props.points.filter((point) => props.selectedPointIds.includes(point.id)).map((point) => point.name);
+    const parts = [...savedPoints, ...(props.homeDeliveryEnabled ? ["envío a domicilio"] : [])];
+    return (
+      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 border border-stone-200 bg-white px-4 py-3 text-sm">
+        <p className="min-w-0 text-stone-700">
+          <span className="text-stone-500">Entregas (para todas tus prendas): </span>
+          {parts.length ? parts.join(", ") : "se acuerdan por WhatsApp"}
+        </p>
+        <button type="button" onClick={() => setExpanded(true)} className="min-h-11 shrink-0 text-xs uppercase tracking-[0.12em] text-stone-700 underline underline-offset-4">Cambiar</button>
+        {message?.ok && <p role="status" className="w-full text-sm text-pine">{message.text}</p>}
+      </div>
+    );
   }
 
   return (
@@ -67,7 +91,10 @@ export function DeliverySettingsForm(props: DeliverySettingsProps) {
           </div>
         )}
       </fieldset>
-      <button type="submit" disabled={busy} className="min-h-12 bg-pine px-6 font-condensed text-base font-bold uppercase text-white disabled:opacity-60">{busy ? "Guardando…" : "Guardar entregas"}</button>
+      <div className="flex flex-wrap items-center gap-4">
+        <button type="submit" disabled={busy} className={PRIMARY_BUTTON_CLASS}>{busy ? "Guardando…" : "Guardar entregas"}</button>
+        {props.compact && <button type="button" onClick={() => setExpanded(false)} className="min-h-11 text-xs uppercase tracking-[0.12em] text-stone-600 underline underline-offset-4">Cancelar</button>}
+      </div>
       {message && <p role={message.ok ? "status" : "alert"} className={`text-sm ${message.ok ? "text-pine" : "text-red-700"}`}>{message.text}</p>}
     </form>
   );

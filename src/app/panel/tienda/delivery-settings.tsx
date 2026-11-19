@@ -3,7 +3,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 // Loads the seller's delivery options and renders the shared form. Server-side so each
 // screen that shows it (store settings, new garment, edit garment) needs just one line.
-export async function DeliverySettings({ sellerId }: { sellerId: string }) {
+export async function DeliverySettings({ sellerId, compact = false }: { sellerId: string; compact?: boolean }) {
   const supabase = await createSupabaseServerClient();
   if (!supabase) return null;
   const [{ data: points }, { data: mine }, { data: profile }] = await Promise.all([
@@ -13,6 +13,7 @@ export async function DeliverySettings({ sellerId }: { sellerId: string }) {
   ]);
   return (
     <DeliverySettingsForm
+      compact={compact}
       points={points ?? []}
       selectedPointIds={(mine ?? []).map((row) => row.point_id)}
       homeDeliveryEnabled={profile?.home_delivery_enabled ?? false}

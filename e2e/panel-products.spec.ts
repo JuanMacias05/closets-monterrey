@@ -21,14 +21,15 @@ test("seller creates, manages photos, sells, restores and deletes her product", 
 
   await loginAsSeller(page);
   await page.goto("/panel/prendas");
-  await page.getByRole("link", { name: "Agregar prenda" }).click();
+  await page.getByRole("link", { name: "Subir prenda", exact: true }).click();
   await page.getByLabel("Nombre", { exact: true }).fill("Prenda de prueba E2E");
   await page.getByLabel("Descripción").fill("Descripción para probar la ficha de producto.");
   await page.getByLabel("Categoría").selectOption("tops");
   await page.getByLabel("Talla").selectOption("M");
   await page.getByLabel("Condición").selectOption("like_new");
   await page.getByLabel("Precio (MXN)").fill("350.00");
-  await page.getByRole("button", { name: "Crear prenda" }).click();
+  // No photos picked: the button says so, and the garment is saved as a draft.
+  await page.getByRole("button", { name: "Guardar como borrador" }).click();
   await expect(page).toHaveURL(/\/panel\/prendas\/[0-9a-f-]+$/);
   await expect(page.getByRole("heading", { name: "Fotos" })).toBeVisible();
   // No photo yet: the garment is a draft and stays out of the catalog.
@@ -72,4 +73,26 @@ test("seller creates, manages photos, sells, restores and deletes her product", 
   await expect(page).toHaveURL(/\/panel\/prendas$/);
   await expect(page.getByText("Prenda de prueba E2E", { exact: true })).toHaveCount(0);
   for (const url of publicPhotoUrls) expect((await request.get(url)).ok()).toBe(false);
+});
+
+// Photos are picked on the same screen as the details and go up right after the garment is
+// created, so it's published in one step instead of being saved first as a draft.
+test("seller publishes a new garment with its photos in one step", async ({ page }) => {
+  await loginAsSeller(page);
+  await page.goto("/panel/prendas/nueva");
+  await expect(page.getByText(/Entregas \(para todas tus prendas\)/)).toBeVisible();
+  await page.locator("#product-photos").setInputFiles(["e2e/fixtures/store-photo-800x600.jpg", "e2e/fixtures/store-photo.png"]);
+  await expect(page.getByAltText(/Foto \d por subir/)).toHaveCount(2);
+  await page.getByRole("button", { name: "Quitar" }).last().click();
+  await expect(page.getByAltText(/Foto \d por subir/)).toHaveCount(1);
+  await page.getByLabel("Nombre", { exact: true }).fill("Prenda con foto E2E");
+  await page.getByLabel("Precio (MXN)").fill("420");
+  await page.getByRole("button", { name: "Publicar prenda" }).click();
+  await expect(page).toHaveURL(/\/panel\/prendas\/[0-9a-f-]+$/);
+  await expect(page.getByText("Publicada en el catálogo.")).toBeVisible();
+  await expect(page.getByText("Principal", { exact: true })).toBeVisible();
+
+  page.once("dialog", (dialog) => dialog.accept());
+  await page.getByRole("button", { name: "Borrar prenda y fotos" }).click();
+  await expect(page).toHaveURL(/\/panel\/prendas$/);
 });

@@ -120,7 +120,7 @@ export default async function SellerReservationsPage({ searchParams }: { searchP
           ))}
         </nav>
       )}
-      {open.length === 0 ? <p className="py-6 text-sm text-stone-600">{activeGroup ? "No hay apartados abiertos con esta entrega." : "No tienes apartados abiertos."}</p> : <ul className="mt-5 space-y-4">{open.map(renderReservation)}</ul>}
+      {open.length === 0 ? <p className="py-6 text-sm text-stone-600">{activeGroup ? "No hay apartados abiertos con esta entrega." : "No tienes apartados abiertos. Cuando una clienta aparte una de tus prendas, aparece aquí para que confirmes su anticipo."}</p> : <ul className="mt-5 space-y-4">{open.map(renderReservation)}</ul>}
       {closed.length > 0 && (
         <details className="mt-8">
           <summary className="cursor-pointer py-3 text-sm font-medium text-stone-700">Historial ({closed.length})</summary>

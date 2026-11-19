@@ -31,8 +31,8 @@ export default async function StoreSettingsPage() {
     <section className="mx-auto max-w-2xl">
       <div className="mb-8 border-b border-stone-200 pb-5">
         <p className="text-[10px] uppercase tracking-[0.22em] text-stone-500">Tu tienda</p>
-        <h1 className="mt-2 font-serif text-3xl tracking-tight text-stone-900">Edita tu perfil</h1>
-        <p className="mt-3 text-sm leading-6 text-stone-600">El slug público no se edita en esta pantalla.</p>
+        <h1 className="mt-2 font-serif text-3xl tracking-tight text-stone-900">Edita tu tienda</h1>
+        <p className="mt-3 text-sm leading-6 text-stone-600">Tu nombre y tu foto salen en tu tienda y en cada prenda. El WhatsApp y la CLABE no son públicos: solo los ve quien te aparta una prenda (y la recolectora, tu WhatsApp, si lleva el pedido).</p>
       </div>
       <StoreSettingsForm
         sellerId={authData.user.id}

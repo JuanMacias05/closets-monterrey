@@ -41,7 +41,7 @@ test("admin can update her own store name, WhatsApp and valid CLABE", async ({ p
 
   await page.reload();
   await expect(page.getByLabel("Nombre de la tienda")).toHaveValue("Closet admin de prueba");
-  await expect(page.getByLabel("WhatsApp")).toHaveValue("+528112345678");
+  await expect(page.getByLabel("WhatsApp")).toHaveValue("+52 81 1234 5678");
   await expect(page.getByLabel("CLABE para recibir pagos")).toHaveValue("000000000000000000");
 
   await page.locator("#store-avatar").setInputFiles("e2e/fixtures/store-photo.png");

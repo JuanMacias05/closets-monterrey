@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { getProductImageUrl } from "@/features/products/public-images";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -28,13 +27,12 @@ export default async function EditProductPage({ params }: PageProps<"/panel/pren
 
   return (
     <section className="mx-auto max-w-3xl">
-      <Link href="/panel/prendas" className="text-xs uppercase tracking-[0.14em] text-stone-600 underline underline-offset-4">← Mis prendas</Link>
-      <div className="mb-7 mt-5 border-b border-stone-200 pb-5">
+      <div className="mb-6 border-b border-stone-200 pb-5">
         <p className="text-[10px] uppercase tracking-[0.22em] text-stone-500">Editar catálogo</p>
         <h1 className="mt-2 font-serif text-3xl tracking-tight text-stone-900">Edita tu prenda</h1>
       </div>
+      <div className="mb-8"><DeliverySettings sellerId={user.id} compact /></div>
       <ProductEditor sellerId={user.id} product={product} />
-      <div className="mt-10"><DeliverySettings sellerId={user.id} /></div>
     </section>
   );
 }

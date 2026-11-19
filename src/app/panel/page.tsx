@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { PRIMARY_BUTTON_CLASS } from "@/components/panel/panel-styles";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 // Panel home. Two groups, so a seller only ever sees her own tools: "Mi tienda" for every
@@ -18,6 +19,7 @@ async function count(query: PromiseLike<{ count: number | null; error: unknown }
 export default async function PanelHomePage() {
   const supabase = await createSupabaseServerClient();
   let isAdmin = false;
+  let storeName = "";
   let stats: { available: Count; reserved: Count; sold: Count; toConfirm: Count; pendingSellers: Count; pendingCouriers: Count } = {
     available: null, reserved: null, sold: null, toConfirm: null, pendingSellers: null, pendingCouriers: null,
   };
@@ -26,8 +28,9 @@ export default async function PanelHomePage() {
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
       await supabase.rpc("release_expired_reservations");
-      const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).maybeSingle();
+      const { data: profile } = await supabase.from("profiles").select("role,store_name").eq("id", user.id).maybeSingle();
       isAdmin = profile?.role === "admin";
+      storeName = profile?.store_name ?? "";
       const ownProducts = (status: string) => supabase.from("products").select("id", { count: "exact", head: true })
         .eq("seller_id", user.id).eq("sale_status", status);
       const [available, reserved, sold, toConfirm, pendingSellers, pendingCouriers] = await Promise.all([
@@ -47,14 +50,15 @@ export default async function PanelHomePage() {
     <div className="space-y-10">
       <section className="flex flex-col gap-5 border-b border-stone-200 pb-8 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="font-serif text-3xl tracking-tight text-stone-900">Tu panel</h1>
+          <p className="text-[10px] uppercase tracking-[0.22em] text-stone-500">{isAdmin ? "Administración" : "Panel de vendedora"}</p>
+          <h1 className="mt-2 font-serif text-3xl tracking-tight text-stone-900">{storeName || "Tu panel"}</h1>
           <p className="mt-2 max-w-xl text-sm leading-6 text-stone-600">
             {isAdmin
               ? "Sube y administra tus prendas, revisa tus apartados y aprueba cuentas nuevas."
               : "Sube y administra tus prendas, revisa tus apartados y edita tu tienda."}
           </p>
         </div>
-        <Link href="/panel/prendas/nueva" className="inline-flex min-h-12 shrink-0 items-center justify-center gap-2 bg-pine px-6 font-condensed text-base font-bold uppercase text-white transition-colors hover:bg-pine-light">
+        <Link href="/panel/prendas/nueva" className={`${PRIMARY_BUTTON_CLASS} shrink-0`}>
           <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
           Subir prenda
         </Link>

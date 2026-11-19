@@ -64,6 +64,7 @@ export const getSellerProducts = cache(async (sellerSlug: string, options: { exc
   if (process.env.CATALOG_DEMO_MODE === "true") {
     return demoProducts
       .filter((product) => product.seller.slug === sellerSlug && product.id !== options.excludeId)
+      .sort((left, right) => left.sale_status.localeCompare(right.sale_status))
       .slice(0, limit);
   }
 
@@ -87,7 +88,9 @@ export const getSellerProducts = cache(async (sellerSlug: string, options: { exc
     .eq("publication_status", "published")
     .eq("hidden_by_admin", false);
   if (options.excludeId) query = query.neq("id", options.excludeId);
-  const { data, error } = await query.order("created_at", { ascending: false }).limit(limit);
+  // Available first, sold last ("available" < "reserved" < "sold"), the same order as the
+  // catalog: a storefront that opened on sold garments read as an empty store.
+  const { data, error } = await query.order("sale_status", { ascending: true }).order("created_at", { ascending: false }).limit(limit);
 
   if (error) return [];
   return (data ?? [])

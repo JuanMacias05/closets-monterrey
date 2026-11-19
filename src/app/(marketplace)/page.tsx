@@ -32,7 +32,7 @@ export default async function HomePage({
   const showingNewOnly = isPlainHome && (await countNewArrivals(newSince)) >= NEW_ARRIVALS_MINIMUM;
   const filters = showingNewOnly ? { ...parsed, newSince } : parsed;
   const [result, viewer, shop, deliveryPoints, couriers] = await Promise.all([getCatalogPage(filters), getViewer(), getShopState(), getDeliveryPoints(), getCourierDirectory()]);
-  const heading = filters.audience === "women" ? "Mujer" : filters.audience === "men" ? "Hombre" : filters.showAll ? "Todo el catálogo" : "Nuevo en tienda";
+  const heading = filters.audience === "women" ? "Mujer" : filters.audience === "men" ? "Hombre" : filters.showAll ? "Todo el catálogo" : showingNewOnly ? "Nuevo en tienda" : "Prendas en tienda";
   const viewerId = viewer.kind === "guest" ? undefined : viewer.userId;
 
   return (

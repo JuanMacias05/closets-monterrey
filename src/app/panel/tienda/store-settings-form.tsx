@@ -2,11 +2,20 @@
 
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { prepareProductImage } from "@/features/products/product-image-upload";
 import { buildStoreAvatarStoragePath } from "@/features/store/clabe";
 import { saveStoreSettings } from "@/app/panel/tienda/actions";
+import { PRIMARY_BUTTON_CLASS } from "@/components/panel/panel-styles";
+import { formatNationalMX } from "@/features/auth/phone-number";
+
+// Shown with spaces (+52 81 1234 5678) instead of the stored +528112345678; saving normalizes
+// it back, so the seller can read and check her own number at a glance.
+function displayWhatsapp(e164: string) {
+  const match = /^\+52(\d{10})$/.exec(e164);
+  return match ? `+52 ${formatNationalMX(match[1])}` : e164;
+}
 
 type Props = {
   sellerId: string;
@@ -24,12 +33,23 @@ export function StoreSettingsForm(props: Props) {
   const [avatarPath, setAvatarPath] = useState(props.avatarPath);
   const [avatarUrl, setAvatarUrl] = useState(props.avatarUrl);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
-  const [whatsapp, setWhatsapp] = useState(props.whatsapp);
+  const [whatsapp, setWhatsapp] = useState(displayWhatsapp(props.whatsapp));
   const [clabe, setClabe] = useState(props.clabe);
   const [depositPercent, setDepositPercent] = useState(props.depositPercent);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const [busy, setBusy] = useState(false);
+  // Local preview of a newly picked photo, so the seller sees it before saving.
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const previewRef = useRef<string | null>(null);
+  useEffect(() => () => { if (previewRef.current) URL.revokeObjectURL(previewRef.current); }, []);
+  function pickAvatar(file: File | null) {
+    if (previewRef.current) URL.revokeObjectURL(previewRef.current);
+    previewRef.current = file ? URL.createObjectURL(file) : null;
+    setPreviewUrl(previewRef.current);
+    setAvatarFile(file);
+  }
+  const shownAvatar = previewUrl ?? avatarUrl;
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -65,7 +85,7 @@ export function StoreSettingsForm(props: Props) {
 
       setAvatarPath(nextAvatarPath);
       setAvatarUrl(nextAvatarPath ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/product-images/${nextAvatarPath}` : null);
-      setAvatarFile(null);
+      pickAvatar(null);
       setSaved(true);
       router.refresh();
     } catch (cause) {
@@ -83,23 +103,28 @@ export function StoreSettingsForm(props: Props) {
   return (
     <form onSubmit={handleSubmit} className="space-y-7">
       <div className="flex items-center gap-4">
-        {avatarUrl ? (
-          <Image src={avatarUrl} alt={`Foto de ${storeName}`} width={80} height={80} className="size-20 rounded-full object-cover" />
+        {shownAvatar ? (
+          // unoptimized: the photo is already resized on upload, and a blob: preview can't go
+          // through the image optimizer at all.
+          <Image src={shownAvatar} alt={`Foto de ${storeName}`} width={80} height={80} unoptimized className="size-20 shrink-0 rounded-full object-cover" />
         ) : (
-          <div aria-label="Sin foto de tienda" className="size-20 rounded-full bg-stone-200" />
+          <div aria-label="Sin foto de tienda" className="flex size-20 shrink-0 items-center justify-center rounded-full bg-stone-200 font-serif text-2xl text-stone-500">{storeName.trim().charAt(0).toUpperCase()}</div>
         )}
         <div className="min-w-0 flex-1">
-          <label htmlFor="store-avatar" className="block text-xs uppercase tracking-[0.16em] text-stone-600">Foto de tienda</label>
-          <input
-            id="store-avatar"
-            type="file"
-            accept="image/*"
-            onChange={(event) => setAvatarFile(event.target.files?.[0] ?? null)}
-            className="mt-2 block w-full text-sm text-stone-600 file:mr-3 file:min-h-10 file:border-0 file:bg-[#eee4d8] file:px-3 file:text-xs file:uppercase file:tracking-wider"
-          />
-          {avatarPath && !avatarFile && (
-            <button type="button" onClick={() => { setAvatarPath(null); setAvatarUrl(null); }} className="mt-2 text-xs text-stone-600 underline underline-offset-4">Quitar foto</button>
-          )}
+          <p className="text-xs uppercase tracking-[0.16em] text-stone-600">Foto de tienda</p>
+          <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1">
+            {/* The native file input shows the browser's own text ("Choose file / No file chosen",
+                often in English), so it's hidden and this label opens it. */}
+            <label htmlFor="store-avatar" className="inline-flex min-h-11 cursor-pointer items-center border border-stone-400 bg-white px-4 text-xs uppercase tracking-[0.12em] text-stone-800 hover:border-stone-800">
+              {shownAvatar ? "Cambiar foto" : "Elegir foto"}
+            </label>
+            <input id="store-avatar" type="file" accept="image/*" onChange={(event) => { pickAvatar(event.target.files?.[0] ?? null); event.target.value = ""; }} className="sr-only" />
+            {avatarFile && <button type="button" onClick={() => pickAvatar(null)} className="min-h-11 text-xs text-stone-600 underline underline-offset-4">Cancelar</button>}
+            {avatarPath && !avatarFile && (
+              <button type="button" onClick={() => { setAvatarPath(null); setAvatarUrl(null); }} className="min-h-11 text-xs text-stone-600 underline underline-offset-4">Quitar foto</button>
+            )}
+          </div>
+          {avatarFile && <p className="mt-1 text-xs text-stone-500">Se guarda al dar “Guardar tienda”.</p>}
         </div>
       </div>
 
@@ -127,7 +152,7 @@ export function StoreSettingsForm(props: Props) {
 
       {error && <p role="alert" className="text-sm text-red-700">{error}</p>}
       {saved && <p role="status" className="text-sm text-green-800">Tienda guardada.</p>}
-      <button type="submit" disabled={busy} className="min-h-12 w-full bg-stone-900 px-5 text-xs uppercase tracking-[0.18em] text-white transition-colors hover:bg-stone-700 disabled:cursor-wait disabled:opacity-60">
+      <button type="submit" disabled={busy} className={`${PRIMARY_BUTTON_CLASS} w-full`}>
         {busy ? "Guardando…" : "Guardar tienda"}
       </button>
     </form>
