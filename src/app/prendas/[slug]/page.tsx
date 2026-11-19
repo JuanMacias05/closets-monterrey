@@ -4,6 +4,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ProductGallery } from "@/components/products/product-gallery";
 import { ProductCard } from "@/components/catalog/product-card";
+import { StoreFooter } from "@/components/store/store-footer";
 import { StoreHeader } from "@/components/store/store-header";
 import { AddToCartButton } from "@/components/shop/add-to-cart-button";
 import { FavoriteButton } from "@/components/shop/favorite-button";
@@ -173,7 +174,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
         </section>
       )}
 
-      <footer className="mt-14 border-t border-stone-200 py-6 text-[10px] uppercase tracking-[0.18em] text-stone-500">Monterrey, Nuevo León · Moda de segunda mano</footer>
+      <StoreFooter className="mt-14" />
     </main>
     </>
   );

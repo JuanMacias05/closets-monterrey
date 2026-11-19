@@ -47,7 +47,10 @@ export default async function SignUpPage({ searchParams }: { searchParams: Promi
             <PhoneLoginForm mode="buyer-signup" nextPath={nextPath} />
           </>
         )}
-        <p className="mt-7 border-t border-stone-100 pt-5 text-center text-sm leading-5 text-stone-600">
+        <p className="mt-5 text-center text-xs leading-5 text-stone-500">
+          Al crear tu cuenta aceptas el <Link href="/privacidad" className="underline underline-offset-4">Aviso de privacidad</Link>.
+        </p>
+        <p className="mt-5 border-t border-stone-100 pt-5 text-center text-sm leading-5 text-stone-600">
           ¿Ya tienes cuenta? <Link href={nextPath ? `/login?next=${encodeURIComponent(nextPath)}` : "/login"} className="font-medium text-pine underline underline-offset-4">Iniciar sesión</Link>
         </p>
       </section>

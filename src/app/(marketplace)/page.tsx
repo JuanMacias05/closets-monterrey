@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { CatalogFiltersPanel } from "@/components/catalog/catalog-filters";
 import { CatalogGrid } from "@/components/catalog/catalog-grid";
+import { StoreFooter } from "@/components/store/store-footer";
 import { StoreHeader } from "@/components/store/store-header";
 import { CourierCard } from "@/components/couriers/courier-card";
 import { getCourierDirectory } from "@/features/couriers/directory";
@@ -70,9 +71,7 @@ export default async function HomePage({
         </Link>
       )}
 
-      <footer className="mt-10 border-t border-stone-200 py-6 text-[10px] uppercase tracking-[0.18em] text-stone-500">
-        Monterrey, Nuevo León · Moda de segunda mano
-      </footer>
+      <StoreFooter className="mt-10" />
     </main>
     </>
   );
