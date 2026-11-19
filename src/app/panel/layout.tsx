@@ -32,11 +32,16 @@ export default async function PanelLayout({ children }: { children: ReactNode })
 
   return (
     <div className="min-h-screen bg-[#faf9f6]">
-      <header className="flex items-center justify-between border-b border-stone-200 bg-white px-4 py-4 sm:px-8">
-        <Link href="/" className="font-serif text-xl tracking-tight text-stone-900">Closets Monterrey</Link>
-        <form action={signOutFromPanel}>
-          <button type="submit" className="min-h-10 px-3 text-xs uppercase tracking-[0.15em] text-stone-600 underline underline-offset-4">Cerrar sesión</button>
-        </form>
+      {/* The logo truncates and the actions never shrink, so "Cerrar sesión" can't be pushed off
+          the right edge on a narrow phone (it used to show as "CERR"). */}
+      <header className="flex items-center justify-between gap-3 border-b border-stone-200 bg-white px-4 py-3 sm:px-8 sm:py-4">
+        <Link href="/panel" className="min-w-0 truncate font-serif text-lg tracking-tight text-stone-900 sm:text-xl">Closets Monterrey</Link>
+        <nav aria-label="Cuenta" className="flex shrink-0 items-center gap-1 sm:gap-3">
+          <Link href="/" className="inline-flex min-h-11 items-center whitespace-nowrap px-2 text-xs uppercase tracking-[0.12em] text-stone-700 underline-offset-4 hover:underline">Ver tienda</Link>
+          <form action={signOutFromPanel}>
+            <button type="submit" className="min-h-11 whitespace-nowrap px-2 text-xs uppercase tracking-[0.12em] text-stone-600 underline underline-offset-4">Cerrar sesión</button>
+          </form>
+        </nav>
       </header>
       <main className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-8 sm:py-12">
         <p className="text-[10px] uppercase tracking-[0.22em] text-stone-500">{profile.role === "admin" ? "Administración" : "Panel de vendedora"}</p>

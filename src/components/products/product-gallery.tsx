@@ -64,10 +64,16 @@ export function ProductGallery({ productName, images }: { productName: string; i
 
   return (
     <section aria-label="Galería de fotos" className="min-w-0">
-      <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_72px] sm:gap-4">
+      {/* Thumbnails go in the narrow first column and the photo in the wide one. They used to be
+          the other way round: the selected thumbnail filled the page, the real photo was a 72 px
+          sliver, and the second thumbnail sat below the fold, so a 2-photo garment looked like
+          it had one. With one photo there's no thumbnail column at all. */}
+      <div className={`grid gap-3 sm:gap-4 ${photos.length > 1 ? "sm:grid-cols-[72px_minmax(0,1fr)]" : ""}`}>
         <div
           data-testid="product-gallery-stage"
-          className="group relative aspect-[4/5] touch-pan-y overflow-hidden bg-stone-100 select-none sm:order-2"
+          // On a laptop the photo is capped at the viewport height (minus the sticky header) and
+          // keeps its 4:5 shape by narrowing, so it's never cut off at the bottom of the screen.
+          className="group relative aspect-[4/5] w-full touch-pan-y overflow-hidden bg-stone-100 select-none sm:order-2 lg:h-[calc(100dvh-13rem)] lg:w-auto lg:max-w-full lg:justify-self-center"
           onPointerDown={onPointerDown}
           onPointerUp={onPointerUp}
           onPointerCancel={() => { pointerStart.current = null; }}
@@ -106,7 +112,7 @@ export function ProductGallery({ productName, images }: { productName: string; i
         </div>
 
         {photos.length > 1 && (
-          <div aria-label="Elegir foto" className="order-2 flex gap-2 overflow-x-auto sm:order-1 sm:flex-col sm:overflow-visible">
+          <div aria-label="Elegir foto" className="order-2 flex gap-2 overflow-x-auto sm:order-1 sm:flex-col sm:overflow-x-visible sm:overflow-y-auto lg:max-h-[calc(100dvh-13rem)]">
             {photos.map((photo, index) => (
               <button
                 key={photo.id}

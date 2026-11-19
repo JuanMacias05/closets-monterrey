@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { normalizePhoneE164 } from "@/features/auth/phone-number";
+import { formatNationalMX, nationalDigitsMX, normalizePhoneE164 } from "@/features/auth/phone-number";
 
 describe("normalizePhoneE164", () => {
   it("keeps a valid international number and removes display separators", () => {
@@ -18,4 +18,24 @@ describe("normalizePhoneE164", () => {
     "rejects an invalid E.164 number: %s",
     (phone) => expect(normalizePhoneE164(phone)).toBeNull(),
   );
+});
+
+describe("nationalDigitsMX", () => {
+  it.each([
+    ["8123456789", "8123456789"],
+    ["81 2345 6789", "8123456789"],
+    ["+52 81 2345 6789", "8123456789"],
+    ["528123456789", "8123456789"],
+    ["81234567890000", "8123456789"],
+    ["81-23", "8123"],
+  ])("keeps the national digits of %s", (input, expected) => expect(nationalDigitsMX(input)).toBe(expected));
+});
+
+describe("formatNationalMX", () => {
+  it.each([
+    ["", ""],
+    ["81", "81"],
+    ["8123", "81 23"],
+    ["8123456789", "81 2345 6789"],
+  ])("formats %s as %s", (input, expected) => expect(formatNationalMX(input)).toBe(expected));
 });

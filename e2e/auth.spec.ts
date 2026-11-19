@@ -33,7 +33,7 @@ test("redirects a visitor without a session to phone login", async ({ page }) =>
   await page.goto("/panel");
 
   await expect(page).toHaveURL(/\/login$/);
-  await expect(page.getByRole("heading", { name: "Bienvenida a tu closet." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Entra a tu clóset." })).toBeVisible();
 });
 
 test("allows an approved admin to enter the panel with a local test OTP", async ({ page }) => {

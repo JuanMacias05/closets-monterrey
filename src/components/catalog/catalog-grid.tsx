@@ -25,7 +25,7 @@ export function CatalogGrid({ result, filters, viewerId, favoriteIds, signedIn =
     return (
       <div className="border-y border-stone-200 py-20 text-center">
         <p className="font-serif text-2xl text-stone-800">Muy pronto, nuevas prendas.</p>
-        <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-stone-600">Nuestras vendedoras están preparando sus closets. Vuelve en unos días para ver lo nuevo.</p>
+        <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-stone-600">Nuestras vendedoras están preparando sus clósets. Vuelve en unos días para ver lo nuevo.</p>
       </div>
     );
   }
@@ -46,7 +46,7 @@ export function CatalogGrid({ result, filters, viewerId, favoriteIds, signedIn =
 
   return (
     <>
-      <div className="flex items-center justify-between py-5 text-xs text-stone-500">
+      <div className="flex items-center justify-between py-3 text-xs text-stone-500">
         <p>{firstItem}–{lastItem} de {result.total} prendas</p>
         <p className="hidden sm:block">Piezas únicas · Monterrey</p>
       </div>

@@ -112,7 +112,8 @@ export default async function ProductDetailPage({ params }: PageProps) {
       <div className="grid gap-8 lg:grid-cols-[minmax(0,1.25fr)_minmax(320px,0.75fr)] lg:gap-16 xl:gap-24">
         <ProductGallery productName={product.name} images={product.images} />
 
-        <section className="lg:sticky lg:top-8 lg:h-fit lg:py-2">
+        {/* top-32 clears the sticky store header; top-8 slid the column under it. */}
+        <section className="lg:sticky lg:top-32 lg:h-fit lg:py-2">
           <div className="flex flex-wrap items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-stone-500">
             <span>{category}</span><span aria-hidden="true">·</span><span>{conditionLabels[product.condition]}</span>
           </div>

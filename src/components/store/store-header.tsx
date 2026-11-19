@@ -53,12 +53,14 @@ export async function StoreHeader({ activeAudience }: { activeAudience?: Catalog
       </header>
 
       <p className="bg-pine px-4 py-2 text-center font-condensed text-sm font-bold uppercase tracking-[0.04em] text-white sm:text-base">
-        Moda circular · Prendas únicas de closets de Monterrey
+        Moda circular · Prendas únicas de clósets de Monterrey
       </p>
     </div>
   );
 }
 
+// Only the two actions a seller reaches for while browsing her own catalog. Everything else
+// (her list, reservations, the admin pages) lives in the panel, so the bar stays one line.
 function SellerBar({ storeName, isAdmin }: { storeName: string; isAdmin: boolean }) {
   return (
     <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 bg-pine px-3 py-1.5 font-condensed text-sm font-bold uppercase tracking-[0.03em] text-white sm:px-6">
@@ -71,12 +73,6 @@ function SellerBar({ storeName, isAdmin }: { storeName: string; isAdmin: boolean
           <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
           Agregar prenda
         </Link>
-        <Link href="/panel/prendas" className="flex min-h-9 items-center px-3 hover:underline">Mis prendas</Link>
-        <Link href="/panel/apartados" className="flex min-h-9 items-center px-3 hover:underline">Apartados</Link>
-        {isAdmin && <Link href="/panel/admin/vendedoras" className="flex min-h-9 items-center px-3 hover:underline">Vendedoras</Link>}
-        {isAdmin && <Link href="/panel/admin/clientas" className="flex min-h-9 items-center px-3 hover:underline">Clientas</Link>}
-        {isAdmin && <Link href="/panel/admin/recolectoras" className="flex min-h-9 items-center px-3 hover:underline">Recolectoras</Link>}
-        {isAdmin && <Link href="/panel/admin/prendas" className="flex min-h-9 items-center px-3 hover:underline">Todas las prendas</Link>}
         <Link href="/panel" className="flex min-h-9 items-center px-3 hover:underline">Panel</Link>
       </nav>
     </div>

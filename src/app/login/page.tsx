@@ -11,16 +11,19 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
   return (
     <main className="flex min-h-screen items-center justify-center bg-[#faf9f6] px-4 py-12">
       <section className="w-full max-w-md border border-stone-200 bg-white px-6 py-9 sm:px-10 sm:py-12">
-        <Link href="/" className="font-serif text-lg tracking-tight text-stone-800">Closets Monterrey</Link>
-        <p className="mt-10 text-[11px] uppercase tracking-[0.24em] text-stone-600">Iniciar sesión</p>
-        <h1 className="mt-3 font-serif text-3xl tracking-tight text-stone-900">Bienvenida a tu closet.</h1>
-        <p className="mt-3 text-sm leading-6 text-stone-600">Entra con el celular de tu cuenta; te mandamos un código por SMS.</p>
-        <PhoneLoginForm nextPath={nextPath} />
-        <div className="mt-7 space-y-2 border-t border-stone-100 pt-5 text-center text-sm leading-5 text-stone-600">
-          <p>¿Aún no tienes cuenta? <Link href={signUpHref} className="font-medium text-pine underline underline-offset-4">Crear cuenta</Link></p>
-          <p>¿Quieres vender? <Link href="/registro?tipo=vendedora" className="font-medium text-pine underline underline-offset-4">Crear cuenta de vendedora</Link></p>
-          <p>¿Haces entregas? <Link href="/registro?tipo=recolectora" className="font-medium text-pine underline underline-offset-4">Ser recolectora</Link></p>
+        <div className="flex items-center justify-between gap-4">
+          <Link href="/" className="whitespace-nowrap font-serif text-lg tracking-tight text-stone-800">Closets Monterrey</Link>
+          <Link href="/" aria-label="Volver a la tienda" className="inline-flex min-h-11 items-center whitespace-nowrap text-xs uppercase tracking-[0.14em] text-stone-600 underline-offset-4 hover:underline">
+            ← <span className="ml-1 sm:hidden">Tienda</span><span className="ml-1 hidden sm:inline">Volver a la tienda</span>
+          </Link>
         </div>
+        <h1 className="mt-10 font-serif text-3xl tracking-tight text-stone-900">Entra a tu clóset.</h1>
+        <p className="mt-3 text-sm leading-6 text-stone-600">Escribe tu celular y te mandamos un código por SMS.</p>
+        <PhoneLoginForm nextPath={nextPath} />
+        {/* One sign-up link: /registro is where a shopper, seller or courier picks her account type. */}
+        <p className="mt-7 border-t border-stone-100 pt-5 text-center text-sm leading-5 text-stone-600">
+          ¿No tienes cuenta? <Link href={signUpHref} className="font-medium text-pine underline underline-offset-4">Crear cuenta</Link>
+        </p>
       </section>
     </main>
   );

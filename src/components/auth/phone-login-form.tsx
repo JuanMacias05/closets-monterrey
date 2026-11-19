@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { normalizePhoneE164 } from "@/features/auth/phone-number";
+import { formatNationalMX, nationalDigitsMX, normalizePhoneE164 } from "@/features/auth/phone-number";
 import { isValidFacebookUrl, normalizeFacebookUrl } from "@/features/shop/facebook-url";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
@@ -10,6 +10,11 @@ import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 // "buyer-signup" creates a shopper (name + Facebook link, no approval needed).
 // "seller-signup" creates a pending seller who can't sell until an admin approves her from
 // /panel/admin/vendedoras.
+// Every SMS costs money (Twilio bills each code), so a code can't be re-sent until this has
+// passed. Supabase has its own server-side limit; this one keeps an impatient double tap from
+// reaching it.
+const RESEND_COOLDOWN_SECONDS = 60;
+
 export function PhoneLoginForm({ mode = "login", nextPath }: { mode?: "login" | "buyer-signup" | "seller-signup" | "courier-signup"; nextPath?: string }) {
   const router = useRouter();
   const [phoneInput, setPhoneInput] = useState("");
@@ -21,18 +26,35 @@ export function PhoneLoginForm({ mode = "login", nextPath }: { mode?: "login" | 
   const [step, setStep] = useState<"phone" | "otp">("phone");
   const [error, setError] = useState<string | null>(null);
   const [isBusy, setIsBusy] = useState(false);
+  const [lastSent, setLastSent] = useState<{ phone: string; at: number } | null>(null);
+  const [now, setNow] = useState(() => Date.now());
 
-  async function requestCode(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  useEffect(() => {
+    if (!lastSent) return;
+    const timer = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, [lastSent]);
+
+  function cooldownLeft(forPhone: string) {
+    if (!lastSent || lastSent.phone !== forPhone) return 0;
+    return Math.max(0, RESEND_COOLDOWN_SECONDS - Math.floor((now - lastSent.at) / 1000));
+  }
+
+  async function requestCode(event?: React.FormEvent<HTMLFormElement>) {
+    event?.preventDefault();
     setError(null);
-    const normalizedPhone = normalizePhoneE164(phoneInput);
+    const normalizedPhone = phoneInput.length === 10 ? normalizePhoneE164(phoneInput) : null;
     if (!normalizedPhone) {
-      setError("Escribe el celular con código de país, por ejemplo +52 81 2345 6789.");
+      setError("Escribe los 10 dígitos de tu celular, por ejemplo 81 2345 6789.");
+      return;
+    }
+    if (cooldownLeft(normalizedPhone) > 0) {
+      setStep("otp");
       return;
     }
     const trimmedStoreName = storeName.trim();
     if (mode === "seller-signup" && (trimmedStoreName.length === 0 || trimmedStoreName.length > 60)) {
-      setError("Escribe el nombre de tu closet (máximo 60 caracteres).");
+      setError("Escribe el nombre de tu clóset (máximo 60 caracteres).");
       return;
     }
     const trimmedFullName = fullName.trim();
@@ -77,6 +99,8 @@ export function PhoneLoginForm({ mode = "login", nextPath }: { mode?: "login" | 
         return;
       }
       setPhone(normalizedPhone);
+      setLastSent({ phone: normalizedPhone, at: Date.now() });
+      setNow(Date.now());
       setStep("otp");
     } catch {
       setError("No pudimos conectar con el servicio de autenticación. Inténtalo de nuevo.");
@@ -150,12 +174,12 @@ export function PhoneLoginForm({ mode = "login", nextPath }: { mode?: "login" | 
           )}
           {mode === "seller-signup" && (
             <>
-              <label htmlFor="store-name" className="block text-xs uppercase tracking-[0.16em] text-stone-600">Nombre de tu closet</label>
+              <label htmlFor="store-name" className="block text-xs uppercase tracking-[0.16em] text-stone-600">Nombre de tu clóset</label>
               <input
                 id="store-name"
                 type="text"
                 autoComplete="organization"
-                placeholder="El closet de Ana"
+                placeholder="El clóset de Ana"
                 value={storeName}
                 onChange={(event) => setStoreName(event.target.value)}
                 maxLength={60}
@@ -165,17 +189,22 @@ export function PhoneLoginForm({ mode = "login", nextPath }: { mode?: "login" | 
             </>
           )}
           <label htmlFor="phone" className="block text-xs uppercase tracking-[0.16em] text-stone-600">Número de celular</label>
-          <input
-            id="phone"
-            type="tel"
-            autoComplete="tel"
-            inputMode="tel"
-            placeholder="+52 81 2345 6789"
-            value={phoneInput}
-            onChange={(event) => setPhoneInput(event.target.value)}
-            required
-            className="min-h-12 w-full border-b border-stone-400 bg-transparent px-1 text-base outline-none focus:border-stone-900"
-          />
+          <div className="flex items-center border-b border-stone-400 focus-within:border-stone-900">
+            <span aria-hidden="true" className="select-none pl-1 pr-2 text-base text-stone-500">+52</span>
+            <input
+              id="phone"
+              type="tel"
+              autoComplete="tel-national"
+              inputMode="numeric"
+              placeholder="81 2345 6789"
+              aria-describedby="phone-hint"
+              value={formatNationalMX(phoneInput)}
+              onChange={(event) => setPhoneInput(nationalDigitsMX(event.target.value))}
+              required
+              className="min-h-12 w-full min-w-0 bg-transparent px-1 text-base tracking-wide outline-none"
+            />
+          </div>
+          <p id="phone-hint" className="-mt-3 text-xs text-stone-500">Celular de México, 10 dígitos.</p>
           <button type="submit" disabled={isBusy} className="min-h-12 w-full bg-pine px-5 font-condensed text-base font-bold uppercase text-white transition-colors hover:bg-pine-light disabled:cursor-wait disabled:opacity-60">
             {isBusy ? "Enviando código…" : mode === "login" ? "Enviar código" : "Crear cuenta"}
           </button>
@@ -200,9 +229,14 @@ export function PhoneLoginForm({ mode = "login", nextPath }: { mode?: "login" | 
           <button type="submit" disabled={isBusy} className="min-h-12 w-full bg-pine px-5 font-condensed text-base font-bold uppercase text-white transition-colors hover:bg-pine-light disabled:cursor-wait disabled:opacity-60">
             {isBusy ? "Verificando…" : "Verificar código"}
           </button>
-          <button type="button" onClick={() => { setStep("phone"); setOtp(""); setError(null); }} className="min-h-11 w-full text-xs uppercase tracking-[0.14em] text-stone-600 underline underline-offset-4">
-            Cambiar número
-          </button>
+          <div className="flex gap-3">
+            <button type="button" onClick={() => { setStep("phone"); setOtp(""); setError(null); }} className="min-h-11 flex-1 text-xs uppercase tracking-[0.14em] text-stone-600 underline underline-offset-4">
+              Cambiar número
+            </button>
+            <button type="button" disabled={isBusy || cooldownLeft(phone) > 0} onClick={() => requestCode()} className="min-h-11 flex-1 text-xs uppercase tracking-[0.14em] text-stone-600 underline underline-offset-4 disabled:cursor-not-allowed disabled:no-underline disabled:opacity-60">
+              {cooldownLeft(phone) > 0 ? `Reenviar en ${cooldownLeft(phone)} s` : "Reenviar código"}
+            </button>
+          </div>
         </form>
       )}
 

@@ -13,9 +13,13 @@ test("renders the catalog and its product cards", async ({ page }) => {
 
 test("updates the shareable URL and results after filtering", async ({ page }) => {
   await page.goto("/");
-  await page.locator("#desktop-category").selectOption("dresses");
-  await page.getByRole("checkbox", { name: "Ocultar prendas vendidas" }).check();
-  await page.getByRole("button", { name: "Aplicar filtros" }).click();
+  await page.getByRole("button", { name: "Filtros" }).click();
+  const panel = page.getByRole("dialog", { name: "Filtrar prendas" });
+  await panel.locator("#filters-category").selectOption("dresses");
+  await expect(page).toHaveURL(/category=dresses/);
+  await panel.getByRole("checkbox", { name: "Ocultar prendas vendidas" }).check();
+  await panel.getByRole("button", { name: "Ver resultados" }).click();
+  await expect(panel).toHaveCount(0);
 
   await expect(page).toHaveURL(/category=dresses/);
   await expect(page).toHaveURL(/hideSold=1/);
@@ -35,9 +39,9 @@ test("opens the mobile filter drawer and keeps a two-column catalog grid", async
     return columns;
   }).toBe(2);
 
-  await page.getByRole("button", { name: "Filtros y orden" }).click();
+  await page.getByRole("button", { name: "Filtros" }).click();
   await expect(page.getByRole("dialog", { name: "Filtrar prendas" })).toBeVisible();
-  await page.locator("#mobile-category").selectOption("shoes");
+  await page.locator("#filters-category").selectOption("shoes");
   await page.getByRole("button", { name: "Ver resultados" }).click();
 
   await expect(page).toHaveURL(/category=shoes/);

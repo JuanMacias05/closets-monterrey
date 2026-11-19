@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   PRODUCT_CATEGORIES,
   PRODUCT_CONDITIONS,
@@ -77,43 +78,71 @@ function FilterFields({ filters, prefix, deliveryPoints }: { filters: CatalogFil
 
 export type DeliveryPointOption = { id: string; name: string };
 
+// One "Filtros" button opens a side panel on every screen size. The old open filter bar on
+// desktop pushed the first row of garments below the fold on a 1366×768 laptop. Changes
+// apply as they happen (the URL is the source of truth, so a filtered catalog stays
+// shareable); number fields wait a moment so typing "350" doesn't fire three navigations.
 export function CatalogFiltersPanel({ filters, deliveryPoints = [] }: { filters: CatalogFilters; deliveryPoints?: DeliveryPointOption[] }) {
   const [isOpen, setIsOpen] = useState(false);
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+  const formRef = useRef<HTMLFormElement>(null);
+  const typingTimer = useRef<number | undefined>(undefined);
+  const activeCount = [filters.category, filters.delivery, filters.size, filters.condition, filters.minPrice, filters.maxPrice, filters.hideSold || undefined, filters.sort !== "recent" ? filters.sort : undefined]
+    .filter((value) => value !== undefined && value !== null && value !== "").length;
+
+  useEffect(() => {
+    if (!isOpen) return;
+    function onKeyDown(event: KeyboardEvent) { if (event.key === "Escape") setIsOpen(false); }
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [isOpen]);
+
+  useEffect(() => () => window.clearTimeout(typingTimer.current), []);
+
+  function apply() {
+    const form = formRef.current;
+    if (!form) return;
+    const params = new URLSearchParams();
+    for (const [key, value] of new FormData(form)) {
+      if (typeof value === "string" && value !== "") params.set(key, value);
+    }
+    if (params.get("sort") === "recent") params.delete("sort");
+    const query = params.toString();
+    startTransition(() => router.replace(query ? `/?${query}` : "/", { scroll: false }));
+  }
+
+  function onChange(event: React.FormEvent<HTMLFormElement>) {
+    window.clearTimeout(typingTimer.current);
+    const target = event.target as HTMLInputElement;
+    if (target.type === "number") typingTimer.current = window.setTimeout(apply, 500);
+    else apply();
+  }
 
   return (
     <>
-      <div className="hidden border-y border-stone-200 py-5 lg:block">
-        <form action="/" method="get" className="grid grid-cols-4 items-end gap-x-6 gap-y-5 xl:grid-cols-8">
-          <FilterFields filters={filters} prefix="desktop" deliveryPoints={deliveryPoints} />
-          <div className="col-span-full flex items-center justify-end gap-5">
-            <Link href="/" className="text-xs uppercase tracking-[0.16em] text-stone-500 underline-offset-4 hover:underline">Limpiar filtros</Link>
-            <button type="submit" className="min-h-11 bg-pine px-6 font-condensed text-base font-bold uppercase text-white transition-colors hover:bg-pine-light">Aplicar filtros</button>
-          </div>
-        </form>
-      </div>
-
-      <div className="border-y border-stone-200 py-4 lg:hidden">
-        <button type="button" aria-expanded={isOpen} aria-controls="mobile-catalog-filters" onClick={() => setIsOpen(true)} className="flex min-h-11 w-full items-center justify-between text-xs uppercase tracking-[0.18em] text-stone-800">
-          <span>Filtros y orden</span>
-          <span aria-hidden="true" className="text-lg">＋</span>
-        </button>
-      </div>
+      <button type="button" aria-expanded={isOpen} aria-controls="catalog-filters" onClick={() => setIsOpen(true)} className="inline-flex min-h-11 shrink-0 items-center gap-2 border border-stone-300 px-4 text-xs uppercase tracking-[0.18em] text-stone-800 hover:border-stone-800">
+        <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M4 6h16M7 12h10M10 18h4" /></svg>
+        Filtros{activeCount > 0 && <span className="grid min-w-5 place-items-center rounded-full bg-pine px-1 text-[11px] tracking-normal text-white">{activeCount}</span>}
+      </button>
 
       {isOpen && (
-        <div className="fixed inset-0 z-50 lg:hidden">
+        <div className="fixed inset-0 z-50">
           <button type="button" aria-label="Cerrar filtros" onClick={() => setIsOpen(false)} className="absolute inset-0 size-full bg-black/35" />
-          <section id="mobile-catalog-filters" role="dialog" aria-modal="true" aria-labelledby="mobile-filters-title" className="absolute inset-x-0 bottom-0 max-h-[90dvh] overflow-y-auto bg-[#faf9f6] px-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-5 shadow-2xl">
-            <div className="mb-6 flex items-center justify-between border-b border-stone-200 pb-4">
-              <h2 id="mobile-filters-title" className="font-serif text-2xl">Filtrar prendas</h2>
-              <button type="button" aria-label="Cerrar panel de filtros" onClick={() => setIsOpen(false)} className="grid size-11 place-items-center text-2xl text-stone-700">×</button>
+          <section id="catalog-filters" role="dialog" aria-modal="true" aria-labelledby="catalog-filters-title" className="absolute inset-y-0 right-0 flex w-full max-w-sm flex-col bg-[#faf9f6] shadow-2xl">
+            <div className="flex items-center justify-between border-b border-stone-200 px-6 py-4">
+              <h2 id="catalog-filters-title" className="font-serif text-2xl">Filtrar prendas</h2>
+              <button type="button" autoFocus aria-label="Cerrar panel de filtros" onClick={() => setIsOpen(false)} className="grid size-11 place-items-center text-2xl text-stone-700">×</button>
             </div>
-            <form action="/" method="get" className="grid gap-5">
-              <FilterFields filters={filters} prefix="mobile" deliveryPoints={deliveryPoints} />
-              <div className="sticky bottom-0 flex gap-3 bg-[#faf9f6] py-3">
-                <Link href="/" className="flex min-h-12 flex-1 items-center justify-center border border-stone-300 text-xs uppercase tracking-[0.16em] text-stone-700">Limpiar</Link>
-                <button type="submit" className="min-h-12 flex-1 bg-pine font-condensed text-base font-bold uppercase text-white">Ver resultados</button>
-              </div>
+            <form ref={formRef} action="/" method="get" onChange={onChange} onSubmit={(event) => { event.preventDefault(); apply(); setIsOpen(false); }} className="grid flex-1 content-start gap-5 overflow-y-auto px-6 py-5">
+              <FilterFields filters={filters} prefix="filters" deliveryPoints={deliveryPoints} />
             </form>
+            <div className="flex gap-3 border-t border-stone-200 px-6 pb-[max(1rem,env(safe-area-inset-bottom))] pt-4">
+              <Link href={filters.audience ? `/?audience=${filters.audience}` : "/"} onClick={() => setIsOpen(false)} className="flex min-h-12 flex-1 items-center justify-center border border-stone-300 text-xs uppercase tracking-[0.16em] text-stone-700">Limpiar</Link>
+              <button type="button" onClick={() => setIsOpen(false)} className="min-h-12 flex-1 bg-pine font-condensed text-base font-bold uppercase text-white">
+                {isPending ? "Actualizando…" : "Ver resultados"}
+              </button>
+            </div>
           </section>
         </div>
       )}

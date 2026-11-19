@@ -30,8 +30,9 @@ test.beforeAll(async () => {
 
 test("a new seller signs up, waits for review, and an admin approves and promotes her", async ({ page, browser }) => {
   await page.goto("/login");
-  await page.getByRole("link", { name: "Crear cuenta de vendedora" }).click();
-  await page.getByLabel("Nombre de tu closet").fill("Closet de Prueba Registro");
+  await page.getByRole("link", { name: "Crear cuenta" }).click();
+  await page.getByRole("navigation", { name: "Tipo de cuenta" }).getByRole("link", { name: "Vender" }).click();
+  await page.getByLabel("Nombre de tu clóset").fill("Closet de Prueba Registro");
   await page.getByLabel("Número de celular").fill(NEW_SELLER_PHONE);
   await page.getByRole("button", { name: "Crear cuenta" }).click();
   await enterCode(page);
