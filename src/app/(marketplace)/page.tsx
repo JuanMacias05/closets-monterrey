@@ -9,9 +9,9 @@ import { getCourierDirectory } from "@/features/couriers/directory";
 import { getShopState } from "@/features/shop/shop-state";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getViewer } from "@/features/viewer/get-viewer";
-import { getCatalogPage } from "@/features/products/catalog-data";
+import { countNewArrivals, getCatalogPage, NEW_ARRIVALS_MINIMUM, newArrivalsSince } from "@/features/products/catalog-data";
 import { parseCatalogFilters, type CatalogSearchParams } from "@/features/products/catalog-filters";
-import { categoriesForSection } from "@/features/products/section-categories";
+import { PRODUCT_CATEGORIES } from "@/features/products/types";
 
 export const metadata: Metadata = {
   title: "Prendas | Closets Monterrey",
@@ -23,8 +23,16 @@ export default async function HomePage({
 }: {
   searchParams: Promise<CatalogSearchParams>;
 }) {
-  const filters = parseCatalogFilters(await searchParams);
+  const parsed = parseCatalogFilters(await searchParams);
+  // The plain home page (no section, filter or ?ver=todo) shows only what's new, unless too
+  // little is new; see NEW_ARRIVALS_* in catalog-data.
+  const isPlainHome = !parsed.showAll && !parsed.audience && !parsed.category && !parsed.size && !parsed.condition
+    && !parsed.delivery && parsed.minPrice === undefined && parsed.maxPrice === undefined && !parsed.hideSold && parsed.sort === "recent";
+  const newSince = newArrivalsSince();
+  const showingNewOnly = isPlainHome && (await countNewArrivals(newSince)) >= NEW_ARRIVALS_MINIMUM;
+  const filters = showingNewOnly ? { ...parsed, newSince } : parsed;
   const [result, viewer, shop, deliveryPoints, couriers] = await Promise.all([getCatalogPage(filters), getViewer(), getShopState(), getDeliveryPoints(), getCourierDirectory()]);
+  const heading = filters.audience === "women" ? "Mujer" : filters.audience === "men" ? "Hombre" : filters.showAll ? "Todo el catálogo" : "Nuevo en tienda";
   const viewerId = viewer.kind === "guest" ? undefined : viewer.userId;
 
   return (
@@ -32,20 +40,20 @@ export default async function HomePage({
     <StoreHeader activeAudience={filters.audience} />
     <main className="mx-auto min-h-screen w-full max-w-[1600px] px-4 pb-12 sm:px-8 lg:px-12">
       {/* Kept short on purpose: on a 1366×768 laptop the first row of garments has to show
-          without scrolling. Mujer/Hombre live in the top menu, so there are no section pills. */}
-      <section className="pb-4 pt-6 sm:pt-8">
-        <h1 className="text-center font-serif text-2xl tracking-tight text-stone-900 sm:text-3xl">
-          {filters.audience === "women" ? "Mujer" : filters.audience === "men" ? "Hombre" : "Nuevo en tienda"}
-        </h1>
-        <div className="mt-4 flex items-center gap-4 border-y border-stone-200 py-2">
-          <nav aria-label="Categorías" className="flex min-w-0 flex-1 gap-x-5 overflow-x-auto text-sm">
-            <CategoryLink href={sectionHref(filters.audience)} active={!filters.category}>Ver todo</CategoryLink>
-            {categoriesForSection(filters.audience).map((category) => (
-              <CategoryLink key={category.value} href={sectionHref(filters.audience, category.value)} active={filters.category === category.value}>{category.label}</CategoryLink>
-            ))}
-          </nav>
-          <CatalogFiltersPanel filters={filters} deliveryPoints={deliveryPoints} />
+          without scrolling. Sections and their categories live in the top menu (Mujer/Hombre);
+          repeating them here as a second row only pushed the garments down. */}
+      <section className="flex items-end justify-between gap-4 border-b border-stone-200 pb-3 pt-6 sm:pt-8">
+        <div className="min-w-0">
+          <h1 className="font-serif text-2xl tracking-tight text-stone-900 sm:text-3xl">
+            {heading}{filters.category && <span className="text-stone-500"> · {categoryLabel(filters.category)}</span>}
+          </h1>
+          {showingNewOnly && (
+            <p className="mt-1 text-sm text-stone-600">
+              Lo que llegó en las últimas 2 semanas. <Link href="/?ver=todo" className="text-pine underline underline-offset-4">Ver todo el catálogo</Link>
+            </p>
+          )}
         </div>
+        <CatalogFiltersPanel filters={filters} deliveryPoints={deliveryPoints} />
       </section>
 
       <div className="xl:flex xl:items-start xl:gap-8">
@@ -77,21 +85,8 @@ export default async function HomePage({
   );
 }
 
-// Category links keep the chosen section, so "Pantalones" inside Hombre stays in Hombre.
-function sectionHref(audience?: string, category?: string) {
-  const params = new URLSearchParams();
-  if (audience) params.set("audience", audience);
-  if (category) params.set("category", category);
-  const query = params.toString();
-  return query ? `/?${query}` : "/";
-}
-
-function CategoryLink({ href, active, children }: { href: string; active: boolean; children: React.ReactNode }) {
-  return (
-    <Link href={href} aria-current={active ? "page" : undefined} className={`flex min-h-11 shrink-0 items-center whitespace-nowrap ${active ? "font-semibold text-stone-900 underline decoration-pine decoration-2 underline-offset-4" : "text-stone-600 hover:text-stone-900"}`}>
-      {children}
-    </Link>
-  );
+function categoryLabel(value: string) {
+  return PRODUCT_CATEGORIES.find((category) => category.value === value)?.label ?? value;
 }
 
 async function getDeliveryPoints() {

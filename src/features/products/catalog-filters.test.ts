@@ -26,6 +26,7 @@ describe("parseCatalogFilters", () => {
       hideSold: true,
       sort: "price-asc",
       page: 2,
+      showAll: false,
     });
   });
 
@@ -39,6 +40,7 @@ describe("parseCatalogFilters", () => {
       hideSold: false,
       sort: "recent",
       page: 1,
+      showAll: false,
     });
   });
 
@@ -119,5 +121,25 @@ describe("delivery filter", () => {
 
   it("ignores anything else", () => {
     expect(parseCatalogFilters({ entrega: "<script>" }).delivery).toBeUndefined();
+  });
+});
+
+describe("new arrivals", () => {
+  it("keeps ?ver=todo across pages", () => {
+    const filters = parseCatalogFilters({ ver: "todo" });
+    expect(filters.showAll).toBe(true);
+    expect(buildCatalogQueryString(filters, 2)).toBe("ver=todo&page=2");
+  });
+
+  it("never reads the new-arrivals cutoff from the URL", () => {
+    expect(parseCatalogFilters({ newSince: "2000-01-01" } as never).newSince).toBeUndefined();
+  });
+
+  it("keeps only garments published since the cutoff", () => {
+    const cutoff = "2026-11-12T00:00:00.000Z";
+    const result = applyCatalogFilters(demoProducts, { ...parseCatalogFilters({}), newSince: cutoff }, 100);
+    expect(result.total).toBeGreaterThan(0);
+    expect(result.total).toBeLessThan(demoProducts.length);
+    expect(result.products.every((product) => Date.parse(product.created_at) >= Date.parse(cutoff))).toBe(true);
   });
 });

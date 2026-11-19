@@ -12,15 +12,15 @@ export default function CatalogLoading() {
       <div className="h-9 bg-pine-light" />
 
       <div className="mx-auto w-full max-w-[1600px] px-4 sm:px-8 lg:px-12">
-        <div className="flex flex-col items-center gap-6 pb-10 pt-12">
-          <div className="h-12 w-3/4 max-w-2xl bg-stone-200 sm:h-20" />
-          <div className="h-4 w-64 bg-stone-200" />
-          <div className="flex gap-2">
-            {Array.from({ length: 4 }, (_, index) => <div key={index} className="h-11 w-20 bg-stone-200" />)}
+        <div className="flex items-end justify-between gap-4 border-b border-stone-200 pb-3 pt-6 sm:pt-8">
+          <div className="flex min-w-0 flex-col gap-2">
+            <div className="h-8 w-48 bg-stone-200 sm:h-9" />
+            <div className="h-4 w-64 max-w-full bg-stone-200" />
           </div>
+          <div className="h-11 w-32 shrink-0 bg-stone-200" />
         </div>
-        <div className="h-16 border-y border-stone-200" />
-        <div className="grid grid-cols-2 gap-x-3 gap-y-9 pt-14 sm:grid-cols-3 sm:gap-x-5 lg:grid-cols-4 lg:gap-x-6">
+        <div className="py-4"><div className="h-3 w-28 bg-stone-200" /></div>
+        <div className="grid grid-cols-2 gap-x-3 gap-y-9 sm:grid-cols-3 sm:gap-x-5 lg:grid-cols-4 lg:gap-x-6">
           {Array.from({ length: 8 }, (_, index) => (
             <div key={index} className="flex flex-col gap-3">
               <div className="aspect-[3/4] bg-stone-200" />

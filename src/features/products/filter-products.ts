@@ -13,6 +13,7 @@ export function applyCatalogFilters(
     if (filters.minPrice !== undefined && product.price_mxn < filters.minPrice * 100) return false;
     if (filters.maxPrice !== undefined && product.price_mxn > filters.maxPrice * 100) return false;
     if (filters.hideSold && product.sale_status === "sold") return false;
+    if (filters.newSince && Date.parse(product.created_at) < Date.parse(filters.newSince)) return false;
     return true;
   });
 

@@ -45,8 +45,8 @@ export function MobileMenu({ signedIn, initialAudience }: { signedIn: boolean; i
           </div>
 
           <nav aria-label={audience === "women" ? "Categorías de Mujer" : "Categorías de Hombre"} className="flex flex-1 flex-col overflow-y-auto px-5 py-2 font-sans text-base font-normal normal-case tracking-normal">
-            <MenuLink href="/?sort=recent" onNavigate={() => setOpen(false)}>Nuevo</MenuLink>
-            <MenuLink href={`/?audience=${audience}`} onNavigate={() => setOpen(false)}>Ver todo</MenuLink>
+            <MenuLink href="/" onNavigate={() => setOpen(false)}>Nuevo</MenuLink>
+            <MenuLink href={`/?audience=${audience}`} onNavigate={() => setOpen(false)}>Todo {audience === "women" ? "Mujer" : "Hombre"}</MenuLink>
             {categoriesForSection(audience).map((category) => (
               <MenuLink key={category.value} href={`/?audience=${audience}&category=${category.value}`} onNavigate={() => setOpen(false)}>{category.label}</MenuLink>
             ))}

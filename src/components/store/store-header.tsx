@@ -25,7 +25,7 @@ export async function StoreHeader({ activeAudience }: { activeAudience?: Catalog
           <MobileMenu signedIn={signedIn} initialAudience={activeAudience} />
           <nav aria-label="Categorías" className="hidden items-center gap-6 lg:flex">
             <CategoriesMenu activeAudience={activeAudience} />
-            <Link href="/?sort=recent" className="hover:text-stone-600">Nuevo</Link>
+            <Link href="/" className="hover:text-stone-600">Nuevo</Link>
           </nav>
         </div>
 

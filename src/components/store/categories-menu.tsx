@@ -10,11 +10,29 @@ const SECTIONS: { audience: CatalogAudience; label: string }[] = [
   { audience: "men", label: "Hombre" },
 ];
 
-// Desktop navigation: a "Mujer" and a "Hombre" trigger, each opening a panel with that
-// section's categories. One component owns both so only one panel can be open at a time.
+// Desktop navigation. "Mujer" and "Hombre" are links straight to the whole section; hovering
+// (or focusing) one opens a panel with that section's categories. They used to be buttons that
+// only opened the panel, so reaching a section took a second click on "Ver todo".
+// One component owns both so only one panel can be open at a time.
 export function CategoriesMenu({ activeAudience }: { activeAudience?: CatalogAudience }) {
   const [open, setOpen] = useState<CatalogAudience | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
+  // The panel hangs a few pixels below the links, so the pointer crosses empty header space on
+  // its way down. Closing on the first mouseleave shut the panel before you could reach it; a
+  // short grace period lets the pointer land on the panel, whose mouseenter cancels the close.
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  function cancelClose() {
+    if (closeTimer.current) clearTimeout(closeTimer.current);
+    closeTimer.current = null;
+  }
+
+  function closeSoon() {
+    cancelClose();
+    closeTimer.current = setTimeout(() => setOpen(null), 200);
+  }
+
+  useEffect(() => cancelClose, []);
 
   useEffect(() => {
     if (!open) return;
@@ -35,27 +53,28 @@ export function CategoriesMenu({ activeAudience }: { activeAudience?: CatalogAud
   const openSection = SECTIONS.find((section) => section.audience === open);
 
   return (
-    <div ref={rootRef} className="flex items-center gap-6">
+    <div ref={rootRef} className="flex items-center gap-6" onMouseEnter={cancelClose} onMouseLeave={closeSoon}>
       {SECTIONS.map((section) => {
         const highlighted = open === section.audience || (open === null && activeAudience === section.audience);
         return (
-          <button
+          <Link
             key={section.audience}
-            type="button"
-            aria-expanded={open === section.audience}
-            aria-controls="categories-panel"
-            onClick={() => setOpen((value) => (value === section.audience ? null : section.audience))}
-            className={`min-h-11 font-condensed font-bold uppercase ${highlighted ? "underline decoration-pine decoration-2 underline-offset-8" : "hover:text-stone-600"}`}
+            href={`/?audience=${section.audience}`}
+            aria-current={activeAudience === section.audience ? "page" : undefined}
+            onMouseEnter={() => { cancelClose(); setOpen(section.audience); }}
+            onFocus={() => setOpen(section.audience)}
+            onClick={() => setOpen(null)}
+            className={`flex min-h-11 items-center font-condensed font-bold uppercase ${highlighted ? "underline decoration-pine decoration-2 underline-offset-8" : "hover:text-stone-600"}`}
           >
             {section.label}
-          </button>
+          </Link>
         );
       })}
       {openSection && (
         <div id="categories-panel" className="absolute inset-x-0 top-full z-50 border-b border-stone-200 bg-white px-12 py-10 shadow-[0_24px_40px_-24px_rgba(0,0,0,0.35)]">
           <p className="mb-5 font-condensed text-sm font-bold uppercase tracking-[0.06em] text-stone-500">{openSection.label}</p>
           <ul className="grid max-w-3xl grid-cols-2 gap-x-16 gap-y-4 normal-case">
-            <li><Link href={`/?audience=${openSection.audience}`} onClick={() => setOpen(null)} className="font-sans text-base font-normal tracking-normal hover:underline">Ver todo</Link></li>
+            <li><Link href={`/?audience=${openSection.audience}`} onClick={() => setOpen(null)} className="font-sans text-base font-normal tracking-normal hover:underline">Todo {openSection.label}</Link></li>
             {categoriesForSection(openSection.audience).map((category) => (
               <li key={category.value}>
                 <Link href={`/?audience=${openSection.audience}&category=${category.value}`} onClick={() => setOpen(null)} className="font-sans text-base font-normal tracking-normal hover:underline">{category.label}</Link>

@@ -5,6 +5,31 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export const CATALOG_PAGE_SIZE = 24;
 
+// The home page shows only new arrivals: garments published in the last NEW_ARRIVALS_DAYS.
+// With fewer than NEW_ARRIVALS_MINIMUM of them the page would look empty, so it falls back to
+// the whole catalog (newest first), which is what a quiet week should still show.
+export const NEW_ARRIVALS_DAYS = 14;
+export const NEW_ARRIVALS_MINIMUM = 8;
+
+// "Now" for the new-arrivals cutoff. The demo catalog (local e2e) has fixed dates, so its runs
+// pin the clock with CATALOG_DEMO_NOW; otherwise the split would drift a day at a time.
+export function newArrivalsSince(): string {
+  const pinned = process.env.CATALOG_DEMO_MODE === "true" ? process.env.CATALOG_DEMO_NOW : undefined;
+  const now = pinned ? Date.parse(pinned) : Date.now();
+  return new Date(now - NEW_ARRIVALS_DAYS * 24 * 60 * 60 * 1000).toISOString();
+}
+
+export async function countNewArrivals(sinceIso: string): Promise<number> {
+  if (process.env.CATALOG_DEMO_MODE === "true") {
+    return getDemoCatalogPage({ hideSold: false, sort: "recent", page: 1, newSince: sinceIso }, 1).total;
+  }
+  const supabase = await createSupabaseServerClient();
+  if (!supabase) return 0;
+  const { count } = await supabase.from("products").select("id", { count: "exact", head: true })
+    .eq("publication_status", "published").eq("hidden_by_admin", false).gte("created_at", sinceIso);
+  return count ?? 0;
+}
+
 type ProductImageRow = Omit<CatalogImage, "url">;
 type ProductRow = Omit<CatalogProduct, "seller" | "images"> & {
   seller: CatalogProduct["seller"] | null;
@@ -50,6 +75,7 @@ export async function getCatalogPage(filters: CatalogFilters): Promise<CatalogPa
   if (filters.minPrice !== undefined) query = query.gte("price_mxn", filters.minPrice * 100);
   if (filters.maxPrice !== undefined) query = query.lte("price_mxn", filters.maxPrice * 100);
   if (filters.hideSold) query = query.neq("sale_status", "sold");
+  if (filters.newSince) query = query.gte("created_at", filters.newSince);
 
   query = query.order("sale_status", { ascending: true });
   if (filters.sort === "price-asc") query = query.order("price_mxn", { ascending: true });

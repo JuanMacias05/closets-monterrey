@@ -1,9 +1,9 @@
 import { expect, test } from "@playwright/test";
 
 test("renders the catalog and its product cards", async ({ page }) => {
-  await page.goto("/");
+  await page.goto("/?ver=todo");
 
-  await expect(page.getByRole("heading", { name: "Nuevo en tienda" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Todo el catálogo" })).toBeVisible();
   await expect(page.getByTestId("product-grid").locator("article")).toHaveCount(19);
   await expect(page.getByText("Closet de Renata").first()).toBeVisible();
   await expect(page.getByText("$350.00 MXN").first()).toBeVisible();
@@ -57,4 +57,46 @@ test("opens the mobile filter drawer and keeps a two-column catalog grid", async
   await expect.poll(async () => page.getByTestId("product-grid").evaluate((element) =>
     getComputedStyle(element).gridTemplateColumns.split(" ").length,
   )).toBe(4);
+});
+
+// CATALOG_DEMO_NOW (playwright.config.ts) pins today to 2026-11-24: 13 of the 19 demo garments
+// were published in the last 14 days.
+test("the home page shows only new arrivals, with a link to everything", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.getByRole("heading", { name: "Nuevo en tienda" })).toBeVisible();
+  await expect(page.getByTestId("product-grid").locator("article")).toHaveCount(13);
+  await page.getByRole("link", { name: "Ver todo el catálogo" }).click();
+  await expect(page).toHaveURL(/ver=todo/);
+  await expect(page.getByTestId("product-grid").locator("article")).toHaveCount(19);
+});
+
+test("Mujer and Hombre in the top menu go straight to the whole section", async ({ page }) => {
+  await page.setViewportSize({ width: 1366, height: 768 });
+  await page.goto("/");
+  const categories = page.getByRole("navigation", { name: "Categorías" });
+  await categories.getByRole("link", { name: "Hombre" }).click();
+  await expect(page).toHaveURL(/audience=men$/);
+  await expect(page.getByRole("heading", { name: "Hombre", level: 1 })).toBeVisible();
+
+  await categories.getByRole("link", { name: "Mujer" }).hover();
+  await page.locator("#categories-panel").getByRole("link", { name: "Vestidos" }).click();
+  await expect(page).toHaveURL(/audience=women&category=dresses/);
+});
+
+// The panel hangs below the links with a gap; moving the pointer down through that gap used to
+// close it before you could pick a category.
+test("the Mujer panel stays open while the pointer moves down into it", async ({ page }) => {
+  await page.setViewportSize({ width: 1366, height: 768 });
+  await page.goto("/");
+  const mujer = page.getByRole("navigation", { name: "Categorías" }).getByRole("link", { name: "Mujer", exact: true });
+  await mujer.hover();
+  const panel = page.locator("#categories-panel");
+  await expect(panel).toBeVisible();
+  const link = await mujer.boundingBox();
+  const target = await panel.getByRole("link", { name: "Vestidos" }).boundingBox();
+  if (!link || !target) throw new Error("menu not laid out");
+  await page.mouse.move(target.x + target.width / 2, target.y + target.height / 2, { steps: 30 });
+  await expect(panel).toBeVisible();
+  await page.mouse.click(target.x + target.width / 2, target.y + target.height / 2);
+  await expect(page).toHaveURL(/audience=women&category=dresses/);
 });

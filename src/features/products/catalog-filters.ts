@@ -50,6 +50,7 @@ export function parseCatalogFilters(params: CatalogSearchParams): CatalogFilters
     hideSold: firstValue(params.hideSold) === "1",
     sort: sort && allowedSorts.has(sort) ? (sort as CatalogSort) : "recent",
     page: Math.max(1, requestedPage),
+    showAll: firstValue(params.ver) === "todo",
   };
 }
 
@@ -68,6 +69,7 @@ export function buildCatalogQueryString(
   if (filters.maxPrice !== undefined) params.set("maxPrice", String(filters.maxPrice));
   if (filters.hideSold) params.set("hideSold", "1");
   if (filters.sort !== "recent") params.set("sort", filters.sort);
+  if (filters.showAll) params.set("ver", "todo");
   if (page > 1) params.set("page", String(page));
 
   return params.toString();

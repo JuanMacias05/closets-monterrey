@@ -41,6 +41,10 @@ export type CatalogFilters = {
   hideSold: boolean;
   sort: CatalogSort;
   page: number;
+  // ?ver=todo: the whole catalog on the home page instead of only the new arrivals.
+  showAll?: boolean;
+  // Set by the home page, never read from the URL: only garments published since this ISO date.
+  newSince?: string;
 };
 
 export type CatalogImage = {
