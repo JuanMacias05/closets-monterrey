@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { updateProduct, deleteProductWithImages } from "@/app/panel/prendas/actions";
+import { updateProduct, deleteProductWithImages, setProductPrice } from "@/app/panel/prendas/actions";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 vi.mock("@/lib/supabase/server", () => ({ createSupabaseServerClient: vi.fn() }));
@@ -72,5 +72,24 @@ describe("product actions enforce ownership for admins too", () => {
     expect(result).toEqual({ ok: false, error: "No encontramos esa prenda en tu tienda." });
     expect(filters).toContainEqual(["seller_id", adminId]);
     expect(remove).not.toHaveBeenCalled();
+  });
+
+  it("will not change the price of another seller's product", async () => {
+    const { supabase, filters, update } = mockAdmin();
+    vi.mocked(createSupabaseServerClient).mockResolvedValue(supabase as never);
+
+    const result = await setProductPrice(foreignProductId, 25000);
+
+    expect(result).toEqual({ ok: false, error: "No encontramos esa prenda en tu tienda." });
+    expect(filters).toContainEqual(["seller_id", adminId]);
+    expect(update).not.toHaveBeenCalled();
+  });
+
+  it.each([-1, 1.5, Number.NaN, 100_000_001])("rejects an invalid price (%s) before touching data", async (price) => {
+    const { supabase, update } = mockAdmin();
+    vi.mocked(createSupabaseServerClient).mockResolvedValue(supabase as never);
+
+    expect(await setProductPrice(foreignProductId, price)).toEqual({ ok: false, error: "Escribe un precio válido." });
+    expect(update).not.toHaveBeenCalled();
   });
 });

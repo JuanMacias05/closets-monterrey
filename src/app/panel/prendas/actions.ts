@@ -87,6 +87,26 @@ export async function updateProduct(productId: string, input: ProductInput): Pro
   return { ok: true };
 }
 
+// Quick price edit from "Mis prendas". Only while the garment is available: an open
+// reservation already froze its price in reservation_items, and changing the list price
+// under it would show the buyer one number and the seller another.
+export async function setProductPrice(productId: string, priceInCents: number): Promise<Result> {
+  const context = await getSellerContext();
+  if (!context.ok) return context;
+  if (!/^[0-9a-f-]{36}$/i.test(productId) || !Number.isSafeInteger(priceInCents) || priceInCents < 0 || priceInCents > 100_000_000) {
+    return { ok: false, error: "Escribe un precio válido." };
+  }
+  const { data: owned } = await context.supabase.from("products").select("id,sale_status")
+    .eq("id", productId).eq("seller_id", context.userId).maybeSingle();
+  if (!owned) return { ok: false, error: "No encontramos esa prenda en tu tienda." };
+  if (owned.sale_status !== "available") return { ok: false, error: "Solo puedes cambiar el precio de una prenda disponible." };
+  const { error } = await context.supabase.from("products").update({ price_mxn: priceInCents })
+    .eq("id", productId).eq("seller_id", context.userId);
+  if (error) return { ok: false, error: "No pudimos guardar el precio." };
+  revalidateProducts();
+  return { ok: true };
+}
+
 export async function setProductSaleStatus(productId: string, status: "available" | "sold"): Promise<Result> {
   const context = await getSellerContext();
   if (!context.ok) return context;

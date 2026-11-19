@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { ReservationActions } from "@/app/panel/apartados/reservation-actions";
 import { formatPriceMXN } from "@/features/products/format-price";
 import { RESERVATION_STATUS_LABELS, TRUST_LABELS, TRUST_STYLES } from "@/features/shop/reservation-labels";
+import { deliveryGroup, sellerBalanceAtDelivery } from "@/features/shop/reservation-money";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export const metadata = { title: "Apartados | Closets Monterrey" };
@@ -20,7 +21,9 @@ type ReservationRow = {
 const dateFormat = new Intl.DateTimeFormat("es-MX", { dateStyle: "medium", timeStyle: "short", timeZone: "America/Monterrey" });
 const OPEN = ["pending_deposit", "confirmed"];
 
-export default async function SellerReservationsPage() {
+export default async function SellerReservationsPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+  const groupParam = (await searchParams).entrega;
+  const activeGroup = typeof groupParam === "string" ? groupParam : undefined;
   const supabase = await createSupabaseServerClient();
   if (!supabase) redirect("/login?reason=configuration");
   const { data: { user } } = await supabase.auth.getUser();
@@ -45,7 +48,15 @@ export default async function SellerReservationsPage() {
   const buyerById = new Map((buyers ?? []).map((buyer) => [buyer.id, buyer]));
   const lightById = new Map(lights);
 
-  const open = reservations.filter((reservation) => OPEN.includes(reservation.status));
+  const allOpen = reservations.filter((reservation) => OPEN.includes(reservation.status));
+  // Group chips count open reservations only: they're for planning today's hand-offs, so a
+  // closed one at Padre Mier must not make Padre Mier look busy.
+  const groups = new Map<string, { label: string; count: number }>();
+  for (const reservation of allOpen) {
+    const { key, label } = deliveryGroup(reservation);
+    groups.set(key, { label, count: (groups.get(key)?.count ?? 0) + 1 });
+  }
+  const open = activeGroup ? allOpen.filter((reservation) => deliveryGroup(reservation).key === activeGroup) : allOpen;
   const closed = reservations.filter((reservation) => !OPEN.includes(reservation.status));
 
   function renderReservation(reservation: ReservationRow) {
@@ -73,6 +84,9 @@ export default async function SellerReservationsPage() {
           ))}
         </ul>
         <p className="mt-2 text-sm text-stone-700">Total {formatPriceMXN(reservation.items_total_mxn)} · anticipo {reservation.deposit_percent} %: <strong className="text-stone-900">{formatPriceMXN(reservation.deposit_mxn)}</strong></p>
+        {OPEN.includes(reservation.status) && (
+          <p className="mt-1 text-sm text-stone-700">Cobras en la entrega: <strong className="text-stone-900" data-testid="seller-balance">{formatPriceMXN(sellerBalanceAtDelivery(reservation))}</strong></p>
+        )}
         <p className="mt-1 text-sm text-stone-700">
           <strong>Entrega:</strong>{" "}
           {reservation.delivery_method === "pickup_point" ? `Punto fijo · ${reservation.point?.name ?? ""}`
@@ -98,7 +112,15 @@ export default async function SellerReservationsPage() {
         </div>
         <Link href="/panel" className="flex min-h-11 items-center text-sm text-stone-700 underline underline-offset-4">Volver al panel</Link>
       </div>
-      {open.length === 0 ? <p className="py-6 text-sm text-stone-600">No tienes apartados abiertos.</p> : <ul className="mt-5 space-y-4">{open.map(renderReservation)}</ul>}
+      {groups.size > 1 && (
+        <nav aria-label="Filtrar por entrega" className="mt-5 flex flex-wrap gap-2">
+          <GroupChip href="/panel/apartados" active={!activeGroup}>Todas ({allOpen.length})</GroupChip>
+          {[...groups].map(([key, group]) => (
+            <GroupChip key={key} href={`/panel/apartados?entrega=${encodeURIComponent(key)}`} active={activeGroup === key}>{group.label} ({group.count})</GroupChip>
+          ))}
+        </nav>
+      )}
+      {open.length === 0 ? <p className="py-6 text-sm text-stone-600">{activeGroup ? "No hay apartados abiertos con esta entrega." : "No tienes apartados abiertos."}</p> : <ul className="mt-5 space-y-4">{open.map(renderReservation)}</ul>}
       {closed.length > 0 && (
         <details className="mt-8">
           <summary className="cursor-pointer py-3 text-sm font-medium text-stone-700">Historial ({closed.length})</summary>
@@ -106,5 +128,13 @@ export default async function SellerReservationsPage() {
         </details>
       )}
     </section>
+  );
+}
+
+function GroupChip({ href, active, children }: { href: string; active: boolean; children: React.ReactNode }) {
+  return (
+    <Link href={href} aria-current={active ? "page" : undefined} className={`inline-flex min-h-10 items-center border px-3 text-sm ${active ? "border-pine bg-pine text-white" : "border-stone-300 bg-white text-stone-700 hover:border-stone-600"}`}>
+      {children}
+    </Link>
   );
 }

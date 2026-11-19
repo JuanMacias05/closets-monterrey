@@ -2,9 +2,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getProductImageUrl } from "@/features/products/public-images";
-import { formatPriceMXN } from "@/features/products/format-price";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { ProductListActions } from "@/app/panel/prendas/product-list-actions";
+import { ProductPriceEditor } from "@/app/panel/prendas/product-price-editor";
 
 export default async function ProductsPage() {
   const supabase = await createSupabaseServerClient();
@@ -47,7 +47,13 @@ export default async function ProductsPage() {
                 </Link>
                 <div className="min-w-0">
                   <Link href={`/panel/prendas/${product.id}`} className="font-serif text-lg leading-6 text-stone-900">{product.name}</Link>
-                  <p className="mt-1 text-sm text-stone-600">{formatPriceMXN(product.price_mxn)} · {product.images.length} {product.images.length === 1 ? "foto" : "fotos"}</p>
+                  <div className="mt-1 flex flex-wrap items-center gap-x-2 text-sm text-stone-600">
+                    <ProductPriceEditor productId={product.id} productName={product.name} priceInCents={product.price_mxn} editable={product.sale_status === "available"} />
+                    <span aria-hidden="true">·</span>
+                    {product.images.length === 0
+                      ? <span className="font-medium text-amber-800">Sin fotos: agrega al menos una</span>
+                      : <span>{product.images.length} {product.images.length === 1 ? "foto" : "fotos"}</span>}
+                  </div>
                   <p className="mt-1 text-xs uppercase tracking-[0.12em] text-stone-500">
                     {product.sale_status === "sold" ? "Vendida" : product.sale_status === "reserved" ? "Apartada" : "Disponible"}
                     {product.publication_status === "draft" ? " · Borrador" : " · Publicada"}
