@@ -92,7 +92,7 @@ test("a buyer picks a verified courier, who collects and delivers with the PIN",
 
   await job.getByLabel("Código de entrega").fill(pin);
   await job.getByRole("button", { name: "Marcar entregada" }).click();
-  await expect(courier.getByText("No tienes entregas por ahora.", { exact: false })).toBeVisible();
+  await expect(courier.getByText("No tienes entregas por ahora.", { exact: false })).toBeVisible({ timeout: 15_000 });
   await courierContext.close();
 
   await page.reload();

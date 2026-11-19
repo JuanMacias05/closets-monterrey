@@ -6,6 +6,8 @@ const SELLER_PHONE = "+528100000001"; // Closet de Renata: CLABE, Padre Mier/Cua
 const PRODUCT_ID = "20000000-0000-4000-8000-000000000003"; // Jeans rectos azul medio, $420
 const PRODUCT_SLUG = "jeans-rectos-azul";
 const PRODUCT_NAME = "Jeans rectos azul medio";
+const WRONG_PIN_ERROR = "Ese código no coincide. Pídeselo de nuevo a la clienta.";
+const SERVER_ACTION_TIMEOUT = 15_000;
 
 function adminHeaders() {
   const key = process.env.E2E_SUPABASE_SECRET_KEY;
@@ -54,7 +56,7 @@ test("a shopper saves a favorite, reserves from her cart and the seller complete
   await page.getByRole("button", { name: `Agregar ${PRODUCT_NAME} a favoritos` }).click();
   await expect(page.getByRole("button", { name: `Quitar ${PRODUCT_NAME} de favoritos` })).toBeVisible();
   await page.getByRole("button", { name: "Agregar al carrito" }).click();
-  await expect(page.getByRole("link", { name: /En tu carrito/ })).toBeVisible();
+  await expect(page.getByRole("link", { name: /En tu carrito/ })).toBeVisible({ timeout: SERVER_ACTION_TIMEOUT });
 
   await page.goto("/favoritos");
   await expect(page.getByText(PRODUCT_NAME)).toBeVisible();
@@ -82,9 +84,9 @@ test("a shopper saves a favorite, reserves from her cart and the seller complete
   await expect(card.getByText("Sin historial")).toBeVisible();
   seller.once("dialog", (dialog) => dialog.accept());
   await card.getByRole("button", { name: "Confirmar anticipo" }).click();
-  await expect(card.getByText("Anticipo confirmado")).toBeVisible();
+  await expect(card.getByText("Anticipo confirmado")).toBeVisible({ timeout: SERVER_ACTION_TIMEOUT });
   await card.getByRole("button", { name: "En camino" }).click();
-  await expect(card.getByText(/En camino/)).toBeVisible();
+  await expect(card.getByText(/En camino/)).toBeVisible({ timeout: SERVER_ACTION_TIMEOUT });
 
   // The buyer sees her PIN; a wrong one is refused, hers completes the delivery.
   await page.goto("/cuenta");
@@ -94,10 +96,12 @@ test("a shopper saves a favorite, reserves from her cart and the seller complete
 
   await card.getByLabel("Código de entrega").fill(pin === "0000" ? "1111" : "0000");
   await card.getByRole("button", { name: "Marcar entregada" }).click();
-  await expect(card.getByText("Ese código no coincide.", { exact: false })).toBeVisible();
+  // Preserve exact assertions while giving Supabase-backed Server Actions time to finish
+  // under a full local suite (the default Playwright expect timeout is 5 seconds).
+  await expect(card.getByRole("alert")).toHaveText(WRONG_PIN_ERROR, { timeout: SERVER_ACTION_TIMEOUT });
   await card.getByLabel("Código de entrega").fill(pin);
   await card.getByRole("button", { name: "Marcar entregada" }).click();
-  await expect(seller.getByText("No tienes apartados abiertos.")).toBeVisible();
+  await expect(seller.getByText("No tienes apartados abiertos.")).toBeVisible({ timeout: SERVER_ACTION_TIMEOUT });
   await seller.getByText(/^Historial \(1\)$/).click();
   await expect(seller.getByRole("listitem").filter({ hasText: "Compradora Prueba" }).getByText("Entregada")).toBeVisible();
   await sellerContext.close();
