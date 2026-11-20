@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { prepareProductImage } from "@/features/products/product-image-upload";
+import { formatCardNumber } from "@/features/store/card-number";
 import { buildStoreAvatarStoragePath } from "@/features/store/clabe";
 import { saveStoreSettings } from "@/app/panel/tienda/actions";
 import { PRIMARY_BUTTON_CLASS } from "@/components/panel/panel-styles";
@@ -24,6 +25,7 @@ type Props = {
   avatarUrl: string | null;
   whatsapp: string;
   clabe: string;
+  oxxoCard: string;
   depositPercent: number;
 };
 
@@ -35,6 +37,7 @@ export function StoreSettingsForm(props: Props) {
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [whatsapp, setWhatsapp] = useState(displayWhatsapp(props.whatsapp));
   const [clabe, setClabe] = useState(props.clabe);
+  const [oxxoCard, setOxxoCard] = useState(formatCardNumber(props.oxxoCard));
   const [depositPercent, setDepositPercent] = useState(props.depositPercent);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
@@ -72,7 +75,7 @@ export function StoreSettingsForm(props: Props) {
         nextAvatarPath = newAvatarPath;
       }
 
-      const result = await saveStoreSettings({ storeName, avatarPath: nextAvatarPath, whatsapp, clabe, depositPercent });
+      const result = await saveStoreSettings({ storeName, avatarPath: nextAvatarPath, whatsapp, clabe, depositPercent, oxxoCard });
       if (!result.ok) {
         if (newAvatarPath) {
           const supabase = createSupabaseBrowserClient();
@@ -140,6 +143,11 @@ export function StoreSettingsForm(props: Props) {
         <label htmlFor="store-clabe" className="block text-xs uppercase tracking-[0.16em] text-stone-600">CLABE para recibir pagos</label>
         <input id="store-clabe" inputMode="numeric" autoComplete="off" maxLength={18} value={clabe} onChange={(event) => setClabe(event.target.value.replace(/\D/g, "").slice(0, 18))} className="mt-2 min-h-12 w-full border-b border-stone-400 bg-transparent px-1 text-base tracking-widest outline-none focus:border-stone-900" />
         <p className="mt-2 text-xs leading-5 text-stone-500">Debe tener 18 dígitos y un dígito verificador válido. Sin CLABE, nadie puede apartarte prendas.</p>
+      </div>
+      <div>
+        <label htmlFor="store-oxxo-card" className="block text-xs uppercase tracking-[0.16em] text-stone-600">Tarjeta para depósitos en OXXO (opcional)</label>
+        <input id="store-oxxo-card" inputMode="numeric" autoComplete="off" placeholder="0000 0000 0000 0000" maxLength={19} value={oxxoCard} onChange={(event) => setOxxoCard(formatCardNumber(event.target.value.slice(0, 19)))} className="mt-2 min-h-12 w-full border-b border-stone-400 bg-transparent px-1 text-base tracking-widest outline-none focus:border-stone-900" />
+        <p className="mt-2 text-xs leading-5 text-stone-500">Los 16 dígitos al frente de tu tarjeta de débito o de Spin by OXXO. Así te puede pagar el anticipo en efectivo quien no tiene app de banco. Antes de ponerla, confirma con tu banco que acepta depósitos en OXXO.</p>
       </div>
       <div>
         <label htmlFor="store-deposit" className="block text-xs uppercase tracking-[0.16em] text-stone-600">Anticipo para apartar</label>

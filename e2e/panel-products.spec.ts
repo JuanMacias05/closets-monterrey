@@ -92,7 +92,24 @@ test("seller publishes a new garment with its photos in one step", async ({ page
   await expect(page.getByText("Publicada en el catálogo.")).toBeVisible();
   await expect(page.getByText("Principal", { exact: true })).toBeVisible();
 
+  // Sharing: desktop Chromium has no share sheet, so the link is copied instead. Pinned off
+  // here so the test does not depend on the platform's navigator.share.
+  await page.context().grantPermissions(["clipboard-read", "clipboard-write"]);
+  await page.addInitScript(() => Object.defineProperty(navigator, "share", { value: undefined, configurable: true }));
+  await page.goto("/panel/prendas");
+  const row = page.getByRole("listitem").filter({ hasText: "Prenda con foto E2E" });
+  await row.getByRole("button", { name: "Compartir" }).click();
+  await expect(row.getByText("Liga copiada. Pégala en WhatsApp o Facebook.")).toBeVisible();
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toMatch(/\/prendas\/prenda-con-foto-e2e/);
+  await row.getByRole("link", { name: "Prenda con foto E2E", exact: true }).click();
+
   page.once("dialog", (dialog) => dialog.accept());
   await page.getByRole("button", { name: "Borrar prenda y fotos" }).click();
   await expect(page).toHaveURL(/\/panel\/prendas$/);
+});
+
+test("the panel home offers the seller her store link to share", async ({ page }) => {
+  await loginAsSeller(page);
+  await expect(page.getByRole("link", { name: "Ver mi tienda" })).toHaveAttribute("href", /^\/tiendas\/[a-z0-9-]+$/);
+  await expect(page.getByRole("button", { name: "Compartir mi tienda" })).toBeVisible();
 });

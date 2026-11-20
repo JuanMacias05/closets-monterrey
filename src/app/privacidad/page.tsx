@@ -19,12 +19,13 @@ export default function PrivacyPage() {
       <LegalSection title="Qué datos guardamos">
         <ul className="list-disc space-y-2 pl-5">
           <li><strong>Todas las cuentas:</strong> número de celular (para entrar con un código por SMS).</li>
-          <li><strong>Compradoras:</strong> nombre, link de tu perfil de Facebook, prendas favoritas, carrito, apartados y, si eliges entrega a domicilio o con recolectora, tu dirección y municipio.</li>
-          <li><strong>Vendedoras:</strong> nombre de la tienda, foto de perfil, WhatsApp, CLABE para recibir anticipos, puntos de entrega y las fotos y datos de las prendas que publicas.</li>
+          <li><strong>Compradoras:</strong> nombre, link de tu perfil de Facebook, prendas favoritas, carrito, apartados, la foto del comprobante de tu anticipo (transferencia o ticket de OXXO) y, si eliges entrega a domicilio o con recolectora, tu dirección y municipio.</li>
+          <li><strong>Vendedoras:</strong> nombre de la tienda, foto de perfil, WhatsApp, CLABE y, si la das, tarjeta para depósitos en OXXO para recibir anticipos, puntos de entrega y las fotos y datos de las prendas que publicas.</li>
           <li><strong>Recolectoras:</strong> nombre, municipios donde entregas, días y horario, tarifa y puntos donde recoges.</li>
+          <li><strong>Solicitudes de ayuda:</strong> lo que nos escribes cuando pides ayuda con un apartado.</li>
           <li><strong>Historial de apartados:</strong> qué apartaste, montos, estado de la entrega y calificaciones a recolectoras. Con él calculamos un indicador de confianza de compradoras que solo ven las vendedoras.</li>
         </ul>
-        <p>No pedimos datos sensibles ni guardamos datos de tarjetas: los anticipos se pagan por transferencia directa a la vendedora.</p>
+        <p>No pedimos datos sensibles ni cobramos con tarjeta: los anticipos se pagan directo a la vendedora, por transferencia o en efectivo en OXXO. El número de tarjeta que una vendedora da para OXXO solo sirve para recibir depósitos.</p>
       </LegalSection>
 
       <LegalSection title="Para qué los usamos">
@@ -33,6 +34,7 @@ export default function PrivacyPage() {
           <li>Crear tu cuenta y dejarte entrar con tu celular.</li>
           <li>Que puedas apartar prendas y que la vendedora sepa con quién trata.</li>
           <li>Coordinar la entrega en un punto, a domicilio o con una recolectora.</li>
+          <li>Que la vendedora confirme tu anticipo y, si hay un problema con tu pago, ayudarte a resolverlo.</li>
           <li>Revisar y aprobar cuentas de vendedoras y recolectoras, y cuidar la seguridad de la tienda.</li>
         </ul>
         <p>No usamos tus datos para publicidad ni los vendemos.</p>
@@ -40,7 +42,7 @@ export default function PrivacyPage() {
 
       <LegalSection title="Quién más los ve">
         <ul className="list-disc space-y-2 pl-5">
-          <li><strong>Cuando apartas una prenda,</strong> la vendedora ve tu nombre, tu link de Facebook, tu celular y tu indicador de confianza. Tú ves su WhatsApp y su CLABE.</li>
+          <li><strong>Cuando apartas una prenda,</strong> la vendedora ve tu nombre, tu link de Facebook, tu celular y tu indicador de confianza. Tú ves su WhatsApp, su CLABE y, si la dio, su tarjeta para OXXO. La foto de tu comprobante solo la ven tú, esa vendedora y la administración de Closets Monterrey, y se borra si borras tu cuenta.</li>
           <li><strong>Si eliges recolectora,</strong> ella ve tu nombre, tu dirección, tu municipio y tu celular para entregarte.</li>
           <li><strong>Lo que es público:</strong> el nombre y la foto de cada tienda, sus prendas, y el nombre, municipios y tarifa de las recolectoras verificadas.</li>
         </ul>

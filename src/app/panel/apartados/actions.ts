@@ -38,3 +38,17 @@ export async function completeWithPin(reservationId: string, pin: string) {
   revalidatePath("/");
   return { ok: true as const };
 }
+
+export async function rejectDepositProof(reservationId: string, reason: string) {
+  const text = typeof reason === "string" ? reason.trim() : "";
+  if (!/^[0-9a-f-]{36}$/i.test(reservationId) || text.length < 3 || text.length > 160) {
+    return { ok: false as const, error: "Escribe el motivo (de 3 a 160 caracteres)." };
+  }
+  const supabase = await createSupabaseServerClient();
+  if (!supabase) return { ok: false as const, error: "Supabase no está configurado." };
+  const { error } = await supabase.rpc("reject_deposit_proof", { target: reservationId, reason: text });
+  if (error) return { ok: false as const, error: "No se pudo rechazar; recarga la página e inténtalo de nuevo." };
+  revalidatePath("/panel/apartados");
+  revalidatePath("/cuenta");
+  return { ok: true as const };
+}

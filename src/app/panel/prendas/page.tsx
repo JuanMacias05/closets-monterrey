@@ -4,6 +4,8 @@ import { redirect } from "next/navigation";
 import { getProductImageUrl } from "@/features/products/public-images";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { PRIMARY_BUTTON_CLASS } from "@/components/panel/panel-styles";
+import { ShareLinkButton } from "@/components/panel/share-link-button";
+import { formatPriceMXN } from "@/features/products/format-price";
 import { ProductListActions } from "@/app/panel/prendas/product-list-actions";
 import { ProductPriceEditor } from "@/app/panel/prendas/product-price-editor";
 
@@ -42,6 +44,14 @@ export default async function ProductsPage() {
         <ul className="divide-y divide-stone-200">
           {products.map((product) => {
             const mainImage = product.images[0];
+            // Only what a shopper can actually open is worth sharing.
+            const shareable = product.publication_status === "published" && product.sale_status === "available" && !product.hidden_by_admin;
+            const actions = (
+              <div className="flex flex-wrap items-start gap-x-4 sm:flex-col sm:items-end">
+                <ProductListActions productId={product.id} saleStatus={product.sale_status} />
+                {shareable && <ShareLinkButton path={`/prendas/${product.slug}`} title={product.name} text={`${product.name} · ${formatPriceMXN(product.price_mxn)}`} />}
+              </div>
+            );
             return (
               <li key={product.id} className="grid grid-cols-[5rem_minmax(0,1fr)] gap-4 py-4 sm:grid-cols-[6rem_minmax(0,1fr)_auto] sm:items-center sm:gap-5">
                 <Link href={`/panel/prendas/${product.id}`} aria-label={`Editar ${product.name}`} className="relative aspect-[3/4] overflow-hidden bg-stone-100">
@@ -61,9 +71,9 @@ export default async function ProductsPage() {
                     {product.publication_status === "draft" ? " · Borrador" : " · Publicada"}
                   </p>
                   {product.hidden_by_admin && <p className="mt-1 text-xs font-medium text-amber-800">Oculta por administración</p>}
-                  <div className="mt-3 sm:hidden"><ProductListActions productId={product.id} saleStatus={product.sale_status} /></div>
+                  <div className="mt-3 sm:hidden">{actions}</div>
                 </div>
-                <div className="hidden sm:block"><ProductListActions productId={product.id} saleStatus={product.sale_status} /></div>
+                <div className="hidden sm:block">{actions}</div>
               </li>
             );
           })}

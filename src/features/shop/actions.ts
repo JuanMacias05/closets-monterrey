@@ -150,3 +150,48 @@ export async function rateCourier(reservationId: string, stars: number): Promise
   revalidatePath("/recolectoras");
   return { ok: true };
 }
+
+const PROOF_ERRORS: Record<string, string> = {
+  not_pending: "Este apartado ya no está esperando anticipo.",
+  invalid_method: "Esa forma de pago no está disponible para este apartado.",
+  invalid_reference: "La clave o folio es demasiado largo.",
+  invalid_proof: "No encontramos la foto que subiste. Inténtalo de nuevo.",
+};
+
+// The photo is uploaded straight from the browser to private storage first; this records it
+// on the reservation. The database function checks the caller is the buyer and the file is
+// in this reservation's folder.
+export async function submitDepositProof(reservationId: string, path: string, method: "transfer" | "oxxo", reference: string): Promise<Result> {
+  if (!UUID.test(reservationId) || typeof path !== "string" || !path.startsWith(`${reservationId}/`)
+    || !["transfer", "oxxo"].includes(method) || typeof reference !== "string" || reference.length > 40) {
+    return { ok: false, error: "Datos no válidos." };
+  }
+  const context = await signedInClient();
+  if (!context.ok) return context;
+  const { error } = await context.supabase.rpc("submit_deposit_proof", { target: reservationId, path, method, reference: reference.trim() || null });
+  if (error) {
+    const code = Object.keys(PROOF_ERRORS).find((key) => error.message.includes(key));
+    return { ok: false, error: code ? PROOF_ERRORS[code]! : "No pudimos guardar tu comprobante. Inténtalo de nuevo." };
+  }
+  revalidatePath("/cuenta");
+  revalidatePath("/panel/apartados");
+  return { ok: true };
+}
+
+export type SupportReason = "proof_rejected" | "proof_not_reviewed" | "released_after_paying" | "other";
+
+export async function requestSupport(reservationId: string, reason: SupportReason, message: string): Promise<Result> {
+  if (!UUID.test(reservationId) || !["proof_rejected", "proof_not_reviewed", "released_after_paying", "other"].includes(reason)
+    || typeof message !== "string") {
+    return { ok: false, error: "Datos no válidos." };
+  }
+  const text = message.trim();
+  if (text.length < 5 || text.length > 1000) return { ok: false, error: "Cuéntanos qué pasó en al menos 5 caracteres." };
+  const context = await signedInClient();
+  if (!context.ok) return context;
+  const { error } = await context.supabase.rpc("request_support", { target: reservationId, why: reason, message: text });
+  if (error) return { ok: false, error: "No pudimos enviar tu solicitud. Inténtalo de nuevo." };
+  revalidatePath("/cuenta");
+  revalidatePath("/panel/admin/soporte");
+  return { ok: true };
+}

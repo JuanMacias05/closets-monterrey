@@ -19,7 +19,7 @@ export default async function StoreSettingsPage() {
       .maybeSingle(),
     supabase
       .from("seller_private_settings")
-      .select("whatsapp_e164,clabe")
+      .select("whatsapp_e164,clabe,oxxo_card")
       .eq("seller_id", authData.user.id)
       .maybeSingle(),
   ]);
@@ -32,7 +32,7 @@ export default async function StoreSettingsPage() {
       <div className="mb-8 border-b border-stone-200 pb-5">
         <p className="text-[10px] uppercase tracking-[0.22em] text-stone-500">Tu tienda</p>
         <h1 className="mt-2 font-serif text-3xl tracking-tight text-stone-900">Edita tu tienda</h1>
-        <p className="mt-3 text-sm leading-6 text-stone-600">Tu nombre y tu foto salen en tu tienda y en cada prenda. El WhatsApp y la CLABE no son públicos: solo los ve quien te aparta una prenda (y la recolectora, tu WhatsApp, si lleva el pedido).</p>
+        <p className="mt-3 text-sm leading-6 text-stone-600">Tu nombre y tu foto salen en tu tienda y en cada prenda. El WhatsApp, la CLABE y la tarjeta para OXXO no son públicos: solo los ve quien te aparta una prenda (y la recolectora, tu WhatsApp, si lleva el pedido).</p>
       </div>
       <StoreSettingsForm
         sellerId={authData.user.id}
@@ -41,6 +41,7 @@ export default async function StoreSettingsPage() {
         avatarUrl={getSellerAvatarUrl(supabase, profile.avatar_path)}
         whatsapp={settings.whatsapp_e164 ?? ""}
         clabe={settings.clabe ?? ""}
+        oxxoCard={settings.oxxo_card ?? ""}
         depositPercent={profile.deposit_percent}
       />
       <div className="mt-10"><DeliverySettings sellerId={authData.user.id} /></div>

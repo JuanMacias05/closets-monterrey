@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { normalizePhoneE164 } from "@/features/auth/phone-number";
+import { cleanCardNumber, isValidCardNumber } from "@/features/store/card-number";
 import { isValidClabe } from "@/features/store/clabe";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -12,6 +13,8 @@ type StoreSettingsInput = {
   clabe: string;
   // 10 or 20; optional so older callers keep the current value.
   depositPercent?: number;
+  // Card for cash deposits at OXXO; "" removes it, undefined keeps the current value.
+  oxxoCard?: string;
 };
 
 export async function saveStoreSettings(input: StoreSettingsInput) {
@@ -21,7 +24,8 @@ export async function saveStoreSettings(input: StoreSettingsInput) {
     (input.avatarPath !== null && typeof input.avatarPath !== "string") ||
     typeof input.whatsapp !== "string" ||
     typeof input.clabe !== "string" ||
-    (input.depositPercent !== undefined && ![10, 20].includes(input.depositPercent))
+    (input.depositPercent !== undefined && ![10, 20].includes(input.depositPercent)) ||
+    (input.oxxoCard !== undefined && typeof input.oxxoCard !== "string")
   ) {
     return { ok: false as const, error: "Los datos de la tienda no son válidos." };
   }
@@ -57,6 +61,11 @@ export async function saveStoreSettings(input: StoreSettingsInput) {
     return { ok: false as const, error: "La CLABE debe tener 18 dígitos y un dígito verificador válido." };
   }
 
+  const oxxoCard = input.oxxoCard === undefined ? undefined : cleanCardNumber(input.oxxoCard) || null;
+  if (oxxoCard && !isValidCardNumber(oxxoCard)) {
+    return { ok: false as const, error: "La tarjeta para OXXO debe tener 16 dígitos; revisa que esté bien escrita." };
+  }
+
   const avatarPath = input.avatarPath?.trim() || null;
   const avatarPrefix = `sellers/${authData.user.id}/avatar/`;
   if (avatarPath && avatarPath !== profile.avatar_path && (!avatarPath.startsWith(avatarPrefix) || !/^sellers\/[0-9a-f-]+\/avatar\/[0-9a-f-]+\.jpg$/i.test(avatarPath))) {
@@ -71,9 +80,9 @@ export async function saveStoreSettings(input: StoreSettingsInput) {
 
   const { error: updateSettingsError } = await supabase
     .from("seller_private_settings")
-    .update({ whatsapp_e164: whatsapp, clabe })
+    .update({ whatsapp_e164: whatsapp, clabe, ...(oxxoCard !== undefined ? { oxxo_card: oxxoCard } : {}) })
     .eq("seller_id", authData.user.id);
-  if (updateSettingsError) return { ok: false as const, error: "No pudimos guardar el WhatsApp y la CLABE." };
+  if (updateSettingsError) return { ok: false as const, error: "No pudimos guardar el WhatsApp y tus datos de pago." };
 
 
   if (profile.avatar_path && profile.avatar_path !== avatarPath && profile.avatar_path.startsWith(avatarPrefix)) {

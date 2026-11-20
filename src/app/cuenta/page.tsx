@@ -4,9 +4,13 @@ import { StoreHeader } from "@/components/store/store-header";
 import { BuyerProfileForm } from "@/components/shop/buyer-profile-form";
 import { CancelReservationButton } from "@/components/shop/cancel-reservation-button";
 import { DeleteAccountButton } from "@/components/shop/delete-account-button";
+import { DepositPayment } from "@/components/shop/deposit-payment";
+import { SupportRequestForm } from "@/components/shop/support-request-form";
 import { RateCourier } from "@/components/shop/rate-courier";
 import { formatPriceMXN } from "@/features/products/format-price";
 import { DELIVERY_STATUS_STEPS, RESERVATION_STATUS_LABELS } from "@/features/shop/reservation-labels";
+import { reservationNoticeMessage, whatsappLink } from "@/features/shop/whatsapp-message";
+import { proofReviewCutoff } from "@/features/support/support-contact";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export const metadata = { title: "Mi cuenta | Closets Monterrey" };
@@ -20,6 +24,8 @@ type ReservationRow = {
   courier: { full_name: string } | null;
   seller: { store_name: string } | null;
   items: { price_mxn: number; product: { name: string; slug: string } | null }[] | null;
+  deposit_oxxo_card: string | null; proof_path: string | null; proof_method: "transfer" | "oxxo" | null; proof_reference: string | null;
+  proof_submitted_at: string | null; proof_rejected_at: string | null; proof_rejection_reason: string | null;
 };
 
 const dateFormat = new Intl.DateTimeFormat("es-MX", { dateStyle: "medium", timeStyle: "short", timeZone: "America/Monterrey" });
@@ -34,11 +40,20 @@ export default async function AccountPage() {
   const [{ data: buyer }, { data: rows }] = await Promise.all([
     supabase.from("buyer_profiles").select("full_name,facebook_url").eq("id", user.id).maybeSingle(),
     supabase.from("reservations")
-      .select("id,status,items_total_mxn,deposit_percent,deposit_mxn,deposit_clabe,seller_whatsapp,expires_at,created_at,delivery_method,delivery_address,delivery_fee_mxn,delivery_status,point:delivery_points(name),courier_fee_payment,courier_whatsapp,buyer_municipality,courier_rating,courier:couriers(full_name),seller:profiles!reservations_seller_id_fkey(store_name),items:reservation_items(price_mxn,product:products(name,slug))")
+      .select("id,status,items_total_mxn,deposit_percent,deposit_mxn,deposit_clabe,seller_whatsapp,expires_at,created_at,delivery_method,delivery_address,delivery_fee_mxn,delivery_status,point:delivery_points(name),courier_fee_payment,courier_whatsapp,buyer_municipality,courier_rating,courier:couriers(full_name),seller:profiles!reservations_seller_id_fkey(store_name),items:reservation_items(price_mxn,product:products(name,slug)),deposit_oxxo_card,proof_path,proof_method,proof_reference,proof_submitted_at,proof_rejected_at,proof_rejection_reason")
       .eq("buyer_id", user.id)
       .order("created_at", { ascending: false }),
   ]);
   const reservations = (rows ?? []) as unknown as ReservationRow[];
+  // Proofs live in private storage; the buyer sees hers through short-lived signed URLs.
+  const proofPaths = reservations.map((reservation) => reservation.proof_path).filter((path): path is string => Boolean(path));
+  const [{ data: signed }, { data: openRequests }] = await Promise.all([
+    proofPaths.length ? supabase.storage.from("payment-proofs").createSignedUrls(proofPaths, 60 * 30) : Promise.resolve({ data: [] }),
+    supabase.from("support_requests").select("reservation_id").eq("status", "open"),
+  ]);
+  const proofUrlByPath = new Map((signed ?? []).filter((entry) => entry.path && entry.signedUrl).map((entry) => [entry.path!, entry.signedUrl]));
+  const openSupport = new Set((openRequests ?? []).map((request) => request.reservation_id));
+  const staleBefore = proofReviewCutoff();
   // The PIN column is hidden from table reads (sellers must not see it); the buyer gets it
   // through a function that only answers for her own reservations.
   const pins = new Map(await Promise.all(
@@ -69,7 +84,11 @@ export default async function AccountPage() {
                   <li key={reservation.id} id={`apartado-${reservation.id}`} className={`border p-5 ${pending ? "border-pine border-2" : "border-stone-200"}`}>
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <p className="font-medium text-stone-900">{reservation.seller?.store_name ?? "Vendedora"}</p>
-                      <span className="bg-stone-100 px-2 py-1 font-condensed text-sm font-bold uppercase text-stone-800">{RESERVATION_STATUS_LABELS[reservation.status] ?? reservation.status}</span>
+                      <span className={`px-2 py-1 font-condensed text-sm font-bold uppercase ${pending && reservation.proof_rejected_at ? "bg-red-50 text-red-800" : "bg-stone-100 text-stone-800"}`}>
+                        {pending && reservation.proof_rejected_at ? "Comprobante rechazado"
+                          : pending && reservation.proof_submitted_at ? "Comprobante en revisión"
+                          : RESERVATION_STATUS_LABELS[reservation.status] ?? reservation.status}
+                      </span>
                     </div>
                     <ul className="mt-2 text-sm text-stone-700">
                       {(reservation.items ?? []).map((item, index) => (
@@ -87,13 +106,49 @@ export default async function AccountPage() {
                     <p className="mt-2 text-sm text-stone-700">Total {formatPriceMXN(reservation.items_total_mxn)} · anticipo {reservation.deposit_percent} %: <strong className="text-stone-900">{formatPriceMXN(reservation.deposit_mxn)}</strong></p>
 
                     {pending && (
-                      <div className="mt-4 bg-stone-100 p-4 text-sm text-stone-800">
-                        <p className="font-semibold">Transfiere {formatPriceMXN(reservation.deposit_mxn)} a esta CLABE:</p>
-                        <p className="mt-1 select-all font-mono text-lg tracking-wider text-stone-900">{reservation.deposit_clabe}</p>
-                        <p className="mt-2">Tienes hasta el <strong>{dateFormat.format(new Date(reservation.expires_at))}</strong>. Si no llega el anticipo, las prendas se liberan.</p>
-                        {reservation.seller_whatsapp && <p className="mt-2">Manda tu comprobante a la vendedora por WhatsApp: <a href={`https://wa.me/${reservation.seller_whatsapp.replace("+", "")}`} className="text-pine underline underline-offset-4">{reservation.seller_whatsapp}</a></p>}
-                        <div className="mt-3"><CancelReservationButton reservationId={reservation.id} /></div>
+                      <div className="mt-4 space-y-4 text-sm text-stone-800">
+                        <DepositPayment
+                          reservationId={reservation.id}
+                          sellerName={reservation.seller?.store_name ?? "La vendedora"}
+                          depositMxn={reservation.deposit_mxn}
+                          clabe={reservation.deposit_clabe}
+                          oxxoCard={reservation.deposit_oxxo_card}
+                          deadlineLabel={dateFormat.format(new Date(reservation.expires_at))}
+                          supportOpen={openSupport.has(reservation.id)}
+                          proof={{
+                            method: reservation.proof_method,
+                            reference: reservation.proof_reference,
+                            submittedLabel: reservation.proof_submitted_at ? dateFormat.format(new Date(reservation.proof_submitted_at)) : null,
+                            rejected: reservation.proof_rejected_at !== null,
+                            rejectionReason: reservation.proof_rejection_reason,
+                            imageUrl: reservation.proof_path ? proofUrlByPath.get(reservation.proof_path) ?? null : null,
+                            stale: reservation.proof_submitted_at !== null && reservation.proof_rejected_at === null && new Date(reservation.proof_submitted_at).getTime() < staleBefore,
+                          }}
+                        />
+                        {reservation.seller_whatsapp && (
+                          <div>
+                            <a
+                              href={whatsappLink(reservation.seller_whatsapp, reservationNoticeMessage({
+                                ...reservation,
+                                buyerName: buyer?.full_name ?? null,
+                                storeName: reservation.seller?.store_name ?? null,
+                                depositMxn: reservation.deposit_mxn,
+                                items: (reservation.items ?? []).map((item) => ({ name: item.product?.name ?? "Prenda", priceMxn: item.price_mxn })),
+                              }))}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex min-h-11 items-center border-2 border-pine px-5 font-condensed text-base font-bold uppercase text-pine hover:bg-[#e6eee9]"
+                            >
+                              Avisarle por WhatsApp
+                            </a>
+                            <p className="mt-2 text-stone-600">La vendedora no recibe aviso automático cuando apartas: mándale este mensaje para que esté al pendiente.</p>
+                          </div>
+                        )}
+                        <div><CancelReservationButton reservationId={reservation.id} /></div>
                       </div>
+                    )}
+                    {reservation.status === "expired" && reservation.proof_submitted_at && (
+                      <div className="mt-4"><SupportRequestForm reservationId={reservation.id} reason="released_after_paying" alreadyOpen={openSupport.has(reservation.id)} /></div>
                     )}
                     {reservation.status === "confirmed" && pins.get(reservation.id) && (
                       <div className="mt-4 border-2 border-pine p-4 text-center">
