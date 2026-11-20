@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { DeliverySettings } from "@/app/panel/tienda/delivery-settings";
+import { PaymentSettingsSummary } from "@/app/panel/tienda/payment-settings-summary";
 import { ProductEditor } from "@/app/panel/prendas/product-editor";
 
 export default async function NewProductPage() {
@@ -14,7 +15,7 @@ export default async function NewProductPage() {
         <p className="text-[10px] uppercase tracking-[0.22em] text-stone-500">Agregar al catálogo</p>
         <h1 className="mt-2 font-serif text-3xl tracking-tight text-stone-900">Nueva prenda</h1>
       </div>
-      <div className="mb-8"><DeliverySettings sellerId={user.id} compact /></div>
+      <div className="mb-8 space-y-3"><DeliverySettings sellerId={user.id} compact /><PaymentSettingsSummary sellerId={user.id} /></div>
       <ProductEditor sellerId={user.id} product={null} />
     </section>
   );

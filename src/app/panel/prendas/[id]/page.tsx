@@ -2,6 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import { getProductImageUrl } from "@/features/products/public-images";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { DeliverySettings } from "@/app/panel/tienda/delivery-settings";
+import { PaymentSettingsSummary } from "@/app/panel/tienda/payment-settings-summary";
 import { ProductEditor, type EditableProduct } from "@/app/panel/prendas/product-editor";
 
 export default async function EditProductPage({ params }: PageProps<"/panel/prendas/[id]">) {
@@ -31,7 +32,7 @@ export default async function EditProductPage({ params }: PageProps<"/panel/pren
         <p className="text-[10px] uppercase tracking-[0.22em] text-stone-500">Editar catálogo</p>
         <h1 className="mt-2 font-serif text-3xl tracking-tight text-stone-900">Edita tu prenda</h1>
       </div>
-      <div className="mb-8"><DeliverySettings sellerId={user.id} compact /></div>
+      <div className="mb-8 space-y-3"><DeliverySettings sellerId={user.id} compact /><PaymentSettingsSummary sellerId={user.id} /></div>
       <ProductEditor sellerId={user.id} product={product} />
     </section>
   );

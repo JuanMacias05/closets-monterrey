@@ -96,7 +96,7 @@ export default async function PanelHomePage() {
         <PanelCard href="/panel/prendas/nueva" title="Subir prenda" description="Fotos, talla, precio y entrega." />
         <PanelCard href="/panel/prendas" title="Mis prendas" description="Edita, marca vendida o retira tus prendas." />
         <PanelCard href="/panel/apartados" title="Apartados" description="Revisa comprobantes, confirma anticipos y entregas." />
-        <PanelCard href="/panel/tienda" title="Editar tienda" description="Nombre, foto y datos de contacto." />
+        <PanelCard href="/panel/tienda" title="Editar tienda" description="Nombre, foto, contacto y cómo te pagan." />
       </PanelGroup>
 
       {isAdmin && (

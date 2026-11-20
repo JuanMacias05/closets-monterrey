@@ -81,6 +81,9 @@ test("seller publishes a new garment with its photos in one step", async ({ page
   await loginAsSeller(page);
   await page.goto("/panel/prendas/nueva");
   await expect(page.getByText(/Entregas \(para todas tus prendas\)/)).toBeVisible();
+  // How buyers pay is store-wide too; the line says what's set and links to Editar tienda.
+  await expect(page.getByText("transferencia (CLABE ••••0000)")).toBeVisible();
+  await expect(page.getByRole("link", { name: "Cambiar" })).toHaveAttribute("href", "/panel/tienda");
   await page.locator("#product-photos").setInputFiles(["e2e/fixtures/store-photo-800x600.jpg", "e2e/fixtures/store-photo.png"]);
   await expect(page.getByAltText(/Foto \d por subir/)).toHaveCount(2);
   await page.getByRole("button", { name: "Quitar" }).last().click();
