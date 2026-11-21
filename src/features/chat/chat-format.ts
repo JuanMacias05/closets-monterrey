@@ -2,7 +2,31 @@
 
 export type ChatArea = "buyer" | "seller" | "courier";
 
-export type ChatMessage = { id: string; sender_id: string | null; body: string; created_at: string };
+export type ConversationKind = "order" | "pickup" | "delivery";
+
+// body is null for a photo sent without text; image_path is null once the nightly purge removed
+// the photo (image_purged_at then says when), 30 days after the reservation closed.
+export type ChatMessage = {
+  id: string; sender_id: string | null; body: string | null; created_at: string;
+  image_path?: string | null; image_purged_at?: string | null;
+};
+
+// What a notification or a list shows for a message (20261126000200: "📷 Foto" without text).
+export function messagePreview(body: string | null | undefined, hasPhoto: boolean): string {
+  const text = body?.trim();
+  if (text) return text;
+  return hasPhoto ? "📷 Foto" : "";
+}
+
+// Chat photos live at <conversation id>/<uuid>.jpg in the private chat-photos bucket; the
+// storage policies and the messages policy check that shape (20261126000200).
+export function chatPhotoPath(conversationId: string, photoId: string): string {
+  return `${conversationId}/${photoId}.jpg`;
+}
+
+export function isChatPhotoPathFor(conversationId: string, path: unknown): path is string {
+  return typeof path === "string" && /^[0-9a-f-]{36}\/[0-9a-f-]{36}\.jpg$/i.test(path) && path.startsWith(`${conversationId}/`);
+}
 
 export const MAX_MESSAGE_LENGTH = 1000;
 

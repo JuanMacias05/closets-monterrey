@@ -88,7 +88,7 @@ export default async function AccountPage() {
   // The PIN column is hidden from table reads (sellers must not see it); the buyer gets it
   // through a function that only answers for her own reservations.
   const chats = await conversationLinks("buyer");
-  const unreadChats = [...chats.values()].reduce((sum, chat) => sum + (chat.order?.unread ?? 0), 0);
+  const unreadChats = [...chats.values()].reduce((sum, chat) => sum + (chat.order?.unread ?? 0) + (chat.delivery?.unread ?? 0), 0);
   const pins = new Map(await Promise.all(
     reservations.filter((reservation) => reservation.status === "confirmed").map(async (reservation) =>
       [reservation.id, (await supabase.rpc("reservation_delivery_pin", { target: reservation.id })).data as string | null] as const),
@@ -229,9 +229,11 @@ export default async function AccountPage() {
                         {reservation.delivery_method === "courier" && reservation.courier_whatsapp && <> Tu recolectora: <a href={`https://wa.me/${reservation.courier_whatsapp.replace("+", "")}`} className="text-pine underline underline-offset-4">WhatsApp {reservation.courier_whatsapp}</a>.</>}
                       </p>
                     )}
-                    {chats.get(reservation.id)?.order && (
-                      <div className="mt-3">
-                        <ChatLink href={`/cuenta/mensajes/${chats.get(reservation.id)!.order!.id}`} label="Mensajes con la vendedora" unread={chats.get(reservation.id)!.order!.unread} />
+                    {(chats.get(reservation.id)?.order || chats.get(reservation.id)?.delivery) && (
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {chats.get(reservation.id)?.order && <ChatLink href={`/cuenta/mensajes/${chats.get(reservation.id)!.order!.id}`} label="Mensajes con la vendedora" unread={chats.get(reservation.id)!.order!.unread} />}
+                        {/* Opens when the courier accepts (20261126000200). */}
+                        {chats.get(reservation.id)?.delivery && <ChatLink href={`/cuenta/mensajes/${chats.get(reservation.id)!.delivery!.id}`} label="Mensajes con la recolectora" unread={chats.get(reservation.id)!.delivery!.unread} />}
                       </div>
                     )}
                   </li>

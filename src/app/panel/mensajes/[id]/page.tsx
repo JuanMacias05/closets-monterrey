@@ -13,7 +13,7 @@ export default async function SellerConversationPage({ params }: { params: Promi
     <section>
       <h1 className="font-serif text-3xl tracking-tight text-stone-900">{conversation.title}</h1>
       <p className="mt-1 mb-4 text-sm text-stone-600">{conversation.subtitle} · <Link href="/panel/apartados" className="text-pine underline underline-offset-4">Ver apartados</Link></p>
-      <ChatThread conversationId={conversation.id} area="seller" myId={conversation.myId} names={conversation.names} initialMessages={conversation.messages} placeholder={conversation.kind === "pickup" ? "Escríbele a la recolectora" : "Escríbele a la clienta"} />
+      <ChatThread conversationId={conversation.id} area="seller" myId={conversation.myId} names={conversation.names} initialMessages={conversation.messages} photoUrls={conversation.photoUrls} placeholder={conversation.kind === "pickup" ? "Escríbele a la recolectora" : "Escríbele a la clienta"} />
     </section>
   );
 }

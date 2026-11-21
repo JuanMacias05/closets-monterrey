@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { chatBasePath, cleanMessageBody, mergeMessages, messageTimeLabel, unreadLabel } from "@/features/chat/chat-format";
+import { chatBasePath, chatPhotoPath, cleanMessageBody, isChatPhotoPathFor, mergeMessages, messagePreview, messageTimeLabel, unreadLabel } from "@/features/chat/chat-format";
 
 const message = (id: string, created_at: string) => ({ id, sender_id: "u1", body: id, created_at });
 
@@ -38,5 +38,29 @@ describe("chat paths and labels", () => {
     const now = new Date("2026-11-20T20:00:00Z");
     expect(messageTimeLabel("2026-11-20T19:05:00Z", now)).not.toMatch(/nov/);
     expect(messageTimeLabel("2026-11-18T19:05:00Z", now)).toMatch(/nov/);
+  });
+});
+
+describe("chat photos", () => {
+  const conversation = "11111111-1111-4111-8111-111111111111";
+  const photo = "22222222-2222-4222-8222-222222222222";
+
+  it("stores a photo in its conversation's folder", () => {
+    expect(chatPhotoPath(conversation, photo)).toBe(`${conversation}/${photo}.jpg`);
+  });
+
+  it("accepts only a JPEG path inside this conversation", () => {
+    expect(isChatPhotoPathFor(conversation, `${conversation}/${photo}.jpg`)).toBe(true);
+    expect(isChatPhotoPathFor(conversation, `${photo}/${photo}.jpg`)).toBe(false);
+    expect(isChatPhotoPathFor(conversation, `${conversation}/${photo}.png`)).toBe(false);
+    expect(isChatPhotoPathFor(conversation, `${conversation}/../x.jpg`)).toBe(false);
+    expect(isChatPhotoPathFor(conversation, null)).toBe(false);
+  });
+
+  it("previews a photo without text as 📷 Foto", () => {
+    expect(messagePreview(null, true)).toBe("📷 Foto");
+    expect(messagePreview("  ", true)).toBe("📷 Foto");
+    expect(messagePreview("Mira la mancha", true)).toBe("Mira la mancha");
+    expect(messagePreview("Hola", false)).toBe("Hola");
   });
 });

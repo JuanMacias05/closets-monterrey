@@ -105,7 +105,8 @@ export function notifyCourierAnswer(requestId: string, accepted: boolean) {
   });
 }
 
-// A chat message: everyone else in the conversation, linked to the chat in her own area.
+// A chat message: the other participant, linked to the chat in her own area. `body` is the
+// preview ("📷 Foto" for a photo without text).
 export function notifyNewMessage(conversationId: string, senderId: string, body: string) {
   after(async () => {
     const admin = createSupabaseAdminClient();
@@ -118,11 +119,18 @@ export function notifyNewMessage(conversationId: string, senderId: string, body:
     const store = reservation.seller?.store_name ?? "La vendedora";
     const preview = body.length > 120 ? `${body.slice(0, 119)}…` : body;
     const tag = `chat-${conversation.id}`;
+    // Each kind has two participants: tell the one who didn't write, in her own area.
     if (conversation.kind === "order") {
       if (senderId === reservation.seller_id) {
         await pushToUsers([reservation.buyer_id], { title: store, body: preview, url: `/cuenta/mensajes/${conversation.id}`, tag });
       } else {
         await pushToUsers([reservation.seller_id], { title: await buyerName(admin, reservation.buyer_id), body: preview, url: `/panel/mensajes/${conversation.id}`, tag });
+      }
+    } else if (conversation.kind === "delivery") {
+      if (senderId === reservation.courier_id) {
+        await pushToUsers([reservation.buyer_id], { title: await courierName(admin, reservation.courier_id), body: preview, url: `/cuenta/mensajes/${conversation.id}`, tag });
+      } else {
+        await pushToUsers([reservation.courier_id], { title: await buyerName(admin, reservation.buyer_id), body: preview, url: `/recolectora/mensajes/${conversation.id}`, tag });
       }
     } else if (senderId === reservation.seller_id) {
       await pushToUsers([reservation.courier_id], { title: store, body: preview, url: `/recolectora/mensajes/${conversation.id}`, tag });

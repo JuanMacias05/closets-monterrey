@@ -1,7 +1,7 @@
 import "server-only";
 
 import { cache } from "react";
-import type { ChatArea, ChatMessage } from "@/features/chat/chat-format";
+import type { ChatArea, ChatMessage, ConversationKind } from "@/features/chat/chat-format";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 // Conversations (20261125000100) as each area shows them. The database decides who is in a
@@ -9,7 +9,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 // sees her buyer chats in /cuenta and her seller chats in /panel.
 
 type MyConversationRow = {
-  conversation_id: string; reservation_id: string; kind: "order" | "pickup"; my_role: ChatArea;
+  conversation_id: string; reservation_id: string; kind: ConversationKind; my_role: ChatArea;
   last_message_at: string | null; last_body: string | null; unread: number;
 };
 
@@ -21,7 +21,7 @@ type ReservationInfo = {
 };
 
 export type ConversationSummary = {
-  id: string; kind: "order" | "pickup"; reservationId: string; title: string; subtitle: string;
+  id: string; kind: ConversationKind; reservationId: string; title: string; subtitle: string;
   lastBody: string | null; lastMessageAt: string | null; unread: number;
 };
 
@@ -43,8 +43,10 @@ export async function unreadCount(area: ChatArea): Promise<number> {
 
 // Unread messages per conversation and the conversation ids per reservation, for the links on
 // the reservation cards.
-export async function conversationLinks(area: ChatArea): Promise<Map<string, { order?: { id: string; unread: number }; pickup?: { id: string; unread: number } }>> {
-  const links = new Map<string, { order?: { id: string; unread: number }; pickup?: { id: string; unread: number } }>();
+export type ChatLinks = Partial<Record<ConversationKind, { id: string; unread: number }>>;
+
+export async function conversationLinks(area: ChatArea): Promise<Map<string, ChatLinks>> {
+  const links = new Map<string, ChatLinks>();
   for (const row of await getMyConversations()) {
     if (row.my_role !== area) continue;
     links.set(row.reservation_id, { ...links.get(row.reservation_id), [row.kind]: { id: row.conversation_id, unread: row.unread } });
@@ -67,11 +69,15 @@ async function reservationInfo(reservationIds: string[]) {
   };
 }
 
-// Who she is talking to, seen from her side.
-function counterpart(area: ChatArea, kind: "order" | "pickup", reservation: ReservationInfo | undefined, buyers: Map<string, string>) {
-  if (area === "buyer" || area === "courier") return reservation?.seller?.store_name ?? "Vendedora";
-  if (kind === "pickup") return `Recolectora ${reservation?.courier?.full_name ?? ""}`.trim();
-  return (reservation?.buyer_id && buyers.get(reservation.buyer_id)) || (reservation?.buyer_id ? "Compradora" : "Cuenta borrada");
+// Who she is talking to, seen from her side. order: buyer-seller; pickup: seller-courier;
+// delivery: buyer-courier (20261126000200).
+function counterpart(area: ChatArea, kind: ConversationKind, reservation: ReservationInfo | undefined, buyers: Map<string, string>) {
+  const buyer = (reservation?.buyer_id && buyers.get(reservation.buyer_id)) || (reservation?.buyer_id ? "Compradora" : "Cuenta borrada");
+  const courier = `Recolectora ${reservation?.courier?.full_name ?? ""}`.trim();
+  const store = reservation?.seller?.store_name ?? "Vendedora";
+  if (area === "buyer") return kind === "delivery" ? courier : store;
+  if (area === "courier") return kind === "delivery" ? buyer : store;
+  return kind === "pickup" ? courier : buyer;
 }
 
 function subtitle(reservation: ReservationInfo | undefined) {
@@ -94,8 +100,10 @@ export async function listConversations(area: ChatArea): Promise<ConversationSum
 }
 
 export type LoadedConversation = {
-  id: string; kind: "order" | "pickup"; reservationId: string; title: string; subtitle: string;
+  id: string; kind: ConversationKind; reservationId: string; title: string; subtitle: string;
   myId: string; messages: ChatMessage[]; names: Record<string, string>;
+  // Short-lived signed URLs for the photos in `messages`, by storage path.
+  photoUrls: Record<string, string>;
 };
 
 // One conversation for its area, or null when she is not in it from that side.
@@ -109,7 +117,7 @@ export async function loadConversation(conversationId: string, area: ChatArea): 
   if (!mine) return null;
 
   const [{ data: latest }, { reservations, buyers }] = await Promise.all([
-    supabase.from("messages").select("id,sender_id,body,created_at").eq("conversation_id", conversationId)
+    supabase.from("messages").select("id,sender_id,body,created_at,image_path,image_purged_at").eq("conversation_id", conversationId)
       .order("created_at", { ascending: false }).limit(200),
     reservationInfo([mine.reservation_id]),
   ]);
@@ -121,9 +129,16 @@ export async function loadConversation(conversationId: string, area: ChatArea): 
   if (reservation?.buyer_id && reservation.buyer_id !== user.id) names[reservation.buyer_id] = buyers.get(reservation.buyer_id) ?? "Compradora";
   if (sellerRow?.courier_id && sellerRow.courier_id !== user.id) names[sellerRow.courier_id] = reservation?.courier?.full_name ?? "Recolectora";
 
+  const messages = ((latest ?? []) as ChatMessage[]).toReversed();
+  // Private bucket: photos are read through signed URLs, which row security lets only the
+  // participants create (20261126000200).
+  const paths = messages.map((message) => message.image_path).filter((path): path is string => Boolean(path));
+  const { data: signed } = paths.length ? await supabase.storage.from("chat-photos").createSignedUrls(paths, 60 * 30) : { data: [] };
+  const photoUrls = Object.fromEntries((signed ?? []).flatMap((entry) => (entry.path && entry.signedUrl ? [[entry.path, entry.signedUrl] as const] : [])));
+
   return {
     id: conversationId, kind: mine.kind, reservationId: mine.reservation_id,
     title: counterpart(area, mine.kind, reservation, buyers), subtitle: subtitle(reservation),
-    myId: user.id, messages: ((latest ?? []) as ChatMessage[]).toReversed(), names,
+    myId: user.id, messages, names, photoUrls,
   };
 }

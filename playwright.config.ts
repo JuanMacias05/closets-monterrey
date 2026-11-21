@@ -29,6 +29,10 @@ export default defineConfig({
       CATALOG_DEMO_NOW: "2026-11-24T00:00:00.000Z",
       NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL ?? "http://127.0.0.1:54321",
       NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? "",
+      // The courier-expiry webhook (20261126000300) checks this secret and claims with the
+      // local secret key. No VAPID keys here, so no push is actually sent.
+      CRON_WEBHOOK_SECRET: "e2e-cron-webhook-secret-0123456789",
+      SUPABASE_SECRET_KEY: process.env.E2E_SUPABASE_SECRET_KEY ?? "",
     },
   },
 });

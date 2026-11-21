@@ -10,8 +10,8 @@ export default async function CourierMessagesPage() {
   return (
     <section>
       <h1 className="font-serif text-3xl tracking-tight text-stone-900">Mensajes</h1>
-      <p className="mt-2 text-sm text-stone-600">Con la vendedora de cada entrega que aceptaste, para coordinar la recolección.</p>
-      <ConversationList area="courier" conversations={conversations} empty="Cuando aceptes una entrega, aquí platicas con la vendedora." />
+      <p className="mt-2 text-sm text-stone-600">Con la vendedora (para recoger) y con la clienta (para entregar) de cada pedido que aceptaste.</p>
+      <ConversationList area="courier" conversations={conversations} empty="Cuando aceptes una entrega, aquí platicas con la vendedora y con la clienta." />
     </section>
   );
 }

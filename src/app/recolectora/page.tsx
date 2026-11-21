@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { CourierDeliveryActions } from "@/app/recolectora/delivery-actions";
 import { ChatLink } from "@/components/chat/conversation-list";
-import { conversationLinks } from "@/features/chat/chat-data";
+import { conversationLinks, type ChatLinks } from "@/features/chat/chat-data";
 import { requireCourier } from "@/features/couriers/require-courier";
 import { formatPriceMXN } from "@/features/products/format-price";
 
@@ -68,9 +68,7 @@ export default async function CourierDeliveriesPage() {
                 <p className="text-sm text-stone-700"><strong>Entregas en:</strong> {assignment.delivery_address}{buyer?.phone_e164 && <> · <a href={`https://wa.me/${buyer.phone_e164.replace("+", "")}`} className="text-pine underline underline-offset-4">WhatsApp de la clienta</a></>}</p>
                 <p className="text-sm text-stone-700"><strong>Prendas:</strong> {(assignment.items ?? []).map((item) => item.product?.name ?? "Prenda").join(", ")}</p>
                 <p className="text-sm text-stone-700"><strong>Tu tarifa:</strong> {formatPriceMXN(assignment.delivery_fee_mxn)} · {assignment.courier_fee_payment === "with_deposit" ? "te la paga la vendedora" : "te la paga la clienta al recibir"}</p>
-                {chats.get(assignment.id)?.pickup && (
-                  <div className="mt-3"><ChatLink href={`/recolectora/mensajes/${chats.get(assignment.id)!.pickup!.id}`} label="Mensajes con la vendedora" unread={chats.get(assignment.id)!.pickup!.unread} /></div>
-                )}
+                <CourierChatLinks links={chats.get(assignment.id)} />
                 <div className="mt-4"><CourierDeliveryActions reservationId={assignment.id} deliveryStatus={assignment.delivery_status} buyerName={buyer?.full_name ?? "La clienta"} /></div>
               </li>
             );
@@ -90,9 +88,7 @@ export default async function CourierDeliveriesPage() {
                   <p className="font-medium text-stone-900">{assignment.seller?.store_name ?? "Vendedora"} → {buyer?.full_name ?? "la clienta"}, {assignment.buyer_municipality}</p>
                   <p>{(assignment.items ?? []).map((item) => item.product?.name ?? "Prenda").join(", ")} · tu tarifa {formatPriceMXN(assignment.delivery_fee_mxn)}</p>
                   <p className="text-stone-600">Tiene hasta {dateFormat.format(new Date(assignment.expires_at))} para pagar; si no, el pedido se libera.</p>
-                  {chats.get(assignment.id)?.pickup && (
-                    <div className="mt-2"><ChatLink href={`/recolectora/mensajes/${chats.get(assignment.id)!.pickup!.id}`} label="Mensajes con la vendedora" unread={chats.get(assignment.id)!.pickup!.unread} /></div>
-                  )}
+                  <CourierChatLinks links={chats.get(assignment.id)} />
                 </li>
               );
             })}
@@ -100,5 +96,16 @@ export default async function CourierDeliveriesPage() {
         </>
       )}
     </section>
+  );
+}
+
+// Her two chats for one delivery: with the seller (to collect) and with the buyer (to deliver).
+function CourierChatLinks({ links }: { links: ChatLinks | undefined }) {
+  if (!links?.pickup && !links?.delivery) return null;
+  return (
+    <div className="mt-3 flex flex-wrap gap-2">
+      {links.pickup && <ChatLink href={`/recolectora/mensajes/${links.pickup.id}`} label="Mensajes con la vendedora" unread={links.pickup.unread} />}
+      {links.delivery && <ChatLink href={`/recolectora/mensajes/${links.delivery.id}`} label="Mensajes con la clienta" unread={links.delivery.unread} />}
+    </div>
   );
 }

@@ -3,19 +3,26 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useReducedMotion } from "framer-motion";
+import { ChatPhoto } from "@/components/chat/chat-photo";
 import { markConversationRead, sendChatMessage } from "@/features/chat/actions";
-import { MAX_MESSAGE_LENGTH, mergeMessages, messageTimeLabel, type ChatArea, type ChatMessage } from "@/features/chat/chat-format";
+import { chatPhotoPath, MAX_MESSAGE_LENGTH, mergeMessages, messageTimeLabel, type ChatArea, type ChatMessage } from "@/features/chat/chat-format";
+import { prepareProductImage } from "@/features/products/product-image-upload";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 // One conversation, live. New messages arrive through Supabase Realtime (row security decides
 // what this browser may receive); if the live feed can't connect, the page refreshes itself
 // every 20 seconds instead, so the chat still works, just slower.
-export function ChatThread({ conversationId, area, myId, names, initialMessages, placeholder }: {
+//
+// Photos: the browser shrinks a picked photo to a JPEG of at most 300 KB (the same helper as
+// garment and proof photos), uploads it straight to the private chat-photos bucket and then
+// sends the message pointing at it (20261126000200).
+export function ChatThread({ conversationId, area, myId, names, initialMessages, photoUrls, placeholder }: {
   conversationId: string;
   area: ChatArea;
   myId: string;
   names: Record<string, string>;
   initialMessages: ChatMessage[];
+  photoUrls: Record<string, string>;
   placeholder: string;
 }) {
   const router = useRouter();
@@ -28,7 +35,37 @@ export function ChatThread({ conversationId, area, myId, names, initialMessages,
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [live, setLive] = useState(true);
+  const [photo, setPhoto] = useState<{ file: File; previewUrl: string } | null>(null);
   const bottomRef = useRef<HTMLLIElement>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => () => { if (photo) URL.revokeObjectURL(photo.previewUrl); }, [photo]);
+
+  function pickPhoto(file: File | null) {
+    setError(null);
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      setError("Elige una foto (imagen).");
+      return;
+    }
+    setPhoto({ file, previewUrl: URL.createObjectURL(file) });
+  }
+
+  function clearPhoto() {
+    setPhoto(null);
+    if (fileRef.current) fileRef.current.value = "";
+  }
+
+  // Shrinks and uploads the picked photo; returns its storage path.
+  async function uploadPhoto(file: File): Promise<string> {
+    const supabase = createSupabaseBrowserClient();
+    if (!supabase) throw new Error("Supabase no está configurado.");
+    const prepared = await prepareProductImage(file);
+    const path = chatPhotoPath(conversationId, crypto.randomUUID());
+    const { error: uploadError } = await supabase.storage.from("chat-photos").upload(path, prepared.file, { contentType: "image/jpeg", upsert: false });
+    if (uploadError) throw new Error("No pudimos subir la foto. Si el apartado cerró hace más de 30 días, la conversación ya no recibe fotos.");
+    return path;
+  }
 
   // Opening the chat reads it; the refresh updates the unread badge in the menu or header.
   useEffect(() => {
@@ -77,17 +114,24 @@ export function ChatThread({ conversationId, area, myId, names, initialMessages,
 
   async function send(event?: React.FormEvent) {
     event?.preventDefault();
-    if (!draft.trim() || busy) return;
+    if ((!draft.trim() && !photo) || busy) return;
     setBusy(true);
     setError(null);
-    const result = await sendChatMessage(conversationId, draft);
-    if (result.ok) {
-      setArrived((current) => [...current, result.message]);
-      setDraft("");
-    } else {
-      setError(result.error);
+    try {
+      const imagePath = photo ? await uploadPhoto(photo.file) : null;
+      const result = await sendChatMessage(conversationId, draft, imagePath);
+      if (result.ok) {
+        setArrived((current) => [...current, result.message]);
+        setDraft("");
+        clearPhoto();
+      } else {
+        setError(result.error);
+      }
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "No pudimos enviar la foto.");
+    } finally {
+      setBusy(false);
     }
-    setBusy(false);
   }
 
   return (
@@ -99,13 +143,28 @@ export function ChatThread({ conversationId, area, myId, names, initialMessages,
           return (
             <li key={message.id} className={`flex max-w-[85%] flex-col ${mine ? "self-end items-end" : "self-start items-start"}`}>
               <span className="text-[11px] text-stone-500">{mine ? "Tú" : (message.sender_id && names[message.sender_id]) || "Cuenta borrada"} · {messageTimeLabel(message.created_at)}</span>
-              <p className={`mt-0.5 whitespace-pre-wrap break-words px-3 py-2 text-sm ${mine ? "bg-pine text-white" : "bg-stone-100 text-stone-900"}`}>{message.body}</p>
+              {message.image_path && <ChatPhoto path={message.image_path} initialUrl={photoUrls[message.image_path] ?? null} senderLabel={mine ? "Tu foto" : `Foto de ${(message.sender_id && names[message.sender_id]) || "Cuenta borrada"}`} />}
+              {!message.image_path && message.image_purged_at && <p className="mt-0.5 border border-dashed border-stone-300 px-3 py-2 text-xs italic text-stone-500">Foto eliminada por privacidad</p>}
+              {message.body && <p className={`mt-0.5 whitespace-pre-wrap break-words px-3 py-2 text-sm ${mine ? "bg-pine text-white" : "bg-stone-100 text-stone-900"}`}>{message.body}</p>}
             </li>
           );
         })}
         <li ref={bottomRef} aria-hidden="true" />
       </ol>
+      {photo && (
+        <div className="flex items-center gap-3 border-t border-stone-200 px-3 pt-3">
+          {/* eslint-disable-next-line @next/next/no-img-element -- local preview (object URL) before upload */}
+          <img src={photo.previewUrl} alt="Foto por enviar" className="size-16 border border-stone-200 object-cover" />
+          <button type="button" onClick={clearPhoto} disabled={busy} className="min-h-11 text-sm text-stone-700 underline underline-offset-4">Quitar foto</button>
+        </div>
+      )}
       <form onSubmit={send} className="flex items-end gap-2 border-t border-stone-200 p-3">
+        {/* Without `capture`, phones offer both the camera and the gallery. */}
+        <input ref={fileRef} id={`chat-photo-${conversationId}`} type="file" accept="image/*" className="sr-only" onChange={(event) => pickPhoto(event.target.files?.[0] ?? null)} />
+        <label htmlFor={`chat-photo-${conversationId}`} title="Adjuntar foto" className="press grid min-h-11 min-w-11 cursor-pointer place-items-center border border-stone-300 text-stone-700 hover:border-stone-600">
+          <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round"><path d="M4 8h3l2-2.5h6L17 8h3v11H4z" /><circle cx="12" cy="13" r="3.5" /></svg>
+          <span className="sr-only">Adjuntar foto</span>
+        </label>
         <label htmlFor={`chat-${conversationId}`} className="sr-only">Escribe un mensaje</label>
         <textarea
           id={`chat-${conversationId}`}
@@ -120,7 +179,7 @@ export function ChatThread({ conversationId, area, myId, names, initialMessages,
           placeholder={placeholder}
           className="min-h-11 flex-1 resize-y border border-stone-300 p-2 text-sm"
         />
-        <button type="submit" disabled={busy || !draft.trim()} className="press min-h-11 bg-pine px-4 font-condensed text-sm font-bold uppercase text-white disabled:opacity-50">
+        <button type="submit" disabled={busy || (!draft.trim() && !photo)} className="press min-h-11 bg-pine px-4 font-condensed text-sm font-bold uppercase text-white disabled:opacity-50">
           {busy ? "Enviando…" : "Enviar"}
         </button>
       </form>

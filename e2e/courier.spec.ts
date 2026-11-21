@@ -135,10 +135,23 @@ test("a courier rejects a request, accepts the next, and everyone coordinates in
 
   // 5. The buyer writes to the seller in the chat.
   await page.getByRole("link", { name: /Mensajes con la vendedora/ }).first().click();
-  await expect(page.getByRole("heading", { name: "Closet de Renata" })).toBeVisible();
+  // The dev server compiles each chat page on its first visit.
+  await expect(page.getByRole("heading", { name: "Closet de Renata" })).toBeVisible({ timeout: 20_000 });
   await page.getByLabel("Escribe un mensaje").fill("Hola, ¿me confirmas cuando lo recoja Lupita?");
   await page.getByRole("button", { name: "Enviar" }).click();
   await expect(page.getByRole("list", { name: "Mensajes" }).getByText("Hola, ¿me confirmas cuando lo recoja Lupita?")).toBeVisible({ timeout: SERVER_ACTION_TIMEOUT });
+
+  // 5b. And to her courier, with a photo of her front door (the seller is not in this chat).
+  await page.goto("/cuenta");
+  await page.getByRole("link", { name: /Mensajes con la recolectora/ }).first().click();
+  await expect(page.getByRole("heading", { name: "Recolectora Lupita Recolectora" })).toBeVisible({ timeout: 20_000 });
+  await page.locator('input[type="file"][id^="chat-photo-"]').setInputFiles("e2e/fixtures/store-photo.png");
+  await expect(page.getByRole("img", { name: "Foto por enviar" })).toBeVisible();
+  await page.getByLabel("Escribe un mensaje").fill("Así es mi fachada, portón verde.");
+  await page.getByRole("button", { name: "Enviar" }).click();
+  await expect(page.getByRole("img", { name: "Tu foto" })).toBeVisible({ timeout: SERVER_ACTION_TIMEOUT });
+  await page.goto("/cuenta/mensajes");
+  await page.getByRole("link", { name: /Closet de Renata/ }).first().click();
 
   // 6. The seller sees who takes it and the unread message, answers live, confirms the deposit.
   const sellerContext = await browser.newContext({ viewport: { width: 1366, height: 800 } });
@@ -149,7 +162,7 @@ test("a courier rejects a request, accepts the next, and everyone coordinates in
   const card = seller.getByRole("listitem").filter({ hasText: "Compradora Recolectora" }).filter({ hasText: "Esperando anticipo" }).first();
   await expect(card.getByTestId("courier-status")).toHaveText("✓ Lupita Recolectora aceptó la entrega.");
   await card.getByRole("link", { name: /Mensajes con Compradora Recolectora/ }).click();
-  await expect(seller.getByText("Hola, ¿me confirmas cuando lo recoja Lupita?")).toBeVisible();
+  await expect(seller.getByText("Hola, ¿me confirmas cuando lo recoja Lupita?")).toBeVisible({ timeout: 20_000 });
   await seller.getByLabel("Escribe un mensaje").fill("¡Claro! Te aviso por aquí.");
   await seller.getByRole("button", { name: "Enviar" }).click();
   // Realtime: the buyer's open chat shows it without reloading.
@@ -166,11 +179,19 @@ test("a courier rejects a request, accepts the next, and everyone coordinates in
   await expect(seller.getByRole("list", { name: "Mensajes" }).getByText("Lupita, te espero en Padre Mier a las 6.")).toBeVisible({ timeout: SERVER_ACTION_TIMEOUT });
   await sellerContext.close();
 
-  // 7. Lupita reads the seller, collects and delivers with the PIN.
+  // 7. Lupita reads the seller and the buyer (with her photo), collects and delivers with the PIN.
   await courier.goto("/recolectora");
   const job = courier.getByRole("listitem").filter({ hasText: "Compradora Recolectora" }).first();
+  await job.getByRole("link", { name: /Mensajes con la clienta/ }).click();
+  await expect(courier.getByText("Así es mi fachada, portón verde.")).toBeVisible({ timeout: 20_000 });
+  await courier.getByRole("button", { name: "Ver foto de compradora recolectora en grande" }).click();
+  const enlarged = courier.getByRole("dialog", { name: "Foto de Compradora Recolectora" });
+  await expect(enlarged.getByRole("img")).toBeVisible();
+  await courier.keyboard.press("Escape");
+  await expect(enlarged).toHaveCount(0);
+  await courier.goto("/recolectora");
   await job.getByRole("link", { name: /Mensajes con la vendedora/ }).click();
-  await expect(courier.getByText("Lupita, te espero en Padre Mier a las 6.")).toBeVisible();
+  await expect(courier.getByText("Lupita, te espero en Padre Mier a las 6.")).toBeVisible({ timeout: 20_000 });
   await courier.goto("/recolectora");
   await job.getByRole("button", { name: "Ya la recogí" }).click();
   await expect(job.getByText("Contigo")).toBeVisible({ timeout: SERVER_ACTION_TIMEOUT });
