@@ -43,7 +43,7 @@ export default async function FavoritesPage() {
           </div>
         ) : (
           <div className="mt-8 grid grid-cols-2 gap-x-3 gap-y-9 sm:grid-cols-3 sm:gap-x-5 lg:grid-cols-4 lg:gap-x-6">
-            {products.map((product) => <ProductCard key={product.id} product={product} viewerId={user.id} favorite signedIn />)}
+            {products.map((product, index) => <ProductCard key={product.id} index={index} product={product} viewerId={user.id} favorite signedIn />)}
           </div>
         )}
       </main>

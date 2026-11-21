@@ -36,9 +36,9 @@ type ProductRow = Omit<CatalogProduct, "seller" | "images"> & {
   images: ProductImageRow[] | null;
 };
 
-export async function getCatalogPage(filters: CatalogFilters): Promise<CatalogPageResult> {
+export async function getCatalogPage(filters: CatalogFilters, pageSize = CATALOG_PAGE_SIZE): Promise<CatalogPageResult> {
   if (process.env.CATALOG_DEMO_MODE === "true") {
-    return { ...getDemoCatalogPage(filters, CATALOG_PAGE_SIZE), error: null };
+    return { ...getDemoCatalogPage(filters, pageSize), error: null };
   }
 
   const supabase = await createSupabaseServerClient();
@@ -50,18 +50,19 @@ export async function getCatalogPage(filters: CatalogFilters): Promise<CatalogPa
   // garment whose 24 h ran out shows as available the next time anyone opens the catalog.
   await supabase.rpc("release_expired_reservations");
 
-  let query = supabase
-    .from("products")
-    .select(
-      "id,slug,name,description,category,audience,size,condition,price_mxn,sale_status,created_at,seller_id,seller:profiles!products_seller_id_fkey(store_name,slug,avatar_path),images:product_images(id,source,storage_path,alt_text,position,width,height)",
-      { count: "exact" },
-    )
-    .eq("publication_status", "published");
+  const columns = "id,slug,name,description,category,audience,size,condition,price_mxn,sale_status,created_at,seller_id,seller:profiles!products_seller_id_fkey(store_name,slug,avatar_path),images:product_images(id,source,storage_path,alt_text,position,width,height)";
+  // A search starts from search_products (the same product rows, already matched in Postgres)
+  // so every filter, order and page below applies to search results unchanged.
+  let query = filters.q
+    ? supabase.rpc("search_products", { search: filters.q }, { count: "exact" }).select(columns)
+    : supabase.from("products").select(columns, { count: "exact" });
+  query = query.eq("publication_status", "published");
   query = query.eq("hidden_by_admin", false);
 
   if (filters.delivery) {
     const { data: sellers } = filters.delivery === "domicilio"
-      ? await supabase.from("profiles").select("id").eq("home_delivery_enabled", true)
+      // Same rule as checkout: home delivery counts only with an origin to price it from.
+      ? await supabase.from("profiles").select("id").eq("home_delivery_enabled", true).not("home_delivery_origin", "is", null)
       : await supabase.from("seller_delivery_points").select("id:seller_id").eq("point_id", filters.delivery);
     const sellerIds = (sellers ?? []).map((row) => row.id as string);
     if (sellerIds.length === 0) return { products: [], total: 0, error: null };
@@ -84,8 +85,8 @@ export async function getCatalogPage(filters: CatalogFilters): Promise<CatalogPa
 
   query = query.order("id", { ascending: true });
 
-  const start = (filters.page - 1) * CATALOG_PAGE_SIZE;
-  const { data, count, error } = await query.range(start, start + CATALOG_PAGE_SIZE - 1);
+  const start = (filters.page - 1) * pageSize;
+  const { data, count, error } = await query.range(start, start + pageSize - 1);
 
   if (error) {
     return { products: [], total: 0, error: "No pudimos conectar con el catálogo. Revisa las migraciones y vuelve a intentar." };

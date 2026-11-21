@@ -1,11 +1,14 @@
 import type { CatalogFilters, CatalogProduct } from "@/features/products/types";
+import { productMatchesSearch, searchTokens } from "@/features/search/search-query";
 
 export function applyCatalogFilters(
   products: CatalogProduct[],
   filters: CatalogFilters,
   pageSize = 24,
 ) {
+  const tokens = filters.q ? searchTokens(filters.q) : [];
   const filtered = products.filter((product) => {
+    if (filters.q && !productMatchesSearch(product, tokens)) return false;
     if (filters.audience && product.audience !== filters.audience && product.audience !== "unisex") return false;
     if (filters.category && product.category !== filters.category) return false;
     if (filters.size && product.size !== filters.size) return false;

@@ -9,7 +9,7 @@ export async function DeliverySettings({ sellerId, compact = false }: { sellerId
   const [{ data: points }, { data: mine }, { data: profile }] = await Promise.all([
     supabase.from("delivery_points").select("id,name").eq("active", true).order("sort_order"),
     supabase.from("seller_delivery_points").select("point_id").eq("seller_id", sellerId),
-    supabase.from("profiles").select("home_delivery_enabled,home_delivery_fee_mxn,home_delivery_note").eq("id", sellerId).maybeSingle(),
+    supabase.from("profiles").select("home_delivery_enabled,home_delivery_origin,home_delivery_note").eq("id", sellerId).maybeSingle(),
   ]);
   return (
     <DeliverySettingsForm
@@ -17,7 +17,7 @@ export async function DeliverySettings({ sellerId, compact = false }: { sellerId
       points={points ?? []}
       selectedPointIds={(mine ?? []).map((row) => row.point_id)}
       homeDeliveryEnabled={profile?.home_delivery_enabled ?? false}
-      homeDeliveryFeeMxn={profile?.home_delivery_fee_mxn ?? 0}
+      homeDeliveryOrigin={profile?.home_delivery_origin ?? ""}
       homeDeliveryNote={profile?.home_delivery_note ?? ""}
     />
   );

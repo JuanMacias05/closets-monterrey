@@ -38,25 +38,59 @@ test("an admin sees both panel groups and the summary", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "Administración del sitio" })).toBeVisible();
   await expect(page.getByRole("link", { name: /Vendedoras por aprobar/ })).toBeVisible();
   await expect(page.getByRole("link", { name: "Subir prenda" }).first()).toHaveAttribute("href", "/panel/prendas/nueva");
+  // Site administration is in the admin's side menu too.
+  await expect(page.getByRole("complementary", { name: "Menú del panel" }).getByRole("link", { name: "Soporte" })).toHaveAttribute("href", "/panel/admin/soporte");
 });
 
-// One login covers the seller checks and both header widths: every login sends an SMS, and
-// the local stack allows 30 an hour for the whole suite.
-test("a seller does not see the admin group, and Cerrar sesión fits at 375 and 1366 px", async ({ page }) => {
+// One login covers the seller checks, the side menu at laptop and phone widths and the way
+// back from inner pages: every login sends an SMS, and the local stack allows 30 an hour for
+// the whole suite.
+test("a seller gets her own side menu: lit on the current page, collapsible, a drawer on a phone", async ({ page }) => {
   await login(page, SELLER_PHONE);
   await expect(page.getByRole("heading", { name: "Mi tienda", exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Administración del sitio" })).toHaveCount(0);
   await expect(page.getByRole("link", { name: /Vendedoras/ })).toHaveCount(0);
 
-  for (const width of [375, 1366]) {
-    await page.setViewportSize({ width, height: 800 });
-    const button = page.getByRole("banner").getByRole("button", { name: "Cerrar sesión" });
-    await expect(button).toBeVisible();
-    const box = await button.boundingBox();
-    expect(box).not.toBeNull();
-    expect(box!.x + box!.width).toBeLessThanOrEqual(width);
-    expect(await button.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
-  }
+  // Laptop: a fixed side menu; the top bar keeps only the store and "Ver tienda".
+  await page.setViewportSize({ width: 1366, height: 800 });
+  const menu = page.getByRole("complementary", { name: "Menú del panel" });
+  const nav = menu.getByRole("navigation", { name: "Panel" });
+  await expect(nav.getByRole("link", { name: "Inicio" })).toHaveAttribute("aria-current", "page");
+  await expect(nav.getByText("Próximamente")).toBeVisible();
+  await expect(nav.getByRole("link", { name: /En vivo/ })).toHaveCount(0);
+  await expect(menu.getByRole("button", { name: "Cerrar sesión" })).toBeVisible();
+  await expect(page.getByRole("banner").getByRole("link", { name: "Ver tienda" })).toHaveAttribute("href", /^\/tiendas\/[a-z0-9-]+$/);
+
+  await nav.getByRole("link", { name: "Apartados" }).click();
+  await expect(page).toHaveURL(/\/panel\/apartados$/);
+  await expect(nav.getByRole("link", { name: "Apartados" })).toHaveAttribute("aria-current", "page");
+  await expect(nav.getByRole("link", { name: "Inicio" })).not.toHaveAttribute("aria-current", "page");
+
+  // Collapsed to icons, and still collapsed after a reload (remembered on this device).
+  await menu.getByRole("button", { name: "Contraer menú" }).click();
+  await expect.poll(async () => (await menu.boundingBox())?.width ?? 0).toBeLessThan(100);
+  await page.reload();
+  await expect(menu.getByRole("button", { name: "Expandir menú" })).toBeVisible();
+  await menu.getByRole("button", { name: "Expandir menú" }).click();
+  await expect(menu.getByRole("button", { name: "Contraer menú" })).toBeVisible();
+
+  // Phone: the menu is a drawer behind the top bar's button, and nothing is pushed off screen.
+  await page.setViewportSize({ width: 375, height: 800 });
+  await expect(menu).toBeHidden();
+  const storeLink = page.getByRole("banner").getByRole("link", { name: "Ver tienda" });
+  const storeBox = await storeLink.boundingBox();
+  expect(storeBox).not.toBeNull();
+  expect(storeBox!.x + storeBox!.width).toBeLessThanOrEqual(375);
+
+  await page.getByRole("button", { name: "Abrir menú del panel" }).click();
+  const drawer = page.getByRole("dialog", { name: "Menú del panel" });
+  const signOut = drawer.getByRole("button", { name: "Cerrar sesión" });
+  await expect(signOut).toBeVisible();
+  const signOutBox = await signOut.boundingBox();
+  expect(signOutBox!.x + signOutBox!.width).toBeLessThanOrEqual(375);
+  await drawer.getByRole("link", { name: "Mis prendas" }).click();
+  await expect(page).toHaveURL(/\/panel\/prendas$/);
+  await expect(drawer).toHaveCount(0);
 
   // Inner panel pages have a way back: a garment goes back to "Mis prendas".
   await page.goto("/panel/prendas/nueva");

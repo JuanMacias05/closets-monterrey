@@ -21,7 +21,8 @@ test("seller creates, manages photos, sells, restores and deletes her product", 
 
   await loginAsSeller(page);
   await page.goto("/panel/prendas");
-  await page.getByRole("link", { name: "Subir prenda", exact: true }).click();
+  // The page's own button; the side menu has a "Subir prenda" entry too.
+  await page.getByRole("main").getByRole("link", { name: "Subir prenda", exact: true }).click();
   await page.getByLabel("Nombre", { exact: true }).fill("Prenda de prueba E2E");
   await page.getByLabel("Descripción").fill("Descripción para probar la ficha de producto.");
   await page.getByLabel("Categoría").selectOption("tops");

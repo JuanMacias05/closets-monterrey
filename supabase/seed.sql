@@ -282,15 +282,16 @@ on conflict (product_id, position) do update set
   storage_path = excluded.storage_path,
   alt_text = excluded.alt_text;
 
--- Delivery options: Renata reaches two metro points and delivers home for $60; Sofía offers
--- neither, so her buyers fall back to arranging delivery on WhatsApp.
+-- Delivery options: Renata reaches two metro points and delivers home from Monterrey (the fee
+-- comes from delivery_zone_rates); Sofía offers neither, so her buyers fall back to arranging
+-- delivery on WhatsApp.
 insert into public.seller_delivery_points (seller_id, point_id) values
   ('10000000-0000-4000-8000-000000000001', '60000000-0000-4000-8000-000000000001'),
   ('10000000-0000-4000-8000-000000000001', '60000000-0000-4000-8000-000000000003')
 on conflict do nothing;
 
 update public.profiles
-set home_delivery_enabled = true, home_delivery_fee_mxn = 6000, home_delivery_note = 'Monterrey, San Nicolás y Guadalupe'
+set home_delivery_enabled = true, home_delivery_origin = 'Monterrey', home_delivery_note = 'Monterrey, San Nicolás y Guadalupe'
 where id = '10000000-0000-4000-8000-000000000001';
 
 -- A verified courier: collects at Padre Mier and delivers in Monterrey and San Nicolás for $45.

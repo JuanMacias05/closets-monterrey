@@ -1,8 +1,10 @@
+import { Suspense } from "react";
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ProductGallery } from "@/components/products/product-gallery";
+import { ProductGridSkeleton, SkeletonBlock } from "@/components/catalog/catalog-skeleton";
 import { ProductCard } from "@/components/catalog/product-card";
 import { SellerDeliveryList } from "@/components/sellers/seller-delivery";
 import { StoreFooter } from "@/components/store/store-footer";
@@ -97,7 +99,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
   const product = await getProductDetail(slug);
   if (!product) notFound();
 
-  const [related, shop, viewer, sellerProfile] = await Promise.all([getMoreFromSeller(product.seller.slug, product.id), getShopState(), getViewer(), getSellerPublicProfile(product.seller.slug)]);
+  const [shop, viewer, sellerProfile] = await Promise.all([getShopState(), getViewer(), getSellerPublicProfile(product.seller.slug)]);
   const isOwn = viewer.kind !== "guest" && product.seller_id === viewer.userId;
   const category = PRODUCT_CATEGORIES.find((item) => item.value === product.category)?.label ?? product.category;
   const saleLabel = product.sale_status === "reserved" ? "Apartada" : product.sale_status === "sold" ? "Vendida" : null;
@@ -172,20 +174,44 @@ export default async function ProductDetailPage({ params }: PageProps) {
         </section>
       </div>
 
-      {related.length > 0 && (
-        <section className="mt-16 border-t border-stone-200 pt-10 sm:mt-24 sm:pt-14">
-          <div className="mb-7 flex items-end justify-between gap-4">
-            <div><p className="text-[10px] uppercase tracking-[0.22em] text-stone-500">Explora su selección</p><h2 className="mt-2 font-serif text-2xl text-stone-900 sm:text-3xl">Más prendas de {product.seller.store_name}</h2></div>
-            <Link href={`/tiendas/${product.seller.slug}`} className="inline-flex min-h-11 items-center text-sm text-pine underline underline-offset-4">Ver toda su tienda</Link>
-          </div>
-          <div className="grid grid-cols-2 gap-x-3 gap-y-9 sm:grid-cols-3 sm:gap-x-5 lg:grid-cols-4 lg:gap-x-6">
-            {related.map((item) => <ProductCard key={item.id} product={item} />)}
-          </div>
-        </section>
-      )}
+      {/* The seller's other garments stream in behind skeleton cards, so the garment itself shows
+          without waiting for them. (No loading.tsx for this route: its fallback would start the
+          response before notFound() runs and turn a missing garment's 404 into a 200.) */}
+      <Suspense fallback={<RelatedProductsSkeleton />}>
+        <RelatedProducts sellerSlug={product.seller.slug} sellerName={product.seller.store_name} productId={product.id} />
+      </Suspense>
 
       <StoreFooter className="mt-14" />
     </main>
     </>
+  );
+}
+
+async function RelatedProducts({ sellerSlug, sellerName, productId }: { sellerSlug: string; sellerName: string; productId: string }) {
+  const related = await getMoreFromSeller(sellerSlug, productId);
+  if (related.length === 0) return null;
+
+  return (
+    <section className="mt-16 border-t border-stone-200 pt-10 sm:mt-24 sm:pt-14">
+      <div className="mb-7 flex items-end justify-between gap-4">
+        <div><p className="text-[10px] uppercase tracking-[0.22em] text-stone-500">Explora su selección</p><h2 className="mt-2 font-serif text-2xl text-stone-900 sm:text-3xl">Más prendas de {sellerName}</h2></div>
+        <Link href={`/tiendas/${sellerSlug}`} className="inline-flex min-h-11 items-center text-sm text-pine underline underline-offset-4">Ver toda su tienda</Link>
+      </div>
+      <div className="grid grid-cols-2 gap-x-3 gap-y-9 sm:grid-cols-3 sm:gap-x-5 lg:grid-cols-4 lg:gap-x-6">
+        {related.map((item, index) => <ProductCard key={item.id} index={index} product={item} />)}
+      </div>
+    </section>
+  );
+}
+
+function RelatedProductsSkeleton() {
+  return (
+    <section aria-busy="true" aria-label="Cargando más prendas" className="mt-16 border-t border-stone-200 pt-10 sm:mt-24 sm:pt-14">
+      <div className="mb-7 flex flex-col gap-2">
+        <SkeletonBlock className="h-3 w-32" />
+        <SkeletonBlock className="h-8 w-64 max-w-full" />
+      </div>
+      <ProductGridSkeleton count={4} />
+    </section>
   );
 }

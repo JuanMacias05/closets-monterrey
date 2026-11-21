@@ -1,10 +1,15 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { DeliveryFeeAdjust } from "@/app/panel/apartados/delivery-fee-adjust";
 import { ProofReview } from "@/app/panel/apartados/proof-review";
 import { ReservationActions } from "@/app/panel/apartados/reservation-actions";
+import { ChatLink } from "@/components/chat/conversation-list";
+import { ProofPurgedNote } from "@/components/shop/proof-purged-note";
+import { conversationLinks } from "@/features/chat/chat-data";
+import { canPayDeposit, courierDeliveryState, type CourierRequestRow } from "@/features/couriers/courier-requests";
 import { formatPriceMXN } from "@/features/products/format-price";
 import { RESERVATION_STATUS_LABELS, TRUST_LABELS, TRUST_STYLES } from "@/features/shop/reservation-labels";
-import { deliveryGroup, sellerBalanceAtDelivery } from "@/features/shop/reservation-money";
+import { deliveryFeeChange, deliveryGroup, sellerBalanceAtDelivery } from "@/features/shop/reservation-money";
 import { proofReviewCutoff } from "@/features/support/support-contact";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -14,12 +19,16 @@ type ReservationRow = {
   id: string; buyer_id: string | null; status: string; items_total_mxn: number; deposit_percent: number; deposit_mxn: number;
   expires_at: string; created_at: string;
   delivery_method: string; delivery_address: string | null; delivery_fee_mxn: number; delivery_status: string;
+  delivery_fee_estimate_mxn: number | null; delivery_origin_municipality: string | null; delivery_fee_adjusted_at: string | null;
   point: { name: string } | null;
   courier_fee_payment: string | null; courier_whatsapp: string | null; buyer_municipality: string | null;
   courier: { full_name: string } | null;
+  courier_id: string | null; courier_accepted_at: string | null;
+  requests: CourierRequestRow[] | null;
   items: { price_mxn: number; product: { name: string; slug: string } | null }[] | null;
   proof_path: string | null; proof_method: "transfer" | "oxxo" | null; proof_reference: string | null;
   proof_submitted_at: string | null; proof_rejected_at: string | null; proof_rejection_reason: string | null;
+  proof_purged_at: string | null;
 };
 
 function underReview(reservation: ReservationRow) {
@@ -39,7 +48,7 @@ export default async function SellerReservationsPage({ searchParams }: { searchP
 
   await supabase.rpc("release_expired_reservations");
   const { data: rows, error } = await supabase.from("reservations")
-    .select("id,buyer_id,status,items_total_mxn,deposit_percent,deposit_mxn,expires_at,created_at,delivery_method,delivery_address,delivery_fee_mxn,delivery_status,point:delivery_points(name),courier_fee_payment,courier_whatsapp,buyer_municipality,courier:couriers(full_name),items:reservation_items(price_mxn,product:products(name,slug)),proof_path,proof_method,proof_reference,proof_submitted_at,proof_rejected_at,proof_rejection_reason")
+    .select("id,buyer_id,status,items_total_mxn,deposit_percent,deposit_mxn,expires_at,created_at,delivery_method,delivery_address,delivery_fee_mxn,delivery_status,point:delivery_points(name),courier_fee_payment,courier_whatsapp,buyer_municipality,courier:couriers(full_name),courier_id,courier_accepted_at,requests:courier_requests(id,status,requested_at,expires_at,resolved_at,rejection_reason,courier_id,courier:couriers(full_name)),items:reservation_items(price_mxn,product:products(name,slug)),proof_path,proof_method,proof_reference,proof_submitted_at,proof_rejected_at,proof_rejection_reason,proof_purged_at,delivery_fee_estimate_mxn,delivery_origin_municipality,delivery_fee_adjusted_at")
     .eq("seller_id", user.id)
     .order("created_at", { ascending: false })
     .limit(100);
@@ -60,6 +69,7 @@ export default async function SellerReservationsPage({ searchParams }: { searchP
   const proofUrlByPath = new Map((signed ?? []).filter((entry) => entry.path && entry.signedUrl).map((entry) => [entry.path!, entry.signedUrl]));
   const staleBefore = proofReviewCutoff();
   const lightById = new Map(lights);
+  const chats = await conversationLinks("seller");
 
   // A proof waiting for review is the one thing that blocks a buyer, so those come first.
   const allOpen = reservations.filter((reservation) => OPEN.includes(reservation.status))
@@ -105,22 +115,32 @@ export default async function SellerReservationsPage({ searchParams }: { searchP
         <p className="mt-1 text-sm text-stone-700">
           <strong>Entrega:</strong>{" "}
           {reservation.delivery_method === "pickup_point" ? `Punto fijo · ${reservation.point?.name ?? ""}`
-            : reservation.delivery_method === "home_delivery" ? `A domicilio (${formatPriceMXN(reservation.delivery_fee_mxn)}) · ${reservation.delivery_address ?? ""}`
+            : reservation.delivery_method === "home_delivery" ? `A domicilio${reservation.buyer_municipality ? ` en ${reservation.buyer_municipality}` : ""} (envío ${formatPriceMXN(reservation.delivery_fee_mxn)}) · ${reservation.delivery_address ?? ""}`
             : reservation.delivery_method === "courier" ? `Recolectora ${reservation.courier?.full_name ?? ""} la recoge contigo en un punto fijo y la lleva a ${reservation.buyer_municipality ?? ""}${reservation.courier_fee_payment === "with_deposit" ? `; su tarifa (${formatPriceMXN(reservation.delivery_fee_mxn)}) viene en el anticipo: págasela tú` : ""}`
             : "Acordar por WhatsApp"}
           {reservation.status === "confirmed" && reservation.delivery_status === "picked_up" && " · Con la recolectora"}
           {reservation.status === "confirmed" && reservation.delivery_status === "on_the_way" && " · En camino"}
           {reservation.delivery_method === "courier" && reservation.courier_whatsapp && <> · <a href={`https://wa.me/${reservation.courier_whatsapp.replace("+", "")}`} className="text-pine underline underline-offset-4">WhatsApp de la recolectora</a></>}
         </p>
-        {reservation.status === "pending_deposit" && !underReview(reservation) && <p className="mt-1 text-sm text-stone-700">Se libera sola el {dateFormat.format(new Date(reservation.expires_at))} si no llega el anticipo.</p>}
+        <DeliveryFeeNote reservation={reservation} />
+        {reservation.status === "pending_deposit" && <CourierRequestNote reservation={reservation} />}
+        {reservation.status === "pending_deposit" && !underReview(reservation) && canPayDeposit(reservation) && <p className="mt-1 text-sm text-stone-700">Se libera sola el {dateFormat.format(new Date(reservation.expires_at))} si no llega el anticipo.</p>}
         {reservation.status === "pending_deposit" && reservation.proof_rejected_at && (
           <p className="mt-2 bg-red-50 p-3 text-sm text-red-800">Rechazaste su comprobante: “{reservation.proof_rejection_reason}”. Tiene hasta el {dateFormat.format(new Date(reservation.expires_at))} para subir otro.</p>
         )}
+        {reservation.proof_purged_at && <ProofPurgedNote purgedAt={reservation.proof_purged_at} />}
         {underReview(reservation) && <ProofToReview reservation={reservation} imageUrl={reservation.proof_path ? proofUrlByPath.get(reservation.proof_path) ?? null : null} stale={new Date(reservation.proof_submitted_at!).getTime() < staleBefore} buyerName={buyerName} />}
         <div className="mt-4 flex flex-wrap items-start gap-2">
-          <ReservationActions reservationId={reservation.id} status={reservation.status} deliveryStatus={reservation.delivery_status} buyerName={buyerName} />
+          <ReservationActions reservationId={reservation.id} status={reservation.status} deliveryStatus={reservation.delivery_status} buyerName={buyerName} canConfirm={canPayDeposit(reservation)} />
+          {canAdjustDeliveryFee(reservation) && <DeliveryFeeAdjust reservationId={reservation.id} feeMxn={reservation.delivery_fee_mxn} buyerName={buyerName} />}
           {underReview(reservation) && <ProofReview reservationId={reservation.id} buyerName={buyerName} />}
         </div>
+        {(chats.get(reservation.id)?.order || chats.get(reservation.id)?.pickup) && (
+          <div className="mt-3 flex flex-wrap gap-2">
+            {chats.get(reservation.id)?.order && <ChatLink href={`/panel/mensajes/${chats.get(reservation.id)!.order!.id}`} label={`Mensajes con ${buyer?.full_name ?? "la clienta"}`} unread={chats.get(reservation.id)!.order!.unread} />}
+            {chats.get(reservation.id)?.pickup && <ChatLink href={`/panel/mensajes/${chats.get(reservation.id)!.pickup!.id}`} label="Mensajes con la recolectora" unread={chats.get(reservation.id)!.pickup!.unread} />}
+          </div>
+        )}
       </li>
     );
   }
@@ -149,6 +169,51 @@ export default async function SellerReservationsPage({ searchParams }: { searchP
         </details>
       )}
     </section>
+  );
+}
+
+// Same rule as adjust_delivery_fee: home delivery, still waiting for the deposit, and the buyer
+// hasn't sent a proof (once she says she paid, the price she saw stands).
+function canAdjustDeliveryFee(reservation: ReservationRow) {
+  return reservation.delivery_method === "home_delivery" && reservation.status === "pending_deposit" && reservation.proof_submitted_at === null;
+}
+
+function DeliveryFeeNote({ reservation }: { reservation: ReservationRow }) {
+  if (reservation.delivery_method !== "home_delivery") return null;
+  const change = deliveryFeeChange(reservation);
+  if (change) {
+    return <p className="mt-1 text-sm text-stone-700">Ajustaste el envío de {formatPriceMXN(change.fromMxn)} a {formatPriceMXN(change.toMxn)}.</p>;
+  }
+  if (canAdjustDeliveryFee(reservation) && reservation.delivery_fee_estimate_mxn !== null) {
+    return (
+      <p className="mt-1 text-sm text-stone-700">
+        Envío estimado{reservation.delivery_origin_municipality && reservation.buyer_municipality ? ` de ${reservation.delivery_origin_municipality} a ${reservation.buyer_municipality}` : ""} con las tarifas de Closets Monterrey. Si su dirección queda lejos, ajústalo antes de que te pague el anticipo.
+      </p>
+    );
+  }
+  return null;
+}
+
+// Who has (or was asked for) the courier delivery, and whether the buyer can pay yet: the
+// seller can't confirm a deposit until the courier accepts (update_reservation refuses it).
+function CourierRequestNote({ reservation }: { reservation: ReservationRow }) {
+  const state = courierDeliveryState(reservation, reservation.requests);
+  if (state.kind === "none") return null;
+  const name = state.request?.courier?.full_name ?? reservation.courier?.full_name ?? "La recolectora";
+  if (state.kind === "accepted") {
+    return <p className="mt-1 text-sm text-pine" data-testid="courier-status">✓ {name} aceptó la entrega.</p>;
+  }
+  if (state.kind === "waiting") {
+    return (
+      <p className="mt-2 bg-stone-100 p-3 text-sm text-stone-800" data-testid="courier-status">
+        Esperando a que <strong>{name}</strong> acepte la entrega{state.request ? ` (responde a más tardar ${dateFormat.format(new Date(state.request.expires_at))})` : ""}. La clienta paga su anticipo hasta que acepte; las prendas siguen apartadas.
+      </p>
+    );
+  }
+  return (
+    <p className="mt-2 bg-amber-50 p-3 text-sm text-amber-900" data-testid="courier-status">
+      {name} {state.request?.status === "expired" ? "no respondió a tiempo" : "no aceptó"}. La clienta está eligiendo otra entrega; tiene hasta {dateFormat.format(new Date(reservation.expires_at))} o las prendas se liberan.
+    </p>
   );
 }
 

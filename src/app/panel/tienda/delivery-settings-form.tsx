@@ -3,13 +3,15 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { saveDeliverySettings } from "@/app/panel/tienda/actions";
+import { MunicipalitySelect } from "@/components/shop/municipality-select";
 import { PRIMARY_BUTTON_CLASS } from "@/components/panel/panel-styles";
 
 export type DeliverySettingsProps = {
   points: { id: string; name: string }[];
   selectedPointIds: string[];
   homeDeliveryEnabled: boolean;
-  homeDeliveryFeeMxn: number;
+  // Where she ships from; "" until she picks it. Home delivery is priced from here.
+  homeDeliveryOrigin: string;
   homeDeliveryNote: string;
   // On the garment screens the settings are store-wide, not part of the garment being edited.
   // Shown in full there, its own save button sat under "Crear prenda" and it wasn't clear which
@@ -21,7 +23,7 @@ export function DeliverySettingsForm(props: DeliverySettingsProps) {
   const router = useRouter();
   const [pointIds, setPointIds] = useState(props.selectedPointIds);
   const [homeDelivery, setHomeDelivery] = useState(props.homeDeliveryEnabled);
-  const [homeFee, setHomeFee] = useState(String(props.homeDeliveryFeeMxn / 100));
+  const [origin, setOrigin] = useState(props.homeDeliveryOrigin);
   const [homeNote, setHomeNote] = useState(props.homeDeliveryNote);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
@@ -31,7 +33,7 @@ export function DeliverySettingsForm(props: DeliverySettingsProps) {
     event.preventDefault();
     setBusy(true);
     setMessage(null);
-    const result = await saveDeliverySettings({ pointIds, homeDelivery, homeFee, homeNote });
+    const result = await saveDeliverySettings({ pointIds, homeDelivery, origin, homeNote });
     setMessage(result.ok ? { ok: true, text: "Entregas guardadas." } : { ok: false, text: result.error });
     if (result.ok) {
       router.refresh();
@@ -42,7 +44,12 @@ export function DeliverySettingsForm(props: DeliverySettingsProps) {
 
   if (!expanded) {
     const savedPoints = props.points.filter((point) => props.selectedPointIds.includes(point.id)).map((point) => point.name);
-    const parts = [...savedPoints, ...(props.homeDeliveryEnabled ? ["envío a domicilio"] : [])];
+    // A switch left on from before zone rates, with no origin, is not offered to buyers; the
+    // summary says so instead of claiming home delivery.
+    const homePart = !props.homeDeliveryEnabled ? []
+      : props.homeDeliveryOrigin ? [`envío a domicilio desde ${props.homeDeliveryOrigin}`]
+      : ["envío a domicilio (falta elegir desde qué municipio envías)"];
+    const parts = [...savedPoints, ...homePart];
     return (
       <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 border border-stone-200 bg-white px-4 py-3 text-sm">
         <p className="min-w-0 text-stone-700">
@@ -78,16 +85,17 @@ export function DeliverySettingsForm(props: DeliverySettingsProps) {
           <input type="checkbox" checked={homeDelivery} onChange={(event) => setHomeDelivery(event.target.checked)} className="size-4 accent-pine" />
           Ofrezco envío a domicilio
         </label>
+        {homeDelivery && !props.homeDeliveryOrigin && props.homeDeliveryEnabled && (
+          <p className="bg-amber-50 p-3 text-sm text-amber-900">Tus clientas no ven el envío a domicilio hasta que elijas desde qué municipio envías.</p>
+        )}
         {homeDelivery && (
           <div className="grid gap-4 sm:grid-cols-2">
-            <div>
-              <label htmlFor="home-fee" className="block text-xs text-stone-600">Costo del envío (MXN)</label>
-              <input id="home-fee" type="number" min="0" step="5" inputMode="numeric" value={homeFee} onChange={(event) => setHomeFee(event.target.value)} className="mt-1 min-h-11 w-full border-b border-stone-400 bg-transparent px-1 text-base" />
-            </div>
+            <MunicipalitySelect id="home-origin" label="¿Desde qué municipio envías?" value={origin} onChange={setOrigin} placeholder="Elige tu municipio" />
             <div>
               <label htmlFor="home-note" className="block text-xs text-stone-600">Zonas (opcional)</label>
               <input id="home-note" value={homeNote} onChange={(event) => setHomeNote(event.target.value)} maxLength={200} placeholder="Ej. Monterrey y San Nicolás" className="mt-1 min-h-11 w-full border-b border-stone-400 bg-transparent px-1 text-base" />
             </div>
+            <p className="text-xs text-stone-600 sm:col-span-2">El costo del envío sale de las tarifas de Closets Monterrey: tu clienta ve un precio aproximado según su municipio y el tuyo. Si su dirección queda lejos, puedes ajustarlo en Apartados antes de que te pague el anticipo.</p>
           </div>
         )}
       </fieldset>

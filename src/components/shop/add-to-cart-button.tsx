@@ -38,9 +38,9 @@ export function AddToCartButton({ productId, initial, signedIn, available, isOwn
   return (
     <div className="mt-7">
       {inCart ? (
-        <Link href="/carrito" className={`${base} border-2 border-pine text-pine`}>En tu carrito · Ver carrito</Link>
+        <Link href="/carrito" className={`press ${base} border-2 border-pine text-pine`}>En tu carrito · Ver carrito</Link>
       ) : (
-        <button type="button" onClick={add} disabled={!available || busy} data-testid="buy-button" className={`${base} bg-pine text-white hover:bg-pine-light disabled:cursor-not-allowed disabled:bg-stone-300 disabled:text-stone-600`}>
+        <button type="button" onClick={add} disabled={!available || busy} data-testid="buy-button" className={`press ${base} bg-pine text-white hover:bg-pine-light disabled:cursor-not-allowed disabled:bg-stone-300 disabled:text-stone-600`}>
           {busy ? "Agregando…" : "Agregar al carrito"}
         </button>
       )}

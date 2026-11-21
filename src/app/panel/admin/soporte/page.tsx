@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { ResolveRequestForm } from "@/app/panel/admin/soporte/resolve-request-form";
+import { ProofPurgedNote } from "@/components/shop/proof-purged-note";
 import { formatPriceMXN } from "@/features/products/format-price";
 import { RESERVATION_STATUS_LABELS } from "@/features/shop/reservation-labels";
 import { whatsappLink } from "@/features/shop/whatsapp-message";
@@ -12,6 +13,7 @@ type ReservationInfo = {
   id: string; status: string; deposit_mxn: number; seller_whatsapp: string | null; created_at: string; expires_at: string;
   proof_path: string | null; proof_method: string | null; proof_reference: string | null;
   proof_submitted_at: string | null; proof_rejected_at: string | null; proof_rejection_reason: string | null;
+  proof_purged_at: string | null;
   buyer_id: string | null;
   seller: { store_name: string } | null;
   items: { price_mxn: number; product: { name: string } | null }[] | null;
@@ -22,7 +24,7 @@ type RequestRow = {
   created_at: string; resolved_at: string | null; buyer_id: string | null; reservation: ReservationInfo | null;
 };
 
-const RESERVATION_FIELDS = "id,status,deposit_mxn,seller_whatsapp,created_at,expires_at,proof_path,proof_method,proof_reference,proof_submitted_at,proof_rejected_at,proof_rejection_reason,buyer_id,seller:profiles!reservations_seller_id_fkey(store_name),items:reservation_items(price_mxn,product:products(name))";
+const RESERVATION_FIELDS = "id,status,deposit_mxn,seller_whatsapp,created_at,expires_at,proof_path,proof_method,proof_reference,proof_submitted_at,proof_rejected_at,proof_rejection_reason,proof_purged_at,buyer_id,seller:profiles!reservations_seller_id_fkey(store_name),items:reservation_items(price_mxn,product:products(name))";
 const dateFormat = new Intl.DateTimeFormat("es-MX", { dateStyle: "medium", timeStyle: "short", timeZone: "America/Monterrey" });
 
 // Support inbox. There is no support team or channel yet, so this is where a buyer's request
@@ -80,6 +82,7 @@ export default async function AdminSupportPage() {
               <img src={imageUrl} alt="Comprobante" className="h-32 w-24 border border-stone-200 object-cover" />
             </a>
           )}
+          {!imageUrl && reservation.proof_purged_at && <ProofPurgedNote purgedAt={reservation.proof_purged_at} variant="tile" />}
           <ol className="min-w-0 space-y-1 text-xs text-stone-600">
             <li>Apartó: {dateFormat.format(new Date(reservation.created_at))}</li>
             {reservation.proof_submitted_at && <li>Subió comprobante: {dateFormat.format(new Date(reservation.proof_submitted_at))}{reservation.proof_reference ? ` · ${reservation.proof_method === "oxxo" ? "folio" : "rastreo"} ${reservation.proof_reference}` : ""}</li>}

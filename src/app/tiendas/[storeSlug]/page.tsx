@@ -64,7 +64,7 @@ export default async function SellerStorefrontPage({ params }: PageProps) {
         ) : (
           <div data-testid="seller-product-grid" className="mt-8 grid grid-cols-2 gap-x-3 gap-y-9 sm:grid-cols-3 sm:gap-x-5 lg:grid-cols-4 lg:gap-x-6">
             {products.map((product, index) => (
-              <ProductCard key={product.id} product={product} priority={index < 4} viewerId={viewerId} favorite={shop.favoriteIds.has(product.id)} signedIn={shop.signedIn} />
+              <ProductCard key={product.id} index={index} product={product} priority={index < 4} viewerId={viewerId} favorite={shop.favoriteIds.has(product.id)} signedIn={shop.signedIn} />
             ))}
           </div>
         )}

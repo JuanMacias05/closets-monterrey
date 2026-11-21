@@ -1,6 +1,9 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { isKnownMunicipality } from "@/features/delivery/zone-rates";
+import type { DeliveryChoice } from "@/features/shop/checkout-steps";
+import { notifyCourierRequested, notifyNewReservation } from "@/features/push/notifications";
 import { isValidFacebookUrl, normalizeFacebookUrl } from "@/features/shop/facebook-url";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -58,7 +61,7 @@ export async function setInCart(productId: string, inCart: boolean): Promise<Res
   return { ok: true };
 }
 
-// Messages for the reservation function's error codes (raised in the migration).
+// Messages for the reservation functions' error codes (raised in the migrations).
 const RESERVE_ERRORS: Record<string, string> = {
   buyer_profile_required: "Antes de apartar, completa tu nombre y tu perfil de Facebook.",
   items_unavailable: "Una o más prendas acaban de ser apartadas por otra persona. Revisa tu carrito.",
@@ -67,46 +70,85 @@ const RESERVE_ERRORS: Record<string, string> = {
   own_products: "No puedes apartar prendas de tu propia tienda.",
   empty_cart: "No tienes prendas de esta vendedora en tu carrito.",
   invalid_delivery: "Elige cómo quieres recibir tus prendas (y escribe tu dirección si es envío a domicilio).",
+  no_delivery_rate: "Todavía no hay tarifa de envío a tu municipio para esta vendedora. Elige otra forma de entrega.",
+  // change_reservation_delivery (20261124000100)
+  not_pending: "Este apartado ya no está esperando anticipo.",
+  delivery_locked: "La entrega de este apartado ya quedó y no se puede cambiar.",
+  courier_unchanged: "Ya le pediste a esa recolectora; espera su respuesta o elige otra.",
+  courier_declined: "Esa recolectora ya no puede llevar este pedido. Elige otra o cambia de entrega.",
+  too_many_courier_requests: "Ya pediste recolectora 3 veces para este apartado. Elige punto fijo o envío a domicilio.",
 };
 
-export type DeliveryChoice =
-  | { method: "pickup_point"; pointId: string }
-  | { method: "home_delivery"; address: string }
-  | { method: "courier"; courierId: string; municipality: string; address: string; feePayment: "on_delivery" | "with_deposit" }
-  | { method: "arranged" };
+function reserveError(message: string) {
+  const code = Object.keys(RESERVE_ERRORS).find((key) => message.includes(key));
+  return { ok: false as const, error: code ? RESERVE_ERRORS[code]! : "No pudimos guardar tu entrega. Inténtalo de nuevo.", code };
+}
 
-export async function reserveFromSeller(sellerId: string, delivery: DeliveryChoice): Promise<{ ok: true; reservationId: string } | { ok: false; error: string; code?: string }> {
-  if (!UUID.test(sellerId) || !delivery || !["pickup_point", "home_delivery", "courier", "arranged"].includes(delivery.method)) {
-    return { ok: false, error: "Datos no válidos." };
-  }
-  if (delivery.method === "pickup_point" && !UUID.test(delivery.pointId)) return { ok: false, error: RESERVE_ERRORS.invalid_delivery! };
+// The shape checks both reserving and changing delivery make before calling the database,
+// which checks the rest (that the seller offers it, that the courier covers it).
+function deliveryInputError(delivery: DeliveryChoice): string | null {
+  if (!delivery || !["pickup_point", "home_delivery", "courier", "arranged"].includes(delivery.method)) return "Datos no válidos.";
+  if (delivery.method === "pickup_point" && !UUID.test(delivery.pointId)) return RESERVE_ERRORS.invalid_delivery!;
+  if (delivery.method === "home_delivery" && !isKnownMunicipality(delivery.municipality)) return "Elige tu municipio para calcular el envío.";
   if (delivery.method === "home_delivery" && (typeof delivery.address !== "string" || delivery.address.trim().length < 10 || delivery.address.length > 300)) {
-    return { ok: false, error: "Escribe tu dirección completa (calle, número, colonia y municipio)." };
+    return "Escribe tu dirección completa (calle, número, colonia y municipio).";
   }
-  if (delivery.method === "courier" && (!UUID.test(delivery.courierId) || typeof delivery.municipality !== "string"
+  if (delivery.method === "courier" && (!UUID.test(delivery.courierId) || !isKnownMunicipality(delivery.municipality)
     || !["on_delivery", "with_deposit"].includes(delivery.feePayment)
     || typeof delivery.address !== "string" || delivery.address.trim().length < 10 || delivery.address.length > 300)) {
-    return { ok: false, error: "Elige tu municipio, una recolectora, cómo pagas su tarifa y escribe tu dirección." };
+    return "Elige tu municipio, una recolectora, cómo pagas su tarifa y escribe tu dirección.";
   }
-  const context = await signedInClient();
-  if (!context.ok) return context;
+  return null;
+}
 
-  const { data, error } = await context.supabase.rpc("reserve_cart_from_seller", {
-    target_seller: sellerId,
+function deliveryArgs(delivery: DeliveryChoice) {
+  return {
     method: delivery.method,
     point: delivery.method === "pickup_point" ? delivery.pointId : null,
     address: delivery.method === "home_delivery" || delivery.method === "courier" ? delivery.address.trim() : null,
     courier: delivery.method === "courier" ? delivery.courierId : null,
-    municipality: delivery.method === "courier" ? delivery.municipality : null,
+    // The buyer's municipality prices home delivery (zone rates) and picks a courier.
+    municipality: delivery.method === "courier" || delivery.method === "home_delivery" ? delivery.municipality : null,
     fee_payment: delivery.method === "courier" ? delivery.feePayment : null,
-  });
+  };
+}
+
+export async function reserveFromSeller(sellerId: string, delivery: DeliveryChoice): Promise<{ ok: true; reservationId: string } | { ok: false; error: string; code?: string }> {
+  if (!UUID.test(sellerId)) return { ok: false, error: "Datos no válidos." };
+  const invalid = deliveryInputError(delivery);
+  if (invalid) return { ok: false, error: invalid };
+  const context = await signedInClient();
+  if (!context.ok) return context;
+
+  const { data, error } = await context.supabase.rpc("reserve_cart_from_seller", { target_seller: sellerId, ...deliveryArgs(delivery) });
   if (error) {
-    const code = Object.keys(RESERVE_ERRORS).find((key) => error.message.includes(key));
-    return { ok: false, error: code ? RESERVE_ERRORS[code]! : "No pudimos apartar las prendas. Inténtalo de nuevo.", code };
+    const failure = reserveError(error.message);
+    return failure.code ? failure : { ...failure, error: "No pudimos apartar las prendas. Inténtalo de nuevo." };
   }
   revalidateShop();
   revalidatePath("/cuenta");
+  // A courier request lands in her "Solicitudes" and its count in her menu.
+  if (delivery.method === "courier") revalidatePath("/recolectora", "layout");
+  notifyNewReservation(data as string, delivery.method === "courier");
   return { ok: true, reservationId: data as string };
+}
+
+// After a courier says no (or doesn't answer), or while still waiting for her, the buyer asks
+// another courier or switches to a point or home delivery.
+export async function changeReservationDelivery(reservationId: string, delivery: DeliveryChoice): Promise<Result> {
+  if (!UUID.test(reservationId)) return { ok: false, error: "Apartado no válido." };
+  const invalid = deliveryInputError(delivery);
+  if (invalid) return { ok: false, error: invalid };
+  const context = await signedInClient();
+  if (!context.ok) return context;
+
+  const { error } = await context.supabase.rpc("change_reservation_delivery", { target: reservationId, ...deliveryArgs(delivery) });
+  if (error) return reserveError(error.message);
+  revalidatePath("/cuenta");
+  revalidatePath("/panel/apartados");
+  revalidatePath("/recolectora", "layout");
+  if (delivery.method === "courier") notifyCourierRequested(reservationId);
+  return { ok: true };
 }
 
 export async function cancelMyReservation(reservationId: string): Promise<Result> {
@@ -117,6 +159,8 @@ export async function cancelMyReservation(reservationId: string): Promise<Result
   if (error) return { ok: false, error: "Este apartado ya no se puede cancelar." };
   revalidateShop();
   revalidatePath("/cuenta");
+  // A request still waiting is withdrawn with the reservation.
+  revalidatePath("/recolectora", "layout");
   return { ok: true };
 }
 
@@ -153,6 +197,7 @@ export async function rateCourier(reservationId: string, stars: number): Promise
 
 const PROOF_ERRORS: Record<string, string> = {
   not_pending: "Este apartado ya no está esperando anticipo.",
+  courier_pending: "Tu recolectora todavía no acepta. Podrás pagar tu anticipo en cuanto acepte.",
   invalid_method: "Esa forma de pago no está disponible para este apartado.",
   invalid_reference: "La clave o folio es demasiado largo.",
   invalid_proof: "No encontramos la foto que subiste. Inténtalo de nuevo.",

@@ -85,8 +85,12 @@ test("a shopper saves a favorite, reserves from her cart and the seller complete
 
   await page.goto("/carrito");
   await expect(page.getByRole("heading", { name: "Closet de Renata" })).toBeVisible();
+  // Three steps: her garments, how she gets them (no courier: a fixed point), the deposit.
+  await page.getByRole("button", { name: "Elegir entrega" }).click();
+  await expect(page.getByRole("radio", { name: "No, gracias" })).toBeChecked();
   await page.getByRole("radio", { name: /Estación Padre Mier/ }).check();
-  page.once("dialog", (dialog) => dialog.accept());
+  await page.getByRole("button", { name: "Continuar al anticipo" }).click();
+  await expect(page.getByText("Entrega: Punto fijo · Estación Padre Mier")).toBeVisible();
   await page.getByRole("button", { name: /Apartar · anticipo \$84\.00 MXN/ }).click();
   await expect(page).toHaveURL(/\/cuenta/);
   await expect(page.getByText("Esperando anticipo")).toBeVisible();

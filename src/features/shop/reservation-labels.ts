@@ -28,3 +28,7 @@ export const DELIVERY_STATUS_STEPS = [
   { value: "on_the_way", label: "En camino" },
   { value: "delivered", label: "Entregada" },
 ] as const;
+
+// Proof images are deleted 15 days after delivery (migration 20261121000100); the reservation
+// keeps proof_purged_at so the screens explain the missing photo instead of showing nothing.
+export const PROOF_PURGED_LABEL = "Comprobante eliminado por privacidad";

@@ -1,3 +1,4 @@
+import { parseSearchQuery } from "@/features/search/search-query";
 import {
   PRODUCT_CATEGORIES,
   PRODUCT_CONDITIONS,
@@ -36,6 +37,7 @@ export function parseCatalogFilters(params: CatalogSearchParams): CatalogFilters
   const requestedPage = parsePositiveInteger(params.page) ?? 1;
 
   return {
+    q: parseSearchQuery(firstValue(params.q)),
     audience: audience === "women" || audience === "men" ? audience : undefined,
     delivery: delivery && (delivery === "domicilio" || /^[0-9a-f-]{36}$/i.test(delivery)) ? delivery : undefined,
     category: category && allowedCategories.has(category)
@@ -60,6 +62,7 @@ export function buildCatalogQueryString(
 ): string {
   const params = new URLSearchParams();
 
+  if (filters.q) params.set("q", filters.q);
   if (filters.audience) params.set("audience", filters.audience);
   if (filters.delivery) params.set("entrega", filters.delivery);
   if (filters.category) params.set("category", filters.category);

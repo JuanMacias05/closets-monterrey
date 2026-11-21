@@ -66,18 +66,18 @@ export function CategoriesMenu({ activeAudience }: { activeAudience?: CatalogAud
             onClick={() => setOpen(null)}
             className={`flex min-h-11 items-center font-condensed font-bold uppercase ${highlighted ? "underline decoration-pine decoration-2 underline-offset-8" : "hover:text-stone-600"}`}
           >
-            {section.label}
+            <span className={highlighted ? undefined : "link-underline"}>{section.label}</span>
           </Link>
         );
       })}
       {openSection && (
-        <div id="categories-panel" className="absolute inset-x-0 top-full z-50 border-b border-stone-200 bg-white px-12 py-10 shadow-[0_24px_40px_-24px_rgba(0,0,0,0.35)]">
+        <div id="categories-panel" className="panel-fade-in absolute inset-x-0 top-full z-50 border-b border-stone-200 bg-white px-12 py-10 shadow-[0_24px_40px_-24px_rgba(0,0,0,0.35)]">
           <p className="mb-5 font-condensed text-sm font-bold uppercase tracking-[0.06em] text-stone-500">{openSection.label}</p>
           <ul className="grid max-w-3xl grid-cols-2 gap-x-16 gap-y-4 normal-case">
-            <li><Link href={`/?audience=${openSection.audience}`} onClick={() => setOpen(null)} className="font-sans text-base font-normal tracking-normal hover:underline">Todo {openSection.label}</Link></li>
+            <li><Link href={`/?audience=${openSection.audience}`} onClick={() => setOpen(null)} className="link-underline font-sans text-base font-normal tracking-normal">Todo {openSection.label}</Link></li>
             {categoriesForSection(openSection.audience).map((category) => (
               <li key={category.value}>
-                <Link href={`/?audience=${openSection.audience}&category=${category.value}`} onClick={() => setOpen(null)} className="font-sans text-base font-normal tracking-normal hover:underline">{category.label}</Link>
+                <Link href={`/?audience=${openSection.audience}&category=${category.value}`} onClick={() => setOpen(null)} className="link-underline font-sans text-base font-normal tracking-normal">{category.label}</Link>
               </li>
             ))}
           </ul>

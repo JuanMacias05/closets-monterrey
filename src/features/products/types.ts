@@ -30,6 +30,8 @@ export type ProductSaleStatus = "available" | "reserved" | "sold";
 export type CatalogSort = "recent" | "price-asc" | "price-desc";
 
 export type CatalogFilters = {
+  // Store search (?q=), as typed; the matching rules live in features/search/search-query.
+  q?: string;
   audience?: CatalogAudience;
   // A delivery point id, or "domicilio" for sellers who deliver home.
   delivery?: string;

@@ -19,7 +19,11 @@ export function SellerDeliveryList({ delivery }: { delivery: SellerDelivery }) {
         <li className="flex items-start gap-2">
           <HomeIcon />
           <span>
-            <span className="text-stone-500">A domicilio:</span> {formatPriceMXN(delivery.home.feeMxn)}
+            <span className="text-stone-500">A domicilio desde {delivery.home.origin}:</span>{" "}
+            {delivery.home.minFeeMxn === delivery.home.maxFeeMxn
+              ? formatPriceMXN(delivery.home.minFeeMxn)
+              : `${formatPriceMXN(delivery.home.minFeeMxn)} a ${formatPriceMXN(delivery.home.maxFeeMxn)}`}
+            <span className="text-stone-500"> según tu municipio</span>
             {delivery.home.note && <span className="text-stone-500"> · {delivery.home.note}</span>}
           </span>
         </li>

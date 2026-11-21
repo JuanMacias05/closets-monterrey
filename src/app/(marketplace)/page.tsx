@@ -26,13 +26,13 @@ export default async function HomePage({
   const parsed = parseCatalogFilters(await searchParams);
   // The plain home page (no section, filter or ?ver=todo) shows only what's new, unless too
   // little is new; see NEW_ARRIVALS_* in catalog-data.
-  const isPlainHome = !parsed.showAll && !parsed.audience && !parsed.category && !parsed.size && !parsed.condition
+  const isPlainHome = !parsed.q && !parsed.showAll && !parsed.audience && !parsed.category && !parsed.size && !parsed.condition
     && !parsed.delivery && parsed.minPrice === undefined && parsed.maxPrice === undefined && !parsed.hideSold && parsed.sort === "recent";
   const newSince = newArrivalsSince();
   const showingNewOnly = isPlainHome && (await countNewArrivals(newSince)) >= NEW_ARRIVALS_MINIMUM;
   const filters = showingNewOnly ? { ...parsed, newSince } : parsed;
   const [result, viewer, shop, deliveryPoints, couriers] = await Promise.all([getCatalogPage(filters), getViewer(), getShopState(), getDeliveryPoints(), getCourierDirectory()]);
-  const heading = filters.audience === "women" ? "Mujer" : filters.audience === "men" ? "Hombre" : filters.showAll ? "Todo el catálogo" : showingNewOnly ? "Nuevo en tienda" : "Prendas en tienda";
+  const heading = filters.q ? `“${filters.q}”` : filters.audience === "women" ? "Mujer" : filters.audience === "men" ? "Hombre" : filters.showAll ? "Todo el catálogo" : showingNewOnly ? "Nuevo en tienda" : "Prendas en tienda";
   const viewerId = viewer.kind === "guest" ? undefined : viewer.userId;
 
   return (
@@ -44,9 +44,15 @@ export default async function HomePage({
           repeating them here as a second row only pushed the garments down. */}
       <section className="flex items-end justify-between gap-4 border-b border-stone-200 pb-3 pt-6 sm:pt-8">
         <div className="min-w-0">
+          {filters.q && <p className="font-condensed text-sm font-bold uppercase tracking-[0.06em] text-stone-500">Resultados de búsqueda</p>}
           <h1 className="font-serif text-2xl tracking-tight text-stone-900 sm:text-3xl">
             {heading}{filters.category && <span className="text-stone-500"> · {categoryLabel(filters.category)}</span>}
           </h1>
+          {filters.q && (
+            <p className="mt-1 text-sm text-stone-600">
+              <Link href={filters.audience ? `/?audience=${filters.audience}` : "/?ver=todo"} className="text-pine underline underline-offset-4">Quitar búsqueda</Link>
+            </p>
+          )}
           {showingNewOnly && (
             <p className="mt-1 text-sm text-stone-600">
               Lo que llegó en las últimas 2 semanas. <Link href="/?ver=todo" className="text-pine underline underline-offset-4">Ver todo el catálogo</Link>

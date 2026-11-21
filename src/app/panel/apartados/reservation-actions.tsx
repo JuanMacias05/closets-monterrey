@@ -6,8 +6,10 @@ import { completeWithPin, updateSellerReservation, type SellerReservationAction 
 
 const button = "min-h-11 border-2 px-3 font-condensed text-sm font-bold uppercase disabled:opacity-40";
 
-export function ReservationActions({ reservationId, status, deliveryStatus, buyerName }: {
+export function ReservationActions({ reservationId, status, deliveryStatus, buyerName, canConfirm = true }: {
   reservationId: string; status: string; deliveryStatus: string; buyerName: string;
+  // False while a courier hasn't accepted: the buyer was told not to pay yet.
+  canConfirm?: boolean;
 }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
@@ -58,7 +60,7 @@ export function ReservationActions({ reservationId, status, deliveryStatus, buye
         </form>
       )}
       <div className="flex flex-wrap gap-2">
-        {status === "pending_deposit" && (
+        {status === "pending_deposit" && canConfirm && (
           <button type="button" disabled={busy} onClick={() => run("confirm", `¿Ya te llegó el anticipo de ${buyerName}? Revisa tu banco antes de confirmar.`)} className={`${button} border-pine bg-pine text-white`}>Confirmar anticipo</button>
         )}
         {status === "confirmed" && deliveryStatus === "preparing" && (

@@ -1,13 +1,15 @@
 import "server-only";
 
 import { cache } from "react";
+import { feeRange, feesFromOrigin, type ZoneRateRow } from "@/features/delivery/zone-rates";
 import { getSellerAvatarUrl } from "@/features/products/public-images";
 import { demoProducts } from "@/features/products/demo-catalog";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export type SellerDelivery = {
   points: string[];
-  home: { feeMxn: number; note: string | null } | null;
+  // From the zone rates: the cheapest and dearest destination from where she ships.
+  home: { origin: string; minFeeMxn: number; maxFeeMxn: number; note: string | null } | null;
 };
 
 export type SellerPublicProfile = {
@@ -33,16 +35,23 @@ export const getSellerPublicProfile = cache(async (slug: string): Promise<Seller
 
   if (!supabase) return demoSeller ? { storeName: demoSeller.store_name, slug, avatarUrl: null, delivery: NO_DELIVERY } : null;
 
-  const profileQuery = supabase.from("profiles").select("id,store_name,slug,avatar_path,home_delivery_enabled,home_delivery_fee_mxn,home_delivery_note");
+  const profileQuery = supabase.from("profiles").select("id,store_name,slug,avatar_path,home_delivery_enabled,home_delivery_origin,home_delivery_note");
   const { data: profile } = demoSeller
     ? await profileQuery.eq("store_name", demoSeller.store_name).maybeSingle()
     : await profileQuery.eq("slug", slug).maybeSingle();
 
   if (!profile) return demoSeller ? { storeName: demoSeller.store_name, slug, avatarUrl: null, delivery: NO_DELIVERY } : null;
 
-  const { data: points } = await supabase.from("seller_delivery_points")
-    .select("point:delivery_points(name,sort_order,active)")
-    .eq("seller_id", profile.id);
+  const origin = profile.home_delivery_enabled ? profile.home_delivery_origin as string | null : null;
+  const [{ data: points }, { data: rateRows }] = await Promise.all([
+    supabase.from("seller_delivery_points")
+      .select("point:delivery_points(name,sort_order,active)")
+      .eq("seller_id", profile.id),
+    origin
+      ? supabase.from("delivery_zone_rates").select("origin_municipality,destination_municipality,fee_mxn").eq("origin_municipality", origin)
+      : Promise.resolve({ data: [] as ZoneRateRow[] }),
+  ]);
+  const homeRange = origin ? feeRange(feesFromOrigin((rateRows ?? []) as ZoneRateRow[], origin)) : null;
   type PointRow = { point: { name: string; sort_order: number; active: boolean } | null };
   const pointNames = ((points ?? []) as unknown as PointRow[])
     .filter((row) => row.point?.active)
@@ -55,7 +64,8 @@ export const getSellerPublicProfile = cache(async (slug: string): Promise<Seller
     avatarUrl: getSellerAvatarUrl(supabase, profile.avatar_path),
     delivery: {
       points: pointNames,
-      home: profile.home_delivery_enabled ? { feeMxn: profile.home_delivery_fee_mxn, note: profile.home_delivery_note } : null,
+      // No origin or no rates: not offered at checkout either, so not announced here.
+      home: origin && homeRange ? { origin, minFeeMxn: homeRange.min, maxFeeMxn: homeRange.max, note: profile.home_delivery_note } : null,
     },
   };
 });

@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { normalizePhoneE164 } from "@/features/auth/phone-number";
+import { isKnownMunicipality } from "@/features/delivery/zone-rates";
 import { cleanCardNumber, isValidCardNumber } from "@/features/store/card-number";
 import { isValidClabe } from "@/features/store/clabe";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -98,17 +99,20 @@ export async function saveStoreSettings(input: StoreSettingsInput) {
   return { ok: true as const };
 }
 
-type DeliverySettingsInput = { pointIds: string[]; homeDelivery: boolean; homeFee: string; homeNote: string };
+// origin: the municipality she ships from ("" = not chosen). There is no fee here any more:
+// home delivery is priced from the zone rates admins manage (20261123000100).
+type DeliverySettingsInput = { pointIds: string[]; homeDelivery: boolean; origin: string; homeNote: string };
 
 // Where a seller delivers. Store-wide, not per garment: it applies to every piece she lists.
 // Editable from "Editar tienda" and from each garment's edit screen, where sellers look for it.
 export async function saveDeliverySettings(input: DeliverySettingsInput) {
   if (!input || !Array.isArray(input.pointIds) || input.pointIds.some((id) => typeof id !== "string" || !/^[0-9a-f-]{36}$/i.test(id))
-    || typeof input.homeDelivery !== "boolean" || typeof input.homeFee !== "string" || typeof input.homeNote !== "string") {
+    || typeof input.homeDelivery !== "boolean" || typeof input.origin !== "string" || typeof input.homeNote !== "string"
+    || (input.origin !== "" && !isKnownMunicipality(input.origin))) {
     return { ok: false as const, error: "Las opciones de entrega no son válidas." };
   }
-  const fee = input.homeDelivery ? Number(input.homeFee.trim() || "0") : 0;
-  if (!Number.isFinite(fee) || fee < 0 || fee > 1000) return { ok: false as const, error: "El costo del envío debe estar entre $0 y $1,000." };
+  // Without an origin there is no rate to price the buyer's shipping from.
+  if (input.homeDelivery && !input.origin) return { ok: false as const, error: "Elige desde qué municipio envías para ofrecer envío a domicilio." };
 
   const supabase = await createSupabaseServerClient();
   if (!supabase) return { ok: false as const, error: "No está configurada la conexión con Supabase." };
@@ -118,7 +122,7 @@ export async function saveDeliverySettings(input: DeliverySettingsInput) {
 
   const { error: profileError } = await supabase.from("profiles").update({
     home_delivery_enabled: input.homeDelivery,
-    home_delivery_fee_mxn: Math.round(fee * 100),
+    home_delivery_origin: input.origin || null,
     home_delivery_note: input.homeNote.trim().slice(0, 200) || null,
   }).eq("id", sellerId);
   if (profileError) return { ok: false as const, error: "No pudimos guardar el envío a domicilio." };

@@ -1,5 +1,5 @@
 begin;
-select plan(18);
+select plan(20);
 
 -- A new courier (sign-up path) and a buyer.
 insert into auth.users (id, aud, role, phone, raw_user_meta_data) values
@@ -36,23 +36,31 @@ select lives_ok(
   $$ select public.reserve_cart_from_seller('10000000-0000-4000-8000-000000000001', 'courier', null, 'Calle Uno 123, Centro', '10000000-0000-4000-8000-000000000006', 'Monterrey', 'with_deposit') $$,
   'The buyer reserves with a courier who covers Monterrey.'
 );
-select is((select deposit_mxn from public.reservations), 6000 + 4500, 'With "incluida en el anticipo", the courier fee is added to the 20% deposit.');
+-- Filtered by buyer: the local database may hold other reservations from e2e runs.
+select is((select deposit_mxn from public.reservations where buyer_id = '80000000-0000-4000-8000-00000000000b'), 6000 + 4500, 'With "incluida en el anticipo", the courier fee is added to the 20% deposit.');
+
+reset role;
+create temporary table handoff as
+select id, delivery_pin as pin, (select q.id from public.courier_requests q where q.reservation_id = r.id) as request
+from public.reservations r where buyer_id = '80000000-0000-4000-8000-00000000000b';
+grant select on handoff to authenticated;
+set local role authenticated;
+
+-- She is asked first (20261124000100); the seller can't confirm until she accepts.
+select set_config('request.jwt.claims', '{"sub":"10000000-0000-4000-8000-000000000001","role":"authenticated"}', true);
+select throws_ok($$ select public.update_reservation((select id from handoff), 'confirm') $$, 'P0001', 'courier_not_accepted', 'The seller cannot confirm before the courier accepts.');
+select set_config('request.jwt.claims', '{"sub":"10000000-0000-4000-8000-000000000006","role":"authenticated"}', true);
+select lives_ok($$ select public.accept_courier_request((select request from handoff)) $$, 'The courier accepts the request.');
 
 -- Seller confirms; the courier collects, travels and delivers with the PIN.
 select set_config('request.jwt.claims', '{"sub":"10000000-0000-4000-8000-000000000001","role":"authenticated"}', true);
-select lives_ok($$ select public.update_reservation((select id from public.reservations), 'confirm') $$, 'The seller confirms the deposit.');
+select lives_ok($$ select public.update_reservation((select id from handoff), 'confirm') $$, 'The seller confirms the deposit.');
 
 select set_config('request.jwt.claims', '{"sub":"10000000-0000-4000-8000-000000000006","role":"authenticated"}', true);
-select is((select full_name from public.buyer_profiles), 'Compradora C', 'The assigned courier can read the buyer she delivers to.');
-select lives_ok($$ select public.courier_update_reservation((select id from public.reservations), 'picked_up') $$, 'The courier marks the package collected.');
-select lives_ok($$ select public.courier_update_reservation((select id from public.reservations), 'on_the_way') $$, 'The courier marks it on the way.');
+select is((select full_name from public.buyer_profiles where id = '80000000-0000-4000-8000-00000000000b'), 'Compradora C', 'The courier who accepted can read the buyer she delivers to.');
+select lives_ok($$ select public.courier_update_reservation((select id from handoff), 'picked_up') $$, 'The courier marks the package collected.');
+select lives_ok($$ select public.courier_update_reservation((select id from handoff), 'on_the_way') $$, 'The courier marks it on the way.');
 select throws_ok($$ select delivery_pin from public.reservations $$, '42501', NULL, 'The courier cannot read the PIN either.');
-
-reset role;
-create temporary table handoff as select id, delivery_pin as pin from public.reservations;
-grant select on handoff to authenticated;
-set local role authenticated;
-select set_config('request.jwt.claims', '{"sub":"10000000-0000-4000-8000-000000000006","role":"authenticated"}', true);
 select lives_ok($$ select public.complete_reservation_with_pin((select id from handoff), (select pin from handoff)) $$, 'The courier completes the delivery with the buyer''s PIN.');
 
 select set_config('request.jwt.claims', '{"sub":"80000000-0000-4000-8000-00000000000b","role":"authenticated"}', true);
