@@ -1,23 +1,34 @@
-// What the panel's side menu lists. "Tu clóset" is every approved seller's own tools; the admin
-// group is only passed to the menu when profiles.role = 'admin' (the layout checks it, and each
-// admin page checks it again on its own). Couriers get the same frame with their own menu
-// (courierNavGroups), under /recolectora.
+// What the "PANEL ▾" menu in the green top bar and the "MI CUENTA ▾" menu list (accounts and menu
+// proposal, approved 2026-11-21). One account can hold several activities (20261127000100), so
+// the panel menu shows one column per activity: "Tu clóset" (selling), "Tus entregas"
+// (delivering) and "Administración del sitio" (admin).
+//
+// IMPORTANT: these lists only decide which links to draw. Every page re-checks access on the
+// server, and the database checks it again.
+
+export type ActivityStatus = "pending" | "approved" | "suspended";
 
 export type PanelNavIcon =
   | "home" | "garments" | "add" | "reservations" | "store" | "live"
   | "sellers" | "buyers" | "couriers" | "allGarments" | "support" | "rates"
-  | "requests" | "route" | "profile" | "ratings" | "messages";
+  | "requests" | "route" | "profile" | "ratings" | "messages"
+  | "verify" | "eye" | "bag" | "heart" | "bell" | "signOut";
 
 export type PanelNavItem = {
   label: string;
   icon: PanelNavIcon;
-  // null = shown but not available yet ("Próximamente"); it must never link anywhere.
+  // null = shown but not available yet ("Próximamente"), unless it is an action.
   href: string | null;
   // Things waiting for her there (e.g. courier requests to answer). Hidden at 0.
   badge?: { count: number; label: string };
+  // Not a page: "Ver como clienta" switches how the store is drawn (a server action).
+  action?: "view-as-buyer";
 };
 
-export type PanelNavGroup = { id: string; label: string; items: PanelNavItem[] };
+// A group with `note` shows only that sentence: the activity is waiting or stopped.
+export type PanelNavGroup = { id: string; label: string; items: PanelNavItem[]; note?: string };
+
+export type ActivityFlags = { seller: ActivityStatus | null; courier: ActivityStatus | null; admin: boolean };
 
 export const SELLER_NAV_GROUP: PanelNavGroup = {
   id: "panel-nav-store",
@@ -25,12 +36,10 @@ export const SELLER_NAV_GROUP: PanelNavGroup = {
   items: [
     { label: "Inicio", icon: "home", href: "/panel" },
     { label: "Mis prendas", icon: "garments", href: "/panel/prendas" },
-    // "Subir prenda", not "Agregar prenda": it is the same action as the panel's main button,
-    // and two names for one action read as two different things (see panel-styles.ts).
+    // "Subir prenda", not "Agregar prenda": it is the same action as the green bar's button,
+    // and two names for one action read as two different things.
     { label: "Subir prenda", icon: "add", href: "/panel/prendas/nueva" },
     { label: "Apartados", icon: "reservations", href: "/panel/apartados" },
-    // Chats with buyers and couriers (20261125000100); the count of unread comes from the layout.
-    { label: "Mensajes", icon: "messages", href: "/panel/mensajes" },
     // Couriers who collect at her points: who can take her buyers' orders.
     { label: "Recolectoras", icon: "couriers", href: "/panel/recolectoras" },
     { label: "Mi tienda", icon: "store", href: "/panel/tienda" },
@@ -45,45 +54,71 @@ export const ADMIN_NAV_GROUP: PanelNavGroup = {
   items: [
     { label: "Vendedoras", icon: "sellers", href: "/panel/admin/vendedoras" },
     { label: "Clientas", icon: "buyers", href: "/panel/admin/clientas" },
-    // Not just "Recolectoras": an admin also has the seller's "Recolectoras" above.
-    { label: "Verificar recolectoras", icon: "couriers", href: "/panel/admin/recolectoras" },
+    // Not just "Recolectoras": a seller-admin also has "Recolectoras" in Tu clóset.
+    { label: "Verificar recolectoras", icon: "verify", href: "/panel/admin/recolectoras" },
     { label: "Tarifas de envío", icon: "rates", href: "/panel/admin/tarifas-envio" },
     { label: "Todas las prendas", icon: "allGarments", href: "/panel/admin/prendas" },
     { label: "Soporte", icon: "support", href: "/panel/admin/soporte" },
+    { label: "Ver como clienta", icon: "eye", href: null, action: "view-as-buyer" },
   ],
 };
 
-export function panelNavGroups(isAdmin: boolean, unreadMessages = 0): PanelNavGroup[] {
-  const seller = { ...SELLER_NAV_GROUP, items: SELLER_NAV_GROUP.items.map((item) => (item.href === "/panel/mensajes" ? { ...item, badge: unreadBadge(unreadMessages) } : item)) };
-  return isAdmin ? [seller, ADMIN_NAV_GROUP] : [seller];
+export const SELLER_PENDING_NOTE = "Tu clóset está en revisión. Te avisamos en cuanto la administración lo apruebe.";
+export const SELLER_SUSPENDED_NOTE = "Tu clóset está suspendido. Comunícate con la administración si necesitas ayuda.";
+export const COURIER_PENDING_NOTE = "Falta tu verificación: la administración te cita para revisar tu identificación.";
+export const COURIER_SUSPENDED_NOTE = "Tu cuenta de recolectora está suspendida. Comunícate con la administración.";
+
+// A courier's sections. "Solicitudes" carries the count of requests waiting for her answer:
+// each one expires in 2 hours, so it is the thing she must not miss. Her chats are in Mi cuenta.
+export function courierNavGroup(pendingRequests: number): PanelNavGroup {
+  return {
+    id: "panel-nav-courier",
+    label: "Tus entregas",
+    items: [
+      {
+        label: "Solicitudes",
+        icon: "requests",
+        href: "/recolectora/solicitudes",
+        badge: pendingRequests > 0 ? { count: pendingRequests, label: pendingRequests === 1 ? "1 por responder" : `${pendingRequests} por responder` } : undefined,
+      },
+      { label: "Mis entregas", icon: "couriers", href: "/recolectora" },
+      { label: "Mi ruta", icon: "route", href: "/recolectora/ruta" },
+      { label: "Mi perfil", icon: "profile", href: "/recolectora/perfil" },
+      { label: "Calificaciones", icon: "ratings", href: "/recolectora/calificaciones" },
+    ],
+  };
 }
 
-function unreadBadge(count: number): PanelNavItem["badge"] {
-  return count > 0 ? { count, label: count === 1 ? "1 mensaje sin leer" : `${count} mensajes sin leer` } : undefined;
+// The panel menu's columns for this account, in a fixed order.
+export function panelMenuGroups(flags: ActivityFlags, pendingRequests = 0): PanelNavGroup[] {
+  const groups: PanelNavGroup[] = [];
+  if (flags.seller === "approved") groups.push(SELLER_NAV_GROUP);
+  else if (flags.seller) groups.push({ id: SELLER_NAV_GROUP.id, label: SELLER_NAV_GROUP.label, items: [], note: flags.seller === "pending" ? SELLER_PENDING_NOTE : SELLER_SUSPENDED_NOTE });
+  const courier = courierNavGroup(pendingRequests);
+  if (flags.courier === "approved") groups.push(courier);
+  else if (flags.courier) groups.push({ id: courier.id, label: courier.label, items: [], note: flags.courier === "pending" ? COURIER_PENDING_NOTE : COURIER_SUSPENDED_NOTE });
+  if (flags.admin) groups.push(ADMIN_NAV_GROUP);
+  return groups;
 }
 
-// A courier's area. "Solicitudes" comes first and carries the count of requests waiting for
-// her answer: each one expires in 2 hours, so it is the thing she must not miss.
-export function courierNavGroups(pendingRequests: number, unreadMessages = 0): PanelNavGroup[] {
-  return [
-    {
-      id: "panel-nav-courier",
-      label: "Tus entregas",
-      items: [
-        {
-          label: "Solicitudes",
-          icon: "requests",
-          href: "/recolectora/solicitudes",
-          badge: pendingRequests > 0 ? { count: pendingRequests, label: pendingRequests === 1 ? "1 por responder" : `${pendingRequests} por responder` } : undefined,
-        },
-        { label: "Mis entregas", icon: "couriers", href: "/recolectora" },
-        { label: "Mensajes", icon: "messages", href: "/recolectora/mensajes", badge: unreadBadge(unreadMessages) },
-        { label: "Mi ruta", icon: "route", href: "/recolectora/ruta" },
-        { label: "Mi perfil", icon: "profile", href: "/recolectora/perfil" },
-        { label: "Calificaciones", icon: "ratings", href: "/recolectora/calificaciones" },
-      ],
-    },
-  ];
+// The green bar exists only for accounts with something beyond buying.
+export function hasPanel(flags: ActivityFlags): boolean {
+  return flags.seller !== null || flags.courier !== null || flags.admin;
+}
+
+// "+ SUBIR PRENDA" is for an approved seller or an admin.
+export function canUploadGarments(flags: ActivityFlags): boolean {
+  return flags.seller === "approved" || flags.admin;
+}
+
+// The green bar's tag: who she is in the panel.
+export function panelTag(flags: ActivityFlags): string {
+  if (flags.admin) return "Administración";
+  return [flags.seller && "Vendedora", flags.courier && "Recolectora"].filter(Boolean).join(" · ");
+}
+
+export function panelBadgeTotal(groups: readonly PanelNavGroup[]): number {
+  return groups.reduce((sum, group) => sum + group.items.reduce((count, item) => count + (item.badge?.count ?? 0), 0), 0);
 }
 
 /**
@@ -100,25 +135,33 @@ export function activePanelHref(pathname: string, hrefs: readonly string[]): str
   return best;
 }
 
-export const SIDEBAR_COLLAPSED_STORAGE_KEY = "closets:panel-sidebar-collapsed";
-
-type ReadableStorage = Pick<Storage, "getItem">;
-type WritableStorage = Pick<Storage, "setItem">;
-
-// Storage can be missing or throw (private window, blocked site data); the menu then simply
-// starts expanded and the choice lasts until the page reloads.
-export function readSidebarCollapsed(storage: ReadableStorage | null | undefined): boolean {
-  try {
-    return storage?.getItem(SIDEBAR_COLLAPSED_STORAGE_KEY) === "1";
-  } catch {
-    return false;
-  }
+// "PANEL" on the storefront, "PANEL · MIS PRENDAS" on a panel page: the button says where she is.
+export function panelMenuLabel(pathname: string, groups: readonly PanelNavGroup[]): string {
+  const items = groups.flatMap((group) => group.items).filter((item) => item.href !== null);
+  const active = activePanelHref(pathname, items.map((item) => item.href!));
+  const item = items.find((candidate) => candidate.href === active);
+  return item ? `Panel · ${item.label}` : "Panel";
 }
 
-export function writeSidebarCollapsed(storage: WritableStorage | null | undefined, collapsed: boolean): void {
-  try {
-    storage?.setItem(SIDEBAR_COLLAPSED_STORAGE_KEY, collapsed ? "1" : "0");
-  } catch {
-    // Not remembered on this device; the in-memory choice still applies.
-  }
+// "MI CUENTA ▾": what every signed-in account has, plus "Hacer algo más" for activities she
+// can still ask for. An admin asks for nothing: another admin grants her activities.
+export function accountMenu(flags: ActivityFlags, unreadMessages: number): { items: PanelNavItem[]; extra: PanelNavItem[] } {
+  const items: PanelNavItem[] = [
+    { label: "Mis compras", icon: "bag", href: "/cuenta" },
+    {
+      label: "Mensajes",
+      icon: "messages",
+      href: "/cuenta/mensajes",
+      badge: unreadMessages > 0 ? { count: unreadMessages, label: unreadMessages === 1 ? "1 mensaje sin leer" : `${unreadMessages} mensajes sin leer` } : undefined,
+    },
+    { label: "Favoritos", icon: "heart", href: "/favoritos" },
+    { label: "Avisos", icon: "bell", href: "/cuenta/avisos" },
+  ];
+  const extra: PanelNavItem[] = [];
+  if (!flags.seller && !flags.admin) extra.push({ label: "Quiero vender", icon: "store", href: "/cuenta/vender" });
+  if (!flags.courier && !flags.admin) extra.push({ label: "Quiero entregar", icon: "couriers", href: "/cuenta/entregar" });
+  return { items, extra };
 }
+
+// What a buyer-only account has: "Ver como clienta" draws the store with these flags.
+export const BUYER_ONLY: ActivityFlags = { seller: null, courier: null, admin: false };

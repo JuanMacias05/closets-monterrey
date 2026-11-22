@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { ZoneRatesForm } from "@/app/panel/admin/tarifas-envio/zone-rates-form";
 import { MUNICIPALITIES } from "@/features/couriers/constants";
 import { isKnownMunicipality } from "@/features/delivery/zone-rates";
+import { isAdminUser } from "@/features/viewer/is-admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export const metadata = { title: "Tarifas de envío | Closets Monterrey" };
@@ -20,8 +21,7 @@ export default async function AdminZoneRatesPage({ searchParams }: { searchParam
   if (!supabase) redirect("/login?reason=configuration");
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
-  const { data: admin } = await supabase.from("profiles").select("role,status").eq("id", user.id).maybeSingle();
-  if (admin?.role !== "admin" || admin.status !== "approved") redirect("/panel");
+  if (!(await isAdminUser(supabase, user.id))) redirect("/panel");
 
   const { data, error } = await supabase.from("delivery_zone_rates").select("origin_municipality,destination_municipality,fee_mxn,updated_at,updated_by");
   if (error) throw new Error("No pudimos cargar las tarifas de envío.");

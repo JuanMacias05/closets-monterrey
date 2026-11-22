@@ -104,8 +104,8 @@ function CourierChatLinks({ links }: { links: ChatLinks | undefined }) {
   if (!links?.pickup && !links?.delivery) return null;
   return (
     <div className="mt-3 flex flex-wrap gap-2">
-      {links.pickup && <ChatLink href={`/recolectora/mensajes/${links.pickup.id}`} label="Mensajes con la vendedora" unread={links.pickup.unread} />}
-      {links.delivery && <ChatLink href={`/recolectora/mensajes/${links.delivery.id}`} label="Mensajes con la clienta" unread={links.delivery.unread} />}
+      {links.pickup && <ChatLink href={`/cuenta/mensajes/${links.pickup.id}`} label="Mensajes con la vendedora" unread={links.pickup.unread} />}
+      {links.delivery && <ChatLink href={`/cuenta/mensajes/${links.delivery.id}`} label="Mensajes con la clienta" unread={links.delivery.unread} />}
     </div>
   );
 }

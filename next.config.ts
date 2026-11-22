@@ -27,6 +27,9 @@ const nextConfig: NextConfig = {
       { source: "/vendedor", destination: "/panel", permanent: true },
       { source: "/admin/prendas", destination: "/panel/admin/prendas", permanent: true },
       { source: "/admin/vendedoras/:id", destination: "/panel", permanent: true },
+      // One inbox for every chat since the accounts and menu change; old links and pushes land here.
+      { source: "/panel/mensajes/:id*", destination: "/cuenta/mensajes/:id*", permanent: true },
+      { source: "/recolectora/mensajes/:id*", destination: "/cuenta/mensajes/:id*", permanent: true },
     ];
   },
 };

@@ -5,6 +5,28 @@ import { expect, test, type Page } from "@playwright/test";
 const ADMIN_PHONE = "8100000004";
 const SELLER_PHONE = "8100000001"; // Closet de Renata, approved seller
 
+const ADMIN_ID = "10000000-0000-4000-8000-000000000004";
+
+async function setAdminStoreName(name: string) {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.E2E_SUPABASE_SECRET_KEY;
+  if (!url || !key) throw new Error("Run through `npm run test:e2e` so the local Supabase keys are set.");
+
+  const response = await fetch(`${url}/rest/v1/profiles?id=eq.${ADMIN_ID}`, {
+    method: "PATCH",
+    headers: {
+      apikey: key,
+      Authorization: `Bearer ${key}`,
+      "Content-Type": "application/json",
+      Prefer: "return=minimal",
+    },
+    body: JSON.stringify({ store_name: name }),
+  });
+  if (!response.ok) throw new Error(`Could not set the local admin fixture name (${response.status}).`);
+}
+
+test.beforeAll(async () => { await setAdminStoreName("Admin de prueba"); });
+
 async function login(page: Page, phone: string) {
   await page.goto("/login");
   await page.getByLabel("Número de celular").fill(phone);
@@ -32,72 +54,70 @@ test("after sending a code, resending waits for the cooldown", async ({ page }) 
   await expect(page.getByRole("button", { name: /Reenviar en \d+ s/ })).toBeDisabled();
 });
 
-test("an admin sees both panel groups and the summary", async ({ page }) => {
+test("an admin opens the panel from the green bar and can view the store as a buyer", async ({ page }) => {
   await login(page, ADMIN_PHONE);
+  // (Also the admin login check that used to live in auth.spec: one login less for the SMS cap.)
+  await expect(page.getByRole("heading", { name: "Admin de prueba" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Mi tienda", exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Administración del sitio" })).toBeVisible();
   await expect(page.getByRole("link", { name: /Vendedoras por aprobar/ })).toBeVisible();
   await expect(page.getByRole("link", { name: "Subir prenda" }).first()).toHaveAttribute("href", "/panel/prendas/nueva");
-  // Site administration is in the admin's side menu too.
-  await expect(page.getByRole("complementary", { name: "Menú del panel" }).getByRole("link", { name: "Soporte" })).toHaveAttribute("href", "/panel/admin/soporte");
+
+  // The panel keeps the store's look: store nav and banner, PANEL ▾ in the green bar.
+  await expect(page.getByRole("navigation", { name: "Categorías" })).toBeVisible();
+  await page.getByRole("button", { name: /^Panel · Inicio/ }).click();
+  const menu = page.getByRole("group", { name: "Panel" });
+  await expect(menu.getByText("Tu clóset", { exact: true })).toBeVisible();
+  await expect(menu.getByRole("link", { name: "Soporte" })).toHaveAttribute("href", "/panel/admin/soporte");
+  await expect(menu.getByRole("link", { name: "Inicio" })).toHaveAttribute("aria-current", "page");
+
+  // "Ver como clienta": no green bar, buyer menu, an amber strip to come back.
+  await menu.getByRole("button", { name: "Ver como clienta" }).click();
+  await expect(page.getByText("Estás viendo la tienda como una clienta.")).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByRole("button", { name: /^Panel/ })).toHaveCount(0);
+  await page.getByRole("button", { name: /Mi cuenta/ }).click();
+  await expect(page.getByRole("group", { name: "Mi cuenta" }).getByRole("link", { name: "Quiero vender" })).toBeVisible();
+  await page.getByRole("button", { name: "Volver a admin" }).click();
+  await expect(page).toHaveURL(/\/panel$/, { timeout: 15_000 });
+  await expect(page.getByRole("button", { name: /^Panel · Inicio/ })).toBeVisible();
 });
 
-// One login covers the seller checks, the side menu at laptop and phone widths and the way
-// back from inner pages: every login sends an SMS, and the local stack allows 30 an hour for
-// the whole suite.
-test("a seller gets her own side menu: lit on the current page, collapsible, a drawer on a phone", async ({ page }) => {
+// One login covers the seller's menu at laptop and phone widths: every login sends an SMS, and
+// the local stack allows 30 an hour for the whole suite.
+test("a seller's PANEL menu says where she is and opens as a sheet on a phone", async ({ page }) => {
   await login(page, SELLER_PHONE);
   await expect(page.getByRole("heading", { name: "Mi tienda", exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Administración del sitio" })).toHaveCount(0);
-  await expect(page.getByRole("link", { name: /Vendedoras/ })).toHaveCount(0);
 
-  // Laptop: a fixed side menu; the top bar keeps only the store and "Ver tienda".
+  // Laptop: hovering PANEL opens one column, hers.
   await page.setViewportSize({ width: 1366, height: 800 });
-  const menu = page.getByRole("complementary", { name: "Menú del panel" });
-  const nav = menu.getByRole("navigation", { name: "Panel" });
-  await expect(nav.getByRole("link", { name: "Inicio" })).toHaveAttribute("aria-current", "page");
-  await expect(nav.getByText("Próximamente")).toBeVisible();
-  await expect(nav.getByRole("link", { name: /En vivo/ })).toHaveCount(0);
-  await expect(menu.getByRole("button", { name: "Cerrar sesión" })).toBeVisible();
-  await expect(page.getByRole("banner").getByRole("link", { name: "Ver tienda" })).toHaveAttribute("href", /^\/tiendas\/[a-z0-9-]+$/);
-
-  await nav.getByRole("link", { name: "Apartados" }).click();
+  const button = page.getByRole("button", { name: /^Panel/ });
+  await expect(button).toHaveText(/Panel · Inicio/);
+  await button.hover();
+  const menu = page.getByRole("group", { name: "Panel" });
+  await expect(menu.getByText("Tu clóset", { exact: true })).toBeVisible();
+  await expect(menu.getByText("Administración del sitio")).toHaveCount(0);
+  await expect(menu.getByText("Próximamente")).toBeVisible();
+  await expect(menu.getByRole("link", { name: /Mensajes/ })).toHaveCount(0);
+  await menu.getByRole("link", { name: "Apartados" }).click();
   await expect(page).toHaveURL(/\/panel\/apartados$/);
-  await expect(nav.getByRole("link", { name: "Apartados" })).toHaveAttribute("aria-current", "page");
-  await expect(nav.getByRole("link", { name: "Inicio" })).not.toHaveAttribute("aria-current", "page");
+  await expect(button).toHaveText(/Panel · Apartados/);
+  // No "Volver a Panel" anywhere: the menu does that job.
+  await expect(page.getByRole("link", { name: /Volver a/ })).toHaveCount(0);
 
-  // Collapsed to icons, and still collapsed after a reload (remembered on this device).
-  await menu.getByRole("button", { name: "Contraer menú" }).click();
-  await expect.poll(async () => (await menu.boundingBox())?.width ?? 0).toBeLessThan(100);
-  await page.reload();
-  await expect(menu.getByRole("button", { name: "Expandir menú" })).toBeVisible();
-  await menu.getByRole("button", { name: "Expandir menú" }).click();
-  await expect(menu.getByRole("button", { name: "Contraer menú" })).toBeVisible();
-
-  // Phone: the menu is a drawer behind the top bar's button, and nothing is pushed off screen.
+  // Phone: PANEL opens a bottom sheet, and nothing scrolls sideways.
   await page.setViewportSize({ width: 375, height: 800 });
-  await expect(menu).toBeHidden();
-  const storeLink = page.getByRole("banner").getByRole("link", { name: "Ver tienda" });
-  const storeBox = await storeLink.boundingBox();
-  expect(storeBox).not.toBeNull();
-  expect(storeBox!.x + storeBox!.width).toBeLessThanOrEqual(375);
-
-  await page.getByRole("button", { name: "Abrir menú del panel" }).click();
-  const drawer = page.getByRole("dialog", { name: "Menú del panel" });
-  const signOut = drawer.getByRole("button", { name: "Cerrar sesión" });
-  await expect(signOut).toBeVisible();
-  const signOutBox = await signOut.boundingBox();
-  expect(signOutBox!.x + signOutBox!.width).toBeLessThanOrEqual(375);
-  await drawer.getByRole("link", { name: "Mis prendas" }).click();
+  await button.click();
+  const sheet = page.getByRole("dialog", { name: "Panel" });
+  await expect(sheet.getByRole("link", { name: "Mis prendas" })).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(375);
+  await sheet.getByRole("link", { name: "Mis prendas" }).click();
   await expect(page).toHaveURL(/\/panel\/prendas$/);
-  await expect(drawer).toHaveCount(0);
+  await expect(sheet).toHaveCount(0);
 
-  // Inner panel pages have a way back: a garment goes back to "Mis prendas".
+  // A garment sits inside Mis prendas, so editing one keeps its way back.
   await page.goto("/panel/prendas/nueva");
-  await page.getByRole("link", { name: "Volver a Mis prendas" }).click();
-  await expect(page).toHaveURL(/\/panel\/prendas$/);
-  await page.getByRole("link", { name: "Volver a Panel" }).click();
-  await expect(page).toHaveURL(/\/panel$/);
+  await expect(page.getByRole("link", { name: /Volver a Mis prendas/ })).toHaveCount(0);
 });
 
 test("on a 1366×768 laptop the first garment shows without scrolling", async ({ page }) => {

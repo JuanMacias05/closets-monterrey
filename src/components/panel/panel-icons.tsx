@@ -2,7 +2,7 @@ import type { PanelNavIcon } from "@/features/panel/panel-navigation";
 
 // Hand-drawn 24×24 stroke icons for the panel menu. Inline SVG instead of an icon package: the
 // menu needs about a dozen, and the rest of the site already draws its few icons inline.
-const PATHS: Record<PanelNavIcon | "menu" | "close" | "collapse" | "expand" | "signOut", React.ReactNode> = {
+const PATHS: Record<PanelNavIcon | "menu" | "close" | "collapse" | "expand" | "chevron", React.ReactNode> = {
   home: <path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z" />,
   garments: (
     <>
@@ -96,6 +96,22 @@ const PATHS: Record<PanelNavIcon | "menu" | "close" | "collapse" | "expand" | "s
     </>
   ),
   ratings: <path d="m12 3.5 2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z" />,
+  verify: (
+    <>
+      <circle cx="12" cy="12" r="9" />
+      <path d="m8.5 12 2.5 2.5 4.5-5" />
+    </>
+  ),
+  eye: (
+    <>
+      <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z" />
+      <circle cx="12" cy="12" r="3" />
+    </>
+  ),
+  bag: <path d="M6 3 3.5 7v13a1 1 0 0 0 1 1h15a1 1 0 0 0 1-1V7L18 3zM3.5 7h17M16 10.5a4 4 0 0 1-8 0" />,
+  heart: <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8z" />,
+  bell: <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0" />,
+  chevron: <path d="m6 9 6 6 6-6" />,
   menu: <path d="M4 7h16M4 12h16M4 17h16" />,
   close: <path d="M6 6l12 12M18 6 6 18" />,
   collapse: <path d="m15 6-6 6 6 6" />,

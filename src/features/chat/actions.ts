@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { chatBasePath, cleanMessageBody, isChatPhotoPathFor, messagePreview, type ChatArea, type ChatMessage } from "@/features/chat/chat-format";
+import { cleanMessageBody, isChatPhotoPathFor, messagePreview, type ChatMessage } from "@/features/chat/chat-format";
 import { notifyNewMessage } from "@/features/push/notifications";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -30,13 +30,14 @@ export async function sendChatMessage(conversationId: string, body: string, imag
   return { ok: true, message: data as ChatMessage };
 }
 
-// Opening a chat clears its unread count; the area's layout (menu badge) is refreshed with it.
-export async function markConversationRead(conversationId: string, area: ChatArea): Promise<{ ok: boolean }> {
-  if (!UUID.test(conversationId) || !["buyer", "seller", "courier"].includes(area)) return { ok: false };
+// Opening a chat clears its unread count. The badge lives in the store header (MI CUENTA ▾),
+// which every page shares, so the whole layout is refreshed.
+export async function markConversationRead(conversationId: string): Promise<{ ok: boolean }> {
+  if (!UUID.test(conversationId)) return { ok: false };
   const supabase = await createSupabaseServerClient();
   if (!supabase) return { ok: false };
   const { error } = await supabase.rpc("mark_conversation_read", { target: conversationId });
   if (error) return { ok: false };
-  revalidatePath(area === "buyer" ? "/" : chatBasePath(area).replace(/\/mensajes$/, ""), "layout");
+  revalidatePath("/", "layout");
   return { ok: true };
 }

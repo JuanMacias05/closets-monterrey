@@ -15,7 +15,13 @@ import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 // reaching it.
 const RESEND_COOLDOWN_SECONDS = 60;
 
-export function PhoneLoginForm({ mode = "login", nextPath }: { mode?: "login" | "buyer-signup" | "seller-signup" | "courier-signup"; nextPath?: string }) {
+// `onVerified`: sign-up asks one more question after the code (registro), so it takes over
+// instead of redirecting.
+export function PhoneLoginForm({ mode = "login", nextPath, onVerified }: {
+  mode?: "login" | "buyer-signup" | "seller-signup" | "courier-signup";
+  nextPath?: string;
+  onVerified?: () => void;
+}) {
   const router = useRouter();
   const [phoneInput, setPhoneInput] = useState("");
   const [storeName, setStoreName] = useState("");
@@ -130,19 +136,24 @@ export function PhoneLoginForm({ mode = "login", nextPath }: { mode?: "login" | 
         setError("El código no es válido o expiró. Revísalo e inténtalo de nuevo.");
         return;
       }
-      // Shoppers land on their account, everyone else on the panel (which also explains a
-      // pending or suspended seller). Filter by the account's own id: a seller can also read
-      // the buyer rows of people who reserved from her.
+      if (onVerified) {
+        onVerified();
+        return;
+      }
+      // Sellers and admins land on the panel (which also explains a pending or suspended store),
+      // couriers on their deliveries, everyone else on her account. Filter by the account's own
+      // id: a seller can also read the buyer rows of people who reserved from her.
       let destination = nextPath;
       const userId = verified.user?.id;
       if (!destination) {
-        const [{ data: buyer }, { data: courier }] = userId
+        const [{ data: store }, { data: admin }, { data: courier }] = userId
           ? await Promise.all([
-            supabase.from("buyer_profiles").select("id").eq("id", userId).maybeSingle(),
+            supabase.from("profiles").select("id").eq("id", userId).maybeSingle(),
+            supabase.from("admins").select("user_id").eq("user_id", userId).maybeSingle(),
             supabase.from("couriers").select("id").eq("id", userId).maybeSingle(),
           ])
-          : [{ data: null }, { data: null }];
-        destination = courier ? "/recolectora" : buyer ? "/cuenta" : "/panel";
+          : [{ data: null }, { data: null }, { data: null }];
+        destination = store || admin ? "/panel" : courier ? "/recolectora" : "/cuenta";
       }
       router.replace(destination);
       router.refresh();

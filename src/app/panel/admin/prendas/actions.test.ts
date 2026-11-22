@@ -20,8 +20,8 @@ function mockClient(role = "admin") {
             if (column === "id" && table === "products") expect(value).toBe(productId);
             return query;
           }),
-          maybeSingle: vi.fn().mockImplementation(async () => table === "profiles"
-            ? { data: { role, status: "approved" }, error: null }
+          maybeSingle: vi.fn().mockImplementation(async () => table === "admins"
+            ? { data: role === "admin" ? { user_id: adminId } : null, error: null }
             : { data: { id: productId, slug: "top-satinado-marfil" }, error: null }),
           select: vi.fn((columns: string) => { selectedColumns = columns; void selectedColumns; return query; }),
         };

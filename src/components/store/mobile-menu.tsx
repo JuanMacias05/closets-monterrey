@@ -4,12 +4,15 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { signOutFromPanel } from "@/app/panel/actions";
+import { MenuItem } from "@/components/store/menu-item";
 import { useStoreSearch } from "@/components/store/store-search";
+import type { PanelNavItem } from "@/features/panel/panel-navigation";
 import { categoriesForSection } from "@/features/products/section-categories";
 import type { CatalogAudience } from "@/features/products/types";
 
-export function MobileMenu({ signedIn, accountHref = "/cuenta", accountLabel = "Mi cuenta", initialAudience }: {
-  signedIn: boolean; accountHref?: string; accountLabel?: string; initialAudience?: CatalogAudience;
+// On a phone "Mi cuenta" lives here (the panel is the green bar's bottom sheet).
+export function MobileMenu({ signedIn, accountItems = [], accountExtra = [], initialAudience }: {
+  signedIn: boolean; accountItems?: PanelNavItem[]; accountExtra?: PanelNavItem[]; initialAudience?: CatalogAudience;
 }) {
   const [open, setOpen] = useState(false);
   const [audience, setAudience] = useState<CatalogAudience>(initialAudience ?? "women");
@@ -84,11 +87,23 @@ export function MobileMenu({ signedIn, accountHref = "/cuenta", accountLabel = "
               Recolectoras verificadas
               <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M9 6l6 6-6 6" /></svg>
             </Link>
-            <div className="mb-3 flex justify-between">
-              <Link href="/favoritos" onClick={() => setOpen(false)} className="flex min-h-11 items-center">Favoritos</Link>
-              <Link href="/carrito" onClick={() => setOpen(false)} className="flex min-h-11 items-center">Carrito</Link>
-              {signedIn && <Link href={accountHref} onClick={() => setOpen(false)} className="flex min-h-11 items-center">{accountLabel}</Link>}
-            </div>
+            {signedIn ? (
+              <div className="mb-3">
+                <p id="mobile-account" className="pb-1 text-[10px] uppercase tracking-[0.22em] text-stone-500">Mi cuenta</p>
+                <ul aria-labelledby="mobile-account" className="-mx-3">{accountItems.map((item) => <li key={item.label}><MenuItem item={item} active={false} onNavigate={() => setOpen(false)} /></li>)}</ul>
+                {accountExtra.length > 0 && (
+                  <>
+                    <p id="mobile-account-more" className="pb-1 pt-2 text-[10px] uppercase tracking-[0.22em] text-stone-500">Hacer algo más</p>
+                    <ul aria-labelledby="mobile-account-more" className="-mx-3">{accountExtra.map((item) => <li key={item.label}><MenuItem item={item} active={false} onNavigate={() => setOpen(false)} /></li>)}</ul>
+                  </>
+                )}
+              </div>
+            ) : (
+              <div className="mb-3 flex justify-between">
+                <Link href="/favoritos" onClick={() => setOpen(false)} className="flex min-h-11 items-center">Favoritos</Link>
+                <Link href="/carrito" onClick={() => setOpen(false)} className="flex min-h-11 items-center">Carrito</Link>
+              </div>
+            )}
             {signedIn ? (
               <form action={signOutFromPanel}>
                 <button type="submit" className="press flex min-h-12 w-full items-center justify-center border-2 border-pine text-pine">Cerrar sesión</button>

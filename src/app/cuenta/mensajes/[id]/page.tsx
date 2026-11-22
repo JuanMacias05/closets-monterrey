@@ -2,28 +2,44 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { ChatThread } from "@/components/chat/chat-thread";
 import { StoreHeader } from "@/components/store/store-header";
-import { loadConversation } from "@/features/chat/chat-data";
+import { loadConversation, type LoadedConversation } from "@/features/chat/chat-data";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export const metadata = { title: "Mensajes | Closets Monterrey" };
 
-export default async function BuyerConversationPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function ConversationPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const supabase = await createSupabaseServerClient();
   if (!supabase) redirect("/login?reason=configuration");
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect(`/login?next=/cuenta/mensajes/${id}`);
-  const conversation = await loadConversation(id, "buyer");
+  const conversation = await loadConversation(id);
   if (!conversation) notFound();
   return (
     <>
       <StoreHeader />
       <main className="mx-auto min-h-screen w-full max-w-3xl px-4 pb-16 pt-6 sm:px-8">
         <Link href="/cuenta/mensajes" className="mb-3 inline-flex min-h-11 items-center gap-1 text-sm text-stone-700 underline-offset-4 hover:underline"><span aria-hidden="true">←</span> Mensajes</Link>
-        <h1 className="font-condensed text-2xl font-bold uppercase text-stone-900">{conversation.title}</h1>
-        <p className="mb-4 text-sm text-stone-600">{conversation.subtitle} · <Link href={`/cuenta#apartado-${conversation.reservationId}`} className="text-pine underline underline-offset-4">Ver apartado</Link></p>
-        <ChatThread conversationId={conversation.id} area="buyer" myId={conversation.myId} names={conversation.names} initialMessages={conversation.messages} photoUrls={conversation.photoUrls} placeholder={conversation.kind === "delivery" ? "Escríbele a la recolectora" : "Escríbele a la vendedora"} />
+        <h1 className="flex flex-wrap items-center gap-3 font-condensed text-2xl font-bold uppercase text-stone-900">
+          {conversation.title}
+          <span className="bg-stone-100 px-1.5 py-0.5 text-xs text-stone-700">{conversation.roleLabel}</span>
+        </h1>
+        <p className="mb-4 text-sm text-stone-600">{conversation.subtitle} · <Link href={reservationHref(conversation)} className="text-pine underline underline-offset-4">Ver apartado</Link></p>
+        <ChatThread conversationId={conversation.id} myId={conversation.myId} names={conversation.names} initialMessages={conversation.messages} photoUrls={conversation.photoUrls} placeholder={placeholder(conversation)} />
       </main>
     </>
   );
+}
+
+// Where the order behind the chat lives, from her side.
+function reservationHref(conversation: LoadedConversation) {
+  if (conversation.myRole === "seller") return "/panel/apartados";
+  if (conversation.myRole === "courier") return "/recolectora";
+  return `/cuenta#apartado-${conversation.reservationId}`;
+}
+
+function placeholder(conversation: LoadedConversation) {
+  if (conversation.kind === "order") return conversation.myRole === "seller" ? "Escríbele a la clienta" : "Escríbele a la vendedora";
+  if (conversation.kind === "pickup") return conversation.myRole === "seller" ? "Escríbele a la recolectora" : "Escríbele a la vendedora";
+  return conversation.myRole === "courier" ? "Escríbele a la clienta" : "Escríbele a la recolectora";
 }

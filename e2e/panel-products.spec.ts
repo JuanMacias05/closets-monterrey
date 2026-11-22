@@ -25,7 +25,7 @@ test("seller creates, manages photos, sells, restores and deletes her product", 
   await page.getByRole("main").getByRole("link", { name: "Subir prenda", exact: true }).click();
   await page.getByLabel("Nombre", { exact: true }).fill("Prenda de prueba E2E");
   await page.getByLabel("Descripción").fill("Descripción para probar la ficha de producto.");
-  await page.getByLabel("Categoría").selectOption("tops");
+  await page.getByLabel("Categoría", { exact: true }).selectOption("tops");
   await page.getByLabel("Talla").selectOption("M");
   await page.getByLabel("Condición").selectOption("like_new");
   await page.getByLabel("Precio (MXN)").fill("350.00");

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { formatPriceMXN } from "@/features/products/format-price";
 import { getProductImageUrl } from "@/features/products/public-images";
+import { isAdminUser } from "@/features/viewer/is-admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { VisibilityAction } from "@/app/panel/admin/prendas/visibility-action";
 
@@ -12,9 +13,7 @@ export default async function AdminProductsPage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const { data: admin, error: adminError } = await supabase.from("profiles")
-    .select("role,status").eq("id", user.id).maybeSingle();
-  if (adminError || admin?.role !== "admin" || admin.status !== "approved") redirect("/panel");
+  if (!(await isAdminUser(supabase, user.id))) redirect("/panel");
 
   const { data: rows, error } = await supabase.from("products")
     .select("id,slug,name,price_mxn,sale_status,publication_status,hidden_by_admin,seller:profiles!products_seller_id_fkey(store_name),images:product_images(id,source,storage_path,alt_text,position)")

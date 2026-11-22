@@ -30,10 +30,18 @@ export function isChatPhotoPathFor(conversationId: string, path: unknown): path 
 
 export const MAX_MESSAGE_LENGTH = 1000;
 
-// Each area has its own chat pages so they live inside that area's frame (store header,
-// seller panel, courier panel).
-export function chatBasePath(area: ChatArea): string {
-  return area === "buyer" ? "/cuenta/mensajes" : area === "seller" ? "/panel/mensajes" : "/recolectora/mensajes";
+// One inbox for every chat she has, whatever her role in it (accounts and menu proposal). The
+// old per-area pages (/panel/mensajes, /recolectora/mensajes) redirect here (next.config.ts).
+export const INBOX_PATH = "/cuenta/mensajes";
+
+export function conversationHref(conversationId: string): string {
+  return `${INBOX_PATH}/${conversationId}`;
+}
+
+// The label on each conversation in the inbox: what the chat is about, from her side.
+export function conversationRoleLabel(kind: ConversationKind, role: ChatArea): string {
+  if (kind === "order") return role === "seller" ? "Como vendedora" : "Como clienta";
+  return "Entrega";
 }
 
 // Same rule as the messages table's check: 1 to 1,000 characters once trimmed.

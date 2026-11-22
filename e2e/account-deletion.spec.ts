@@ -11,7 +11,19 @@ test("a shopper with a clean record deletes her own account", async ({ page }) =
   await page.getByRole("button", { name: "Crear cuenta" }).click();
   await page.getByLabel("Código de verificación").fill("123456");
   await page.getByRole("button", { name: "Verificar código" }).click();
-  await expect(page).toHaveURL(/\/cuenta$/);
+  // Step 2: buying only.
+  await expect(page.getByRole("checkbox", { name: /Comprar/ })).toBeChecked();
+  await page.getByRole("button", { name: "Crear mi cuenta" }).click();
+  await expect(page).toHaveURL(/\/cuenta$/, { timeout: 20_000 });
+
+  // A buyer-only account has no green bar; Mi cuenta offers to sell or deliver.
+  await expect(page.getByRole("navigation", { name: "Herramientas del panel" })).toHaveCount(0);
+  await page.getByRole("button", { name: /Mi cuenta/ }).click();
+  const account = page.getByRole("group", { name: "Mi cuenta" });
+  await expect(account.getByRole("link", { name: "Mis compras" })).toHaveAttribute("href", "/cuenta");
+  await expect(account.getByRole("link", { name: "Quiero vender" })).toBeVisible();
+  await expect(account.getByRole("link", { name: "Quiero entregar" })).toBeVisible();
+  await page.keyboard.press("Escape");
 
   await page.getByRole("button", { name: "Borrar mi cuenta" }).click();
   await expect(page.getByText("¿Borrar tu cuenta para siempre?")).toBeVisible();

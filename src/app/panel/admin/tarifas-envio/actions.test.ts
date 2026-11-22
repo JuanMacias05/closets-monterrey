@@ -13,7 +13,7 @@ function createMockSupabase(role = "admin") {
   const supabase = {
     auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: "10000000-0000-4000-8000-000000000004" } }, error: null }) },
     from: vi.fn(() => ({
-      select: vi.fn(() => ({ eq: vi.fn(() => ({ maybeSingle: vi.fn().mockResolvedValue({ data: { role, status: "approved" }, error: null }) })) })),
+      select: vi.fn(() => ({ eq: vi.fn(() => ({ maybeSingle: vi.fn().mockResolvedValue({ data: role === "admin" ? { user_id: "admin" } : null, error: null }) })) })),
       upsert: vi.fn((rows: unknown) => {
         upserts.push(rows);
         return Promise.resolve({ error: null });

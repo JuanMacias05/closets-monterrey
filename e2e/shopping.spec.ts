@@ -73,6 +73,7 @@ test("a shopper saves a favorite, reserves from her cart and the seller complete
   await page.getByLabel("Número de celular").fill(BUYER_PHONE);
   await page.getByRole("button", { name: "Crear cuenta" }).click();
   await enterCode(page);
+  await page.getByRole("button", { name: "Crear mi cuenta" }).click();
   await expect(page).toHaveURL(new RegExp(`/prendas/${PRODUCT_SLUG}$`));
 
   await page.getByRole("button", { name: `Agregar ${PRODUCT_NAME} a favoritos` }).click();

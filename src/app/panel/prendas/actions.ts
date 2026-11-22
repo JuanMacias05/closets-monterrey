@@ -24,9 +24,11 @@ async function getSellerContext() {
   const { data: { user }, error } = await supabase.auth.getUser();
   if (error || !user) return { ok: false as const, error: "Inicia sesión para administrar tus prendas." };
 
+  // Her own store must be approved: products belong to a store (profiles row), whatever else
+  // she does (20261127000100).
   const { data: profile, error: profileError } = await supabase
-    .from("profiles").select("role,status").eq("id", user.id).maybeSingle();
-  if (profileError || !profile || profile.status !== "approved" || !["seller", "admin"].includes(profile.role)) {
+    .from("profiles").select("status").eq("id", user.id).maybeSingle();
+  if (profileError || !profile || profile.status !== "approved") {
     return { ok: false as const, error: "Tu cuenta no tiene permiso para administrar prendas." };
   }
   return { ok: true as const, supabase, userId: user.id };

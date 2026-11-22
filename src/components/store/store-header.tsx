@@ -1,40 +1,55 @@
 import Link from "next/link";
-import { signOutFromPanel } from "@/app/panel/actions";
+import { AccountMenu } from "@/components/store/account-menu";
 import { CategoriesMenu } from "@/components/store/categories-menu";
 import { CartCount } from "@/components/store/cart-count";
 import { MobileMenu } from "@/components/store/mobile-menu";
+import { PanelMenuBar } from "@/components/store/panel-menu-bar";
 import { StoreSearchPanel, StoreSearchProvider, StoreSearchTrigger } from "@/components/store/store-search";
+import { unreadTotal } from "@/features/chat/chat-data";
+import { accountMenu, BUYER_ONLY, canUploadGarments, hasPanel, panelMenuGroups, panelTag, type ActivityFlags } from "@/features/panel/panel-navigation";
 import type { CatalogAudience } from "@/features/products/types";
-import { unreadCount } from "@/features/chat/chat-data";
 import { getShopState } from "@/features/shop/shop-state";
-import { getViewer, isSellerViewer } from "@/features/viewer/get-viewer";
+import { stopViewingAsBuyer } from "@/features/viewer/view-as-actions";
+import { getViewAsBuyer, getViewer } from "@/features/viewer/get-viewer";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 
-// Storefront header shared by the catalog and product pages. A seller (or admin) sees the
-// same header a guest does — they can browse and buy like anyone — plus a pine "Modo
-// vendedora" bar above it holding the tools only their account has. Keeping the tools in
-// their own bar, instead of mixing them into the account links, is what makes a seller
-// account visibly different from a regular one.
+// The store header, the same on every page for every account (accounts and menu proposal,
+// approved 2026-11-21): the panel never changes the store's look. On top of it:
+//   * a green bar with "PANEL ▾" for accounts that sell, deliver or administer (one column per
+//     activity); a buyer-only account has no green bar at all;
+//   * "MI CUENTA ▾" in the white nav for every signed-in account.
+// "Ver como clienta" draws it as a buyer-only account sees it, with an amber strip to go back.
 export async function StoreHeader({ activeAudience }: { activeAudience?: CatalogAudience } = {}) {
-  const [viewer, shop] = await Promise.all([getViewer(), getShopState()]);
-  // Unread chat messages ride on the account link: buyers' chats live in /cuenta, couriers' in
-  // /recolectora (sellers see theirs in the panel menu).
-  const unread = viewer.kind === "buyer" || viewer.kind === "seller" || viewer.kind === "admin"
-    ? await unreadCount("buyer")
-    : viewer.kind === "courier" ? await unreadCount("courier") : 0;
-  const accountLabel = viewer.kind === "courier" ? "Mis entregas" : "Mi cuenta";
+  const [viewer, shop, viewAsBuyer] = await Promise.all([getViewer(), getShopState(), getViewAsBuyer()]);
   const signedIn = viewer.kind !== "guest";
+  const real: ActivityFlags = viewer.kind === "account"
+    ? { seller: viewer.seller?.status ?? null, courier: viewer.courier?.status ?? null, admin: viewer.admin }
+    : BUYER_ONLY;
+  const flags = viewAsBuyer ? BUYER_ONLY : real;
+  const unread = signedIn ? await unreadTotal() : 0;
+  const pendingRequests = flags.courier === "approved" && viewer.kind === "account" ? await waitingCourierRequests(viewer.userId) : 0;
+  const groups = panelMenuGroups(flags, pendingRequests);
+  const account = accountMenu(flags, unread);
   const cartCount = shop.cartIds.size;
   const cartLabel = `Carrito (${cartCount})`;
 
   return (
     <StoreSearchProvider>
     <div className="sticky top-0 z-40 bg-white">
-      {isSellerViewer(viewer) && <SellerBar storeName={viewer.storeName} isAdmin={viewer.kind === "admin"} />}
+      {viewAsBuyer && (
+        <form action={stopViewingAsBuyer} className="flex flex-wrap items-center justify-center gap-x-3 bg-amber-300 px-3 py-1.5 text-center text-sm text-stone-900">
+          <span>Estás viendo la tienda como una clienta.</span>
+          <button type="submit" className="min-h-9 font-semibold underline underline-offset-4">Volver a admin</button>
+        </form>
+      )}
+      {viewer.kind === "account" && hasPanel(flags) && (
+        <PanelMenuBar tag={panelTag(flags)} name={viewer.seller?.storeName ?? viewer.name} groups={groups} canUpload={canUploadGarments(flags)} />
+      )}
 
       {/* bg-white: the search panel's backdrop sits under the header, and must not show through it. */}
       <header className="relative flex items-center justify-between gap-4 border-b border-stone-200 bg-white px-2 py-1 font-condensed text-base font-bold uppercase tracking-[0.02em] text-stone-900 sm:px-6 sm:py-3 lg:text-lg">
         <div className="flex items-center gap-6">
-          <MobileMenu signedIn={signedIn} accountHref={viewer.kind === "courier" ? "/recolectora" : "/cuenta"} accountLabel={unread > 0 ? `${accountLabel} (${unread})` : accountLabel} initialAudience={activeAudience} />
+          <MobileMenu signedIn={signedIn} accountItems={account.items} accountExtra={account.extra} initialAudience={activeAudience} />
           <nav aria-label="Categorías" className="hidden items-center gap-6 lg:flex">
             <CategoriesMenu activeAudience={activeAudience} />
             <Link href="/" className="link-underline hover:text-stone-600">Nuevo</Link>
@@ -50,15 +65,7 @@ export async function StoreHeader({ activeAudience }: { activeAudience?: Catalog
           <Link href="/favoritos" className="link-underline hover:text-stone-600">Favoritos</Link>
           <Link href="/carrito" aria-label={cartLabel} className="link-underline hover:text-stone-600">Carrito (<CartCount count={cartCount} />)</Link>
           {signedIn ? (
-            <>
-              <Link href={viewer.kind === "courier" ? "/recolectora" : "/cuenta"} className="link-underline hover:text-stone-600">
-                {accountLabel}
-                {unread > 0 && <span className="ml-1.5 inline-grid h-5 min-w-5 place-items-center rounded-full bg-[#a3261b] px-1 align-middle font-sans text-[11px] font-semibold text-white"><span aria-hidden="true">{unread}</span><span className="sr-only"> ({unread === 1 ? "1 mensaje sin leer" : `${unread} mensajes sin leer`})</span></span>}
-              </Link>
-              <form action={signOutFromPanel}>
-                <button type="submit" className="press min-h-11 font-condensed font-bold uppercase hover:text-stone-600">Cerrar sesión</button>
-              </form>
-            </>
+            <AccountMenu items={account.items} extra={account.extra} unread={unread} />
           ) : (
             <Link href="/login" className="link-underline hover:text-stone-600">Iniciar sesión</Link>
           )}
@@ -84,22 +91,11 @@ export async function StoreHeader({ activeAudience }: { activeAudience?: Catalog
   );
 }
 
-// Only the two actions a seller reaches for while browsing her own catalog. Everything else
-// (her list, reservations, the admin pages) lives in the panel, so the bar stays one line.
-function SellerBar({ storeName, isAdmin }: { storeName: string; isAdmin: boolean }) {
-  return (
-    <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 bg-pine px-3 py-1.5 font-condensed text-sm font-bold uppercase tracking-[0.03em] text-white sm:px-6">
-      <p className="flex min-w-0 items-center gap-2">
-        <span className="bg-white px-2 py-0.5 text-xs text-pine">{isAdmin ? "Administración" : "Modo vendedora"}</span>
-        <span className="truncate font-sans text-sm font-medium normal-case tracking-normal">{storeName}</span>
-      </p>
-      <nav aria-label="Herramientas de vendedora" className="flex flex-wrap items-center gap-1">
-        <Link href="/panel/prendas/nueva" className="flex min-h-9 items-center gap-1.5 bg-white px-3 text-pine hover:bg-stone-100">
-          <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
-          Agregar prenda
-        </Link>
-        <Link href="/panel" className="flex min-h-9 items-center px-3 hover:underline">Panel</Link>
-      </nav>
-    </div>
-  );
+// Requests waiting for this courier's answer: the badge on PANEL and on "Solicitudes".
+async function waitingCourierRequests(courierId: string): Promise<number> {
+  const supabase = await createSupabaseServerClient();
+  if (!supabase) return 0;
+  const { count } = await supabase.from("courier_requests").select("id", { count: "exact", head: true })
+    .eq("courier_id", courierId).eq("status", "requested").gt("expires_at", new Date().toISOString());
+  return count ?? 0;
 }

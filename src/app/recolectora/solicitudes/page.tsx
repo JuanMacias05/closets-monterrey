@@ -26,7 +26,7 @@ const timeFormat = new Intl.DateTimeFormat("es-MX", { dateStyle: "medium", timeS
 // collect, the buyer's municipality, the garments, her fee), never who the buyer is: that comes
 // with the job, in "Mis entregas", once she accepts.
 export default async function CourierRequestsPage() {
-  const { viewer, supabase } = await requireCourier("/recolectora/solicitudes");
+  const { courier, supabase } = await requireCourier("/recolectora/solicitudes");
   await supabase.rpc("release_expired_reservations");
   const { data } = await supabase.rpc("courier_request_inbox");
   const rows = (data ?? []) as InboxRow[];
@@ -40,7 +40,7 @@ export default async function CourierRequestsPage() {
       <p className="mt-2 max-w-2xl text-sm text-stone-600">
         Cada solicitud espera tu respuesta {COURIER_REQUEST_HOURS} horas; si no contestas, se vence y la clienta elige otra entrega. Al aceptar ves su nombre y dirección en Mis entregas. Ella no paga nada hasta que aceptas.
       </p>
-      {viewer.status !== "approved" && (
+      {courier.status !== "approved" && (
         <p className="mt-4 text-sm text-stone-700">Cuando la administración te verifique, aquí te llegan las entregas que te pidan.</p>
       )}
 

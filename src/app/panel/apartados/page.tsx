@@ -137,8 +137,8 @@ export default async function SellerReservationsPage({ searchParams }: { searchP
         </div>
         {(chats.get(reservation.id)?.order || chats.get(reservation.id)?.pickup) && (
           <div className="mt-3 flex flex-wrap gap-2">
-            {chats.get(reservation.id)?.order && <ChatLink href={`/panel/mensajes/${chats.get(reservation.id)!.order!.id}`} label={`Mensajes con ${buyer?.full_name ?? "la clienta"}`} unread={chats.get(reservation.id)!.order!.unread} />}
-            {chats.get(reservation.id)?.pickup && <ChatLink href={`/panel/mensajes/${chats.get(reservation.id)!.pickup!.id}`} label="Mensajes con la recolectora" unread={chats.get(reservation.id)!.pickup!.unread} />}
+            {chats.get(reservation.id)?.order && <ChatLink href={`/cuenta/mensajes/${chats.get(reservation.id)!.order!.id}`} label={`Mensajes con ${buyer?.full_name ?? "la clienta"}`} unread={chats.get(reservation.id)!.order!.unread} />}
+            {chats.get(reservation.id)?.pickup && <ChatLink href={`/cuenta/mensajes/${chats.get(reservation.id)!.pickup!.id}`} label="Mensajes con la recolectora" unread={chats.get(reservation.id)!.pickup!.unread} />}
           </div>
         )}
       </li>

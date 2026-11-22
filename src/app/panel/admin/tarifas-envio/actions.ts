@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { MUNICIPALITIES } from "@/features/couriers/constants";
 import { isKnownMunicipality, parseDeliveryFeePesos } from "@/features/delivery/zone-rates";
+import { isAdminUser } from "@/features/viewer/is-admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 // Saves every destination from one origin at once: the page edits one origin's table, and a
@@ -23,8 +24,7 @@ export async function saveZoneRates(origin: string, fees: Record<string, string>
   if (!supabase) return { ok: false as const, error: "Supabase no está configurado." };
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { ok: false as const, error: "Inicia sesión para continuar." };
-  const { data: profile } = await supabase.from("profiles").select("role,status").eq("id", user.id).maybeSingle();
-  if (profile?.role !== "admin" || profile.status !== "approved") {
+  if (!(await isAdminUser(supabase, user.id))) {
     return { ok: false as const, error: "Solo la administración puede cambiar las tarifas." };
   }
 

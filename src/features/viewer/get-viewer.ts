@@ -1,21 +1,31 @@
 import "server-only";
 
 import { cache } from "react";
+import { cookies } from "next/headers";
+import { VIEW_AS_BUYER_COOKIE } from "@/features/viewer/view-as";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
+export type ActivityStatus = "pending" | "approved" | "suspended";
+
+// One account, several activities (20261127000100). Every signed-in account can buy; selling,
+// delivering and administering are independent and any mix is possible.
 export type Viewer =
   | { kind: "guest" }
-  // A shopper: signed up through the buyer form, so she has a buyer profile and no store.
-  | { kind: "buyer"; userId: string; fullName: string }
-  // A courier ("recolectora"); pending until an admin verifies her.
-  | { kind: "courier"; userId: string; fullName: string; status: string }
-  // Signed in, but neither a buyer nor an approved seller/admin (pending or suspended
-  // seller). They get the guest storefront plus "Cerrar sesión" — never the seller tools.
-  | { kind: "member"; userId: string }
-  | { kind: "seller" | "admin"; userId: string; storeName: string };
+  | {
+    kind: "account";
+    userId: string;
+    // What the store shows as her name: her buyer name, her store or her courier name.
+    name: string;
+    buyer: boolean;
+    seller: { status: ActivityStatus; storeName: string; slug: string | null } | null;
+    courier: { status: ActivityStatus; fullName: string } | null;
+    admin: boolean;
+  };
 
-// Cached per request: the header and every product card ask for the viewer, and each
-// lookup is an auth round-trip plus a profile query.
+export type AccountViewer = Extract<Viewer, { kind: "account" }>;
+
+// Cached per request: the header and every product card ask for the viewer, and each lookup
+// is an auth round-trip plus a few small queries.
 export const getViewer = cache(async (): Promise<Viewer> => {
   const supabase = await createSupabaseServerClient();
   if (!supabase) return { kind: "guest" };
@@ -24,26 +34,42 @@ export const getViewer = cache(async (): Promise<Viewer> => {
   const user = authData.user;
   if (!user) return { kind: "guest" };
 
-  const [{ data: profile }, { data: buyer }, { data: courier }] = await Promise.all([
-    supabase.from("profiles").select("store_name,role,status").eq("id", user.id).maybeSingle(),
+  const [{ data: profile }, { data: buyer }, { data: courier }, { data: admin }] = await Promise.all([
+    supabase.from("profiles").select("store_name,slug,status").eq("id", user.id).maybeSingle(),
     supabase.from("buyer_profiles").select("full_name").eq("id", user.id).maybeSingle(),
     supabase.from("couriers").select("full_name,status").eq("id", user.id).maybeSingle(),
+    supabase.from("admins").select("user_id").eq("user_id", user.id).maybeSingle(),
   ]);
 
-  // Mirrors the panel layout's gate so the storefront never offers tools the panel would refuse.
-  if (profile && profile.status === "approved" && ["seller", "admin"].includes(profile.role)) {
-    return { kind: profile.role as "seller" | "admin", userId: user.id, storeName: profile.store_name };
-  }
-  if (courier) return { kind: "courier", userId: user.id, fullName: courier.full_name, status: courier.status };
-  if (buyer) return { kind: "buyer", userId: user.id, fullName: buyer.full_name };
-  return { kind: "member", userId: user.id };
+  return {
+    kind: "account",
+    userId: user.id,
+    name: buyer?.full_name ?? profile?.store_name ?? courier?.full_name ?? "Mi cuenta",
+    buyer: Boolean(buyer),
+    seller: profile ? { status: profile.status as ActivityStatus, storeName: profile.store_name, slug: profile.slug } : null,
+    courier: courier ? { status: courier.status as ActivityStatus, fullName: courier.full_name } : null,
+    admin: Boolean(admin),
+  };
 });
 
-export function isSellerViewer(viewer: Viewer): viewer is Extract<Viewer, { kind: "seller" | "admin" }> {
-  return viewer.kind === "seller" || viewer.kind === "admin";
+export function isApprovedSeller(viewer: Viewer): viewer is AccountViewer {
+  return viewer.kind === "account" && viewer.seller?.status === "approved";
 }
 
-// Buyers and approved sellers/admins can shop; sellers buy like anyone else.
-export function canShop(viewer: Viewer): viewer is Extract<Viewer, { userId: string }> {
-  return viewer.kind === "buyer" || isSellerViewer(viewer);
+export function isApprovedCourier(viewer: Viewer): viewer is AccountViewer {
+  return viewer.kind === "account" && viewer.courier?.status === "approved";
 }
+
+// Buying is always on: any signed-in account can shop.
+export function canShop(viewer: Viewer): viewer is AccountViewer {
+  return viewer.kind === "account";
+}
+
+// "Ver como clienta" (admins): the header draws the store as a buyer-only account sees it. It is
+// presentation only and never feeds a permission check: pages and the database still use the
+// real activities above.
+export const getViewAsBuyer = cache(async (): Promise<boolean> => {
+  const viewer = await getViewer();
+  if (viewer.kind !== "account" || !viewer.admin) return false;
+  return (await cookies()).get(VIEW_AS_BUYER_COOKIE)?.value === "1";
+});

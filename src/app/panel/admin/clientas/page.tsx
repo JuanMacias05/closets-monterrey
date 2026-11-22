@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { TrustOverrideSelect } from "@/app/panel/admin/clientas/trust-override-select";
 import { TRUST_LABELS, TRUST_STYLES } from "@/features/shop/reservation-labels";
+import { isAdminUser } from "@/features/viewer/is-admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export const metadata = { title: "Clientas | Closets Monterrey" };
@@ -10,8 +11,7 @@ export default async function AdminBuyersPage() {
   if (!supabase) redirect("/login?reason=configuration");
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
-  const { data: admin } = await supabase.from("profiles").select("role,status").eq("id", user.id).maybeSingle();
-  if (admin?.role !== "admin" || admin.status !== "approved") redirect("/panel");
+  if (!(await isAdminUser(supabase, user.id))) redirect("/panel");
 
   const { data: buyers, error } = await supabase.from("buyer_profiles")
     .select("id,full_name,facebook_url,phone_e164,trust_override,created_at")

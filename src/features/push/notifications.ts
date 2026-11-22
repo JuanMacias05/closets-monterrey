@@ -105,7 +105,7 @@ export function notifyCourierAnswer(requestId: string, accepted: boolean) {
   });
 }
 
-// A chat message: the other participant, linked to the chat in her own area. `body` is the
+// A chat message: the other participant, linked to the chat in her one inbox. `body` is the
 // preview ("📷 Foto" for a photo without text).
 export function notifyNewMessage(conversationId: string, senderId: string, body: string) {
   after(async () => {
@@ -124,18 +124,18 @@ export function notifyNewMessage(conversationId: string, senderId: string, body:
       if (senderId === reservation.seller_id) {
         await pushToUsers([reservation.buyer_id], { title: store, body: preview, url: `/cuenta/mensajes/${conversation.id}`, tag });
       } else {
-        await pushToUsers([reservation.seller_id], { title: await buyerName(admin, reservation.buyer_id), body: preview, url: `/panel/mensajes/${conversation.id}`, tag });
+        await pushToUsers([reservation.seller_id], { title: await buyerName(admin, reservation.buyer_id), body: preview, url: `/cuenta/mensajes/${conversation.id}`, tag });
       }
     } else if (conversation.kind === "delivery") {
       if (senderId === reservation.courier_id) {
         await pushToUsers([reservation.buyer_id], { title: await courierName(admin, reservation.courier_id), body: preview, url: `/cuenta/mensajes/${conversation.id}`, tag });
       } else {
-        await pushToUsers([reservation.courier_id], { title: await buyerName(admin, reservation.buyer_id), body: preview, url: `/recolectora/mensajes/${conversation.id}`, tag });
+        await pushToUsers([reservation.courier_id], { title: await buyerName(admin, reservation.buyer_id), body: preview, url: `/cuenta/mensajes/${conversation.id}`, tag });
       }
     } else if (senderId === reservation.seller_id) {
-      await pushToUsers([reservation.courier_id], { title: store, body: preview, url: `/recolectora/mensajes/${conversation.id}`, tag });
+      await pushToUsers([reservation.courier_id], { title: store, body: preview, url: `/cuenta/mensajes/${conversation.id}`, tag });
     } else {
-      await pushToUsers([reservation.seller_id], { title: await courierName(admin, reservation.courier_id), body: preview, url: `/panel/mensajes/${conversation.id}`, tag });
+      await pushToUsers([reservation.seller_id], { title: await courierName(admin, reservation.courier_id), body: preview, url: `/cuenta/mensajes/${conversation.id}`, tag });
     }
   });
 }

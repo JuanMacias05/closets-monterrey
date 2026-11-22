@@ -5,6 +5,7 @@ import { formatPriceMXN } from "@/features/products/format-price";
 import { RESERVATION_STATUS_LABELS } from "@/features/shop/reservation-labels";
 import { whatsappLink } from "@/features/shop/whatsapp-message";
 import { PROOF_REVIEW_HOURS, proofReviewCutoff, SUPPORT_REASON_LABELS } from "@/features/support/support-contact";
+import { isAdminUser } from "@/features/viewer/is-admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export const metadata = { title: "Soporte | Closets Monterrey" };
@@ -34,8 +35,7 @@ export default async function AdminSupportPage() {
   if (!supabase) redirect("/login?reason=configuration");
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
-  const { data: admin } = await supabase.from("profiles").select("role,status").eq("id", user.id).maybeSingle();
-  if (admin?.role !== "admin" || admin.status !== "approved") redirect("/panel");
+  if (!(await isAdminUser(supabase, user.id))) redirect("/panel");
 
   const staleBefore = new Date(proofReviewCutoff()).toISOString();
   const [{ data: requestRows, error }, { data: staleRows }] = await Promise.all([

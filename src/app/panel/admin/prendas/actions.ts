@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { isAdminUser } from "@/features/viewer/is-admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 type ActionResult = { ok: true } | { ok: false; error: string };
@@ -11,9 +12,7 @@ export async function setAdminProductVisibility(productId: string, hidden: boole
   const { data: { user }, error: authError } = await supabase.auth.getUser();
   if (authError || !user) return { ok: false, error: "Inicia sesión para administrar el catálogo." };
 
-  const { data: profile, error: profileError } = await supabase.from("profiles")
-    .select("role,status").eq("id", user.id).maybeSingle();
-  if (profileError || !profile || profile.role !== "admin" || profile.status !== "approved") {
+  if (!(await isAdminUser(supabase, user.id))) {
     return { ok: false, error: "Solo la administración puede cambiar la visibilidad del catálogo." };
   }
   if (!/^[0-9a-f-]{36}$/i.test(productId) || typeof hidden !== "boolean") {

@@ -65,7 +65,8 @@ test("an admin prices a zone, the buyer reserves with that estimate and the sell
   const adminContext = await browser.newContext();
   const admin = await adminContext.newPage();
   await login(admin, ADMIN_PHONE);
-  await admin.getByRole("link", { name: "Tarifas de envío" }).click();
+  await admin.getByRole("button", { name: /^Panel/ }).click();
+  await admin.getByRole("group", { name: "Panel" }).getByRole("link", { name: "Tarifas de envío" }).click();
   await expect(admin.getByRole("heading", { name: "Tarifas de envío", level: 1 })).toBeVisible({ timeout: 20_000 });
   await expect(admin.getByText("Todas las tarifas son de ejemplo")).toBeVisible();
   await expect(admin.getByRole("link", { name: /^Monterrey/ })).toHaveAttribute("aria-current", "page");
@@ -85,6 +86,7 @@ test("an admin prices a zone, the buyer reserves with that estimate and the sell
   await page.getByRole("button", { name: "Crear cuenta" }).click();
   await page.getByLabel("Código de verificación").fill("123456");
   await page.getByRole("button", { name: "Verificar código" }).click();
+  await page.getByRole("button", { name: "Crear mi cuenta" }).click();
   await expect(page).toHaveURL(/\/cuenta$/, { timeout: 20_000 });
 
   await page.goto(`/prendas/${PRODUCT_SLUG}`);

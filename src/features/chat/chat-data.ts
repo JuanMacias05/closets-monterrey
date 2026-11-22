@@ -1,12 +1,11 @@
 import "server-only";
 
 import { cache } from "react";
-import type { ChatArea, ChatMessage, ConversationKind } from "@/features/chat/chat-format";
+import { conversationRoleLabel, type ChatArea, type ChatMessage, type ConversationKind } from "@/features/chat/chat-format";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
-// Conversations (20261125000100) as each area shows them. The database decides who is in a
-// chat; `area` only picks which of her chats belong on this screen: a seller who also shops
-// sees her buyer chats in /cuenta and her seller chats in /panel.
+// Conversations (20261125000100). The database decides who is in a chat; all of an account's
+// chats share one inbox (/cuenta/mensajes), labelled by her side of each.
 
 type MyConversationRow = {
   conversation_id: string; reservation_id: string; kind: ConversationKind; my_role: ChatArea;
@@ -22,6 +21,8 @@ type ReservationInfo = {
 
 export type ConversationSummary = {
   id: string; kind: ConversationKind; reservationId: string; title: string; subtitle: string;
+  // "Como clienta" / "Como vendedora" / "Entrega".
+  roleLabel: string;
   lastBody: string | null; lastMessageAt: string | null; unread: number;
 };
 
@@ -37,8 +38,9 @@ export const getMyConversations = cache(async (): Promise<MyConversationRow[]> =
   return (data ?? []) as MyConversationRow[];
 });
 
-export async function unreadCount(area: ChatArea): Promise<number> {
-  return (await getMyConversations()).filter((row) => row.my_role === area).reduce((sum, row) => sum + row.unread, 0);
+// Every unread message she has, as buyer, seller or courier: the badge on MI CUENTA ▾ › Mensajes.
+export async function unreadTotal(): Promise<number> {
+  return (await getMyConversations()).reduce((sum, row) => sum + row.unread, 0);
 }
 
 // Unread messages per conversation and the conversation ids per reservation, for the links on
@@ -86,14 +88,16 @@ function subtitle(reservation: ReservationInfo | undefined) {
   return `Apartado del ${dateFormat.format(new Date(reservation.created_at))}${garments ? ` · ${garments}` : ""}`;
 }
 
-export async function listConversations(area: ChatArea): Promise<ConversationSummary[]> {
-  const rows = (await getMyConversations()).filter((row) => row.my_role === area);
+// The single inbox: all her chats, newest first, each labelled with her side of it.
+export async function listConversations(): Promise<ConversationSummary[]> {
+  const rows = await getMyConversations();
   const { reservations, buyers } = await reservationInfo([...new Set(rows.map((row) => row.reservation_id))]);
   return rows.map((row) => {
     const reservation = reservations.get(row.reservation_id);
     return {
       id: row.conversation_id, kind: row.kind, reservationId: row.reservation_id,
-      title: counterpart(area, row.kind, reservation, buyers), subtitle: subtitle(reservation),
+      title: counterpart(row.my_role, row.kind, reservation, buyers), subtitle: subtitle(reservation),
+      roleLabel: conversationRoleLabel(row.kind, row.my_role),
       lastBody: row.last_body, lastMessageAt: row.last_message_at, unread: row.unread,
     };
   });
@@ -101,19 +105,20 @@ export async function listConversations(area: ChatArea): Promise<ConversationSum
 
 export type LoadedConversation = {
   id: string; kind: ConversationKind; reservationId: string; title: string; subtitle: string;
+  roleLabel: string; myRole: ChatArea;
   myId: string; messages: ChatMessage[]; names: Record<string, string>;
   // Short-lived signed URLs for the photos in `messages`, by storage path.
   photoUrls: Record<string, string>;
 };
 
-// One conversation for its area, or null when she is not in it from that side.
-export async function loadConversation(conversationId: string, area: ChatArea): Promise<LoadedConversation | null> {
+// One of her conversations, whatever her side of it, or null when she is not in it.
+export async function loadConversation(conversationId: string): Promise<LoadedConversation | null> {
   if (!/^[0-9a-f-]{36}$/i.test(conversationId)) return null;
   const supabase = await createSupabaseServerClient();
   if (!supabase) return null;
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
-  const mine = (await getMyConversations()).find((row) => row.conversation_id === conversationId && row.my_role === area);
+  const mine = (await getMyConversations()).find((row) => row.conversation_id === conversationId);
   if (!mine) return null;
 
   const [{ data: latest }, { reservations, buyers }] = await Promise.all([
@@ -138,7 +143,8 @@ export async function loadConversation(conversationId: string, area: ChatArea): 
 
   return {
     id: conversationId, kind: mine.kind, reservationId: mine.reservation_id,
-    title: counterpart(area, mine.kind, reservation, buyers), subtitle: subtitle(reservation),
+    title: counterpart(mine.my_role, mine.kind, reservation, buyers), subtitle: subtitle(reservation),
+    roleLabel: conversationRoleLabel(mine.kind, mine.my_role), myRole: mine.my_role,
     myId: user.id, messages, names, photoUrls,
   };
 }

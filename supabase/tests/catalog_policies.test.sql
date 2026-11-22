@@ -52,8 +52,11 @@ set store_name = 'Tienda pendiente'
 where id = '10000000-0000-4000-8000-000000000003';
 
 update public.profiles
-set store_name = 'Admin de prueba', status = 'approved', role = 'admin'
+set store_name = 'Admin de prueba', status = 'approved', role = 'seller'
 where id = '10000000-0000-4000-8000-000000000004';
+
+-- Admin is its own flag since 20261127000100; the profile is only her store.
+insert into public.admins (user_id) values ('10000000-0000-4000-8000-000000000004') on conflict do nothing;
 
 insert into public.products (
   id, seller_id, slug, name, category, size, condition, price_mxn,

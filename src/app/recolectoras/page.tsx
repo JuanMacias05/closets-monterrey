@@ -43,7 +43,7 @@ export default async function CourierDirectoryPage() {
             </div>
           </>
         )}
-        <p className="mt-10 text-sm text-stone-600">¿Haces entregas en tu ruta? <Link href="/registro?tipo=recolectora" className="text-pine underline underline-offset-4">Regístrate como recolectora</Link></p>
+        <p className="mt-10 text-sm text-stone-600">¿Haces entregas en tu ruta? <Link href="/cuenta/entregar" className="text-pine underline underline-offset-4">Pide entregar con Closets</Link></p>
       </main>
     </>
   );

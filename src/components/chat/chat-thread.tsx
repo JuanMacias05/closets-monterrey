@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useReducedMotion } from "framer-motion";
 import { ChatPhoto } from "@/components/chat/chat-photo";
 import { markConversationRead, sendChatMessage } from "@/features/chat/actions";
-import { chatPhotoPath, MAX_MESSAGE_LENGTH, mergeMessages, messageTimeLabel, type ChatArea, type ChatMessage } from "@/features/chat/chat-format";
+import { chatPhotoPath, MAX_MESSAGE_LENGTH, mergeMessages, messageTimeLabel, type ChatMessage } from "@/features/chat/chat-format";
 import { prepareProductImage } from "@/features/products/product-image-upload";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
@@ -16,9 +16,8 @@ import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 // Photos: the browser shrinks a picked photo to a JPEG of at most 300 KB (the same helper as
 // garment and proof photos), uploads it straight to the private chat-photos bucket and then
 // sends the message pointing at it (20261126000200).
-export function ChatThread({ conversationId, area, myId, names, initialMessages, photoUrls, placeholder }: {
+export function ChatThread({ conversationId, myId, names, initialMessages, photoUrls, placeholder }: {
   conversationId: string;
-  area: ChatArea;
   myId: string;
   names: Record<string, string>;
   initialMessages: ChatMessage[];
@@ -69,10 +68,10 @@ export function ChatThread({ conversationId, area, myId, names, initialMessages,
 
   // Opening the chat reads it; the refresh updates the unread badge in the menu or header.
   useEffect(() => {
-    markConversationRead(conversationId, area).then((result) => {
+    markConversationRead(conversationId).then((result) => {
       if (result.ok) router.refresh();
     });
-  }, [conversationId, area, router]);
+  }, [conversationId, router]);
 
   useEffect(() => {
     const supabase = createSupabaseBrowserClient();
@@ -89,7 +88,7 @@ export function ChatThread({ conversationId, area, myId, names, initialMessages,
         .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages", filter: `conversation_id=eq.${conversationId}` }, (payload) => {
           const message = payload.new as ChatMessage;
           setArrived((current) => [...current, message]);
-          if (message.sender_id !== myId) markConversationRead(conversationId, area);
+          if (message.sender_id !== myId) markConversationRead(conversationId);
         })
         .subscribe((status) => {
           if (status === "SUBSCRIBED") setLive(true);
@@ -100,7 +99,7 @@ export function ChatThread({ conversationId, area, myId, names, initialMessages,
       cancelled = true;
       if (channel) supabase.removeChannel(channel);
     };
-  }, [conversationId, area, myId]);
+  }, [conversationId, myId]);
 
   useEffect(() => {
     if (live) return;

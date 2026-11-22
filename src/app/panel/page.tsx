@@ -4,7 +4,7 @@ import { ShareLinkButton } from "@/components/panel/share-link-button";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 // Panel home. Two groups, so a seller only ever sees her own tools: "Mi tienda" for every
-// approved seller, "Administración del sitio" only for role = admin. The summary cards up top are
+// approved seller, "Administración del sitio" only for admins (public.admins). The summary cards up top are
 // what needs attention today; each links to the list behind it.
 //
 // IMPORTANT: a count that failed to load is shown as "—", never 0. A 0 says "nothing to do",
@@ -31,8 +31,12 @@ export default async function PanelHomePage() {
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
       await supabase.rpc("release_expired_reservations");
-      const { data: profile } = await supabase.from("profiles").select("role,store_name,slug,status").eq("id", user.id).maybeSingle();
-      isAdmin = profile?.role === "admin";
+      const [{ data: profile }, { data: adminRow }] = await Promise.all([
+        supabase.from("profiles").select("store_name,slug,status").eq("id", user.id).maybeSingle(),
+        supabase.from("admins").select("user_id").eq("user_id", user.id).maybeSingle(),
+      ]);
+      // Admin is its own flag (20261127000100), not a kind of store.
+      isAdmin = Boolean(adminRow);
       storeName = profile?.store_name ?? "";
       storeSlug = profile?.slug ?? "";
       approved = profile?.status === "approved";

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { chatBasePath, chatPhotoPath, cleanMessageBody, isChatPhotoPathFor, mergeMessages, messagePreview, messageTimeLabel, unreadLabel } from "@/features/chat/chat-format";
+import { chatPhotoPath, conversationHref, conversationRoleLabel, cleanMessageBody, isChatPhotoPathFor, mergeMessages, messagePreview, messageTimeLabel, unreadLabel } from "@/features/chat/chat-format";
 
 const message = (id: string, created_at: string) => ({ id, sender_id: "u1", body: id, created_at });
 
@@ -24,10 +24,15 @@ describe("cleanMessageBody", () => {
 });
 
 describe("chat paths and labels", () => {
-  it("keeps each area's chats inside that area", () => {
-    expect(chatBasePath("buyer")).toBe("/cuenta/mensajes");
-    expect(chatBasePath("seller")).toBe("/panel/mensajes");
-    expect(chatBasePath("courier")).toBe("/recolectora/mensajes");
+  it("keeps every chat in one inbox", () => {
+    expect(conversationHref("abc")).toBe("/cuenta/mensajes/abc");
+  });
+  it("labels each chat by what it is about, from her side", () => {
+    expect(conversationRoleLabel("order", "buyer")).toBe("Como clienta");
+    expect(conversationRoleLabel("order", "seller")).toBe("Como vendedora");
+    expect(conversationRoleLabel("pickup", "seller")).toBe("Entrega");
+    expect(conversationRoleLabel("pickup", "courier")).toBe("Entrega");
+    expect(conversationRoleLabel("delivery", "buyer")).toBe("Entrega");
   });
   it("says how many are unread", () => {
     expect(unreadLabel(0)).toBeNull();

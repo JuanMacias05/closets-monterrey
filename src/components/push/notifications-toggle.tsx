@@ -85,7 +85,9 @@ export function NotificationsToggle({ compact = false }: { compact?: boolean }) 
     }
   }
 
-  if (state === "loading" || state === "unsupported") return null;
+  if (state === "loading") return null;
+  // In a menu there is nothing to offer; on the Avisos page she should know why.
+  if (state === "unsupported") return compact ? null : <p className="text-sm text-stone-600">Este navegador no puede recibir avisos, o todavía no están configurados en la tienda.</p>;
 
   const text = compact ? "text-xs" : "text-sm";
   return (

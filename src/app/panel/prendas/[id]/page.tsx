@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { getProductImageUrl } from "@/features/products/public-images";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -28,6 +29,9 @@ export default async function EditProductPage({ params }: PageProps<"/panel/pren
 
   return (
     <section className="mx-auto max-w-3xl">
+      {/* A garment sits inside Mis prendas and has no menu entry of its own: the one back link the
+          panel keeps (the PANEL menu replaced every "Volver a Panel"). */}
+      <Link href="/panel/prendas" className="mb-4 inline-flex min-h-11 items-center gap-1 text-sm text-stone-700 underline-offset-4 hover:underline"><span aria-hidden="true">←</span> Mis prendas</Link>
       <div className="mb-6 border-b border-stone-200 pb-5">
         <p className="text-[10px] uppercase tracking-[0.22em] text-stone-500">Editar catálogo</p>
         <h1 className="mt-2 font-serif text-3xl tracking-tight text-stone-900">Edita tu prenda</h1>

@@ -1,31 +1,93 @@
 import { describe, expect, it } from "vitest";
 import {
   ADMIN_NAV_GROUP,
+  BUYER_ONLY,
+  COURIER_PENDING_NOTE,
   SELLER_NAV_GROUP,
-  SIDEBAR_COLLAPSED_STORAGE_KEY,
+  SELLER_PENDING_NOTE,
+  accountMenu,
   activePanelHref,
-  courierNavGroups,
-  panelNavGroups,
-  readSidebarCollapsed,
-  writeSidebarCollapsed,
+  canUploadGarments,
+  hasPanel,
+  panelBadgeTotal,
+  panelMenuGroups,
+  panelMenuLabel,
+  panelTag,
 } from "@/features/panel/panel-navigation";
 
-const hrefs = [...SELLER_NAV_GROUP.items, ...ADMIN_NAV_GROUP.items]
-  .map((item) => item.href)
-  .filter((href): href is string => href !== null);
+const labels = (flags: Parameters<typeof panelMenuGroups>[0], pending = 0) => panelMenuGroups(flags, pending).map((group) => group.label);
+
+describe("panelMenuGroups", () => {
+  it("gives a buyer-only account no panel at all", () => {
+    expect(panelMenuGroups(BUYER_ONLY)).toEqual([]);
+    expect(hasPanel(BUYER_ONLY)).toBe(false);
+  });
+
+  it("gives a courier only Tus entregas", () => {
+    expect(labels({ seller: null, courier: "approved", admin: false })).toEqual(["Tus entregas"]);
+  });
+
+  it("gives a seller who also delivers both columns, in a fixed order", () => {
+    expect(labels({ seller: "approved", courier: "approved", admin: false })).toEqual(["Tu clóset", "Tus entregas"]);
+  });
+
+  it("adds the site administration for an admin, who may also deliver", () => {
+    expect(labels({ seller: "approved", courier: "approved", admin: true })).toEqual(["Tu clóset", "Tus entregas", "Administración del sitio"]);
+    expect(labels({ seller: null, courier: null, admin: true })).toEqual(["Administración del sitio"]);
+  });
+
+  it("shows only a note while an activity waits for approval", () => {
+    const [store, deliveries] = panelMenuGroups({ seller: "pending", courier: "pending", admin: false });
+    expect(store).toMatchObject({ label: "Tu clóset", items: [], note: SELLER_PENDING_NOTE });
+    expect(deliveries).toMatchObject({ label: "Tus entregas", items: [], note: COURIER_PENDING_NOTE });
+    expect(hasPanel({ seller: "pending", courier: null, admin: false })).toBe(true);
+  });
+
+  it("keeps chats out of the panel: they are in Mi cuenta", () => {
+    const hrefs = panelMenuGroups({ seller: "approved", courier: "approved", admin: true }).flatMap((group) => group.items.map((item) => item.href));
+    expect(hrefs.some((href) => href?.includes("mensajes"))).toBe(false);
+  });
+
+  it("ends the admin group with Ver como clienta, an action, not a page", () => {
+    expect(ADMIN_NAV_GROUP.items.at(-1)).toMatchObject({ label: "Ver como clienta", href: null, action: "view-as-buyer" });
+  });
+
+  it("announces live sales without linking anywhere", () => {
+    expect(SELLER_NAV_GROUP.items.find((item) => item.label === "En vivo")?.href).toBeNull();
+  });
+});
+
+describe("the green bar", () => {
+  it("offers Subir prenda only to an approved seller or an admin", () => {
+    expect(canUploadGarments({ seller: "approved", courier: null, admin: false })).toBe(true);
+    expect(canUploadGarments({ seller: "pending", courier: null, admin: false })).toBe(false);
+    expect(canUploadGarments({ seller: null, courier: "approved", admin: false })).toBe(false);
+    expect(canUploadGarments({ seller: null, courier: null, admin: true })).toBe(true);
+  });
+
+  it("tags who she is", () => {
+    expect(panelTag({ seller: "approved", courier: "approved", admin: false })).toBe("Vendedora · Recolectora");
+    expect(panelTag({ seller: null, courier: "pending", admin: false })).toBe("Recolectora");
+    expect(panelTag({ seller: "approved", courier: null, admin: true })).toBe("Administración");
+  });
+
+  it("counts courier requests waiting as the PANEL badge", () => {
+    expect(panelBadgeTotal(panelMenuGroups({ seller: "approved", courier: "approved", admin: false }, 2))).toBe(2);
+    expect(panelBadgeTotal(panelMenuGroups({ seller: null, courier: "pending", admin: false }, 2))).toBe(0);
+  });
+
+  it("says which page she is on", () => {
+    const groups = panelMenuGroups({ seller: "approved", courier: "approved", admin: true });
+    expect(panelMenuLabel("/", groups)).toBe("Panel");
+    expect(panelMenuLabel("/panel/prendas/nueva", groups)).toBe("Panel · Subir prenda");
+    expect(panelMenuLabel("/panel/prendas/3f1c2a9e-0000-4000-8000-000000000001", groups)).toBe("Panel · Mis prendas");
+    expect(panelMenuLabel("/recolectora/solicitudes", groups)).toBe("Panel · Solicitudes");
+    expect(panelMenuLabel("/panel/admin/vendedoras", groups)).toBe("Panel · Vendedoras");
+  });
+});
 
 describe("activePanelHref", () => {
-  it("lights Inicio only on the panel home", () => {
-    expect(activePanelHref("/panel", hrefs)).toBe("/panel");
-  });
-
-  it("lights Subir prenda, not Mis prendas, on the new-garment form", () => {
-    expect(activePanelHref("/panel/prendas/nueva", hrefs)).toBe("/panel/prendas/nueva");
-  });
-
-  it("keeps Mis prendas lit while a garment is being edited", () => {
-    expect(activePanelHref("/panel/prendas/3f1c2a9e-0000-4000-8000-000000000001", hrefs)).toBe("/panel/prendas");
-  });
+  const hrefs = [...SELLER_NAV_GROUP.items, ...ADMIN_NAV_GROUP.items].flatMap((item) => (item.href ? [item.href] : []));
 
   it("does not mistake the admin garments page for the seller's own list", () => {
     expect(activePanelHref("/panel/admin/prendas", hrefs)).toBe("/panel/admin/prendas");
@@ -36,74 +98,19 @@ describe("activePanelHref", () => {
   });
 });
 
-describe("panelNavGroups", () => {
-  it("shows a seller only her own tools", () => {
-    expect(panelNavGroups(false)).toEqual([SELLER_NAV_GROUP]);
+describe("accountMenu", () => {
+  it("gives everyone purchases, one inbox, favorites and notifications", () => {
+    expect(accountMenu(BUYER_ONLY, 0).items.map((item) => item.label)).toEqual(["Mis compras", "Mensajes", "Favoritos", "Avisos"]);
   });
 
-  it("adds the site administration for an admin", () => {
-    expect(panelNavGroups(true)).toEqual([SELLER_NAV_GROUP, ADMIN_NAV_GROUP]);
+  it("counts unread messages on Mensajes", () => {
+    expect(accountMenu(BUYER_ONLY, 3).items[1]!.badge).toEqual({ count: 3, label: "3 mensajes sin leer" });
   });
 
-  it("announces live sales without linking anywhere", () => {
-    expect(SELLER_NAV_GROUP.items.find((item) => item.label === "En vivo")?.href).toBeNull();
-  });
-});
-
-describe("courierNavGroups", () => {
-  const items = courierNavGroups(0)[0]!.items;
-
-  it("lists the courier's sections, requests first", () => {
-    expect(items.map((item) => item.label)).toEqual(["Solicitudes", "Mis entregas", "Mensajes", "Mi ruta", "Mi perfil", "Calificaciones"]);
-  });
-
-  it("lights each section on its own page and Mis entregas on the area's home", () => {
-    const hrefs = items.map((item) => item.href!);
-    expect(activePanelHref("/recolectora/solicitudes", hrefs)).toBe("/recolectora/solicitudes");
-    expect(activePanelHref("/recolectora", hrefs)).toBe("/recolectora");
-  });
-
-  it("counts requests waiting for an answer, and shows nothing at zero", () => {
-    expect(items[0]!.badge).toBeUndefined();
-    expect(courierNavGroups(2)[0]!.items[0]!.badge).toEqual({ count: 2, label: "2 por responder" });
-    expect(courierNavGroups(1)[0]!.items[0]!.badge?.label).toBe("1 por responder");
-  });
-});
-
-describe("unread messages", () => {
-  it("shows the count on Mensajes for sellers and couriers", () => {
-    const seller = panelNavGroups(false, 3)[0]!.items.find((item) => item.href === "/panel/mensajes");
-    expect(seller?.badge).toEqual({ count: 3, label: "3 mensajes sin leer" });
-    expect(courierNavGroups(0, 1)[0]!.items.find((item) => item.href === "/recolectora/mensajes")?.badge?.label).toBe("1 mensaje sin leer");
-    expect(panelNavGroups(false, 0)[0]!.items.find((item) => item.href === "/panel/mensajes")?.badge).toBeUndefined();
-  });
-});
-
-describe("seller and admin courier entries", () => {
-  it("gives sellers the couriers at their points and keeps verification for admins", () => {
-    expect(SELLER_NAV_GROUP.items.find((item) => item.href === "/panel/recolectoras")?.label).toBe("Recolectoras");
-    expect(ADMIN_NAV_GROUP.items.find((item) => item.href === "/panel/admin/recolectoras")?.label).toBe("Verificar recolectoras");
-  });
-});
-
-describe("sidebar collapsed preference", () => {
-  it("round-trips through storage", () => {
-    const values = new Map<string, string>();
-    const storage = { getItem: (key: string) => values.get(key) ?? null, setItem: (key: string, value: string) => void values.set(key, value) };
-    writeSidebarCollapsed(storage, true);
-    expect(values.get(SIDEBAR_COLLAPSED_STORAGE_KEY)).toBe("1");
-    expect(readSidebarCollapsed(storage)).toBe(true);
-    writeSidebarCollapsed(storage, false);
-    expect(readSidebarCollapsed(storage)).toBe(false);
-  });
-
-  it("starts expanded when storage is missing or throws", () => {
-    const broken = {
-      getItem: () => { throw new Error("SecurityError"); },
-      setItem: () => { throw new Error("QuotaExceededError"); },
-    };
-    expect(readSidebarCollapsed(undefined)).toBe(false);
-    expect(readSidebarCollapsed(broken)).toBe(false);
-    expect(() => writeSidebarCollapsed(broken, true)).not.toThrow();
+  it("offers to sell or deliver only what she doesn't do yet, and nothing to an admin", () => {
+    expect(accountMenu(BUYER_ONLY, 0).extra.map((item) => item.label)).toEqual(["Quiero vender", "Quiero entregar"]);
+    expect(accountMenu({ seller: "pending", courier: null, admin: false }, 0).extra.map((item) => item.label)).toEqual(["Quiero entregar"]);
+    expect(accountMenu({ seller: null, courier: "approved", admin: false }, 0).extra.map((item) => item.label)).toEqual(["Quiero vender"]);
+    expect(accountMenu({ seller: null, courier: null, admin: true }, 0).extra).toEqual([]);
   });
 });

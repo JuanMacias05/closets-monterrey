@@ -85,6 +85,7 @@ test("a courier rejects a request, accepts the next, and everyone coordinates in
   await page.getByRole("button", { name: "Crear cuenta" }).click();
   await page.getByLabel("Código de verificación").fill("123456");
   await page.getByRole("button", { name: "Verificar código" }).click();
+  await page.getByRole("button", { name: "Crear mi cuenta" }).click();
   await expect(page).toHaveURL(/\/cuenta$/, { timeout: 20_000 });
 
   // 1. She asks Lupita. Until Lupita answers there is nothing to pay.
@@ -96,9 +97,10 @@ test("a courier rejects a request, accepts the next, and everyone coordinates in
   const courierContext = await browser.newContext({ viewport: { width: 1366, height: 800 } });
   const courier = await courierContext.newPage();
   await login(courier, COURIER_PHONE, /\/recolectora$/);
-  const courierMenu = courier.getByRole("complementary", { name: "Menú del panel" });
-  await expect(courierMenu.getByRole("link", { name: /Solicitudes \(1 por responder\)/ })).toBeVisible();
-  await courierMenu.getByRole("link", { name: /Solicitudes/ }).click();
+  // The green bar's PANEL counts the request; its "Tus entregas" column leads to it.
+  await expect(courier.getByRole("button", { name: /^Panel.*1 pendientes/ })).toBeVisible();
+  await courier.getByRole("button", { name: /^Panel/ }).click();
+  await courier.getByRole("group", { name: "Panel" }).getByRole("link", { name: /Solicitudes \(1 por responder\)/ }).click();
   const request = courier.getByRole("listitem").filter({ hasText: "Closet de Renata → Monterrey" });
   await expect(request.getByText("Vestido floral")).toBeVisible();
   await expect(request.getByText("Compradora Recolectora")).toHaveCount(0); // no buyer details before accepting
@@ -157,7 +159,9 @@ test("a courier rejects a request, accepts the next, and everyone coordinates in
   const sellerContext = await browser.newContext({ viewport: { width: 1366, height: 800 } });
   const seller = await sellerContext.newPage();
   await login(seller, SELLER_PHONE, /\/panel$/);
-  await expect(seller.getByRole("complementary", { name: "Menú del panel" }).getByRole("link", { name: /Mensajes \(1 mensaje sin leer\)/ })).toBeVisible();
+  // One inbox: the unread count is on MI CUENTA ▾ › Mensajes.
+  await seller.getByRole("button", { name: /Mi cuenta/ }).click();
+  await expect(seller.getByRole("group", { name: "Mi cuenta" }).getByRole("link", { name: /Mensajes \(1 mensaje sin leer\)/ })).toBeVisible();
   await seller.goto("/panel/apartados");
   const card = seller.getByRole("listitem").filter({ hasText: "Compradora Recolectora" }).filter({ hasText: "Esperando anticipo" }).first();
   await expect(card.getByTestId("courier-status")).toHaveText("✓ Lupita Recolectora aceptó la entrega.");
