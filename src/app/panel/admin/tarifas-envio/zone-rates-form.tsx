@@ -26,7 +26,7 @@ export function ZoneRatesForm({ origin, fees }: { origin: string; fees: { destin
   return (
     <form onSubmit={submit} aria-labelledby="zone-rates-title" className="border border-stone-200 bg-white p-5">
       <h2 id="zone-rates-title" className="font-condensed text-xl font-bold uppercase text-stone-900">Envíos desde {origin}</h2>
-      <p className="mt-1 text-sm text-stone-600">Precio en pesos hasta el municipio de la clienta.</p>
+      <p className="mt-1 text-sm text-stone-600">Precio en pesos hasta el municipio de quien compra.</p>
       <ul className="mt-4 divide-y divide-stone-200">
         {fees.map(({ destination }) => (
           <li key={destination} className="flex min-h-14 items-center justify-between gap-3 py-2">

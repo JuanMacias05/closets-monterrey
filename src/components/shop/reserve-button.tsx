@@ -143,7 +143,7 @@ export function ReserveButton({ sellerId, storeName, itemsTotalMxn, itemCount, d
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <button type="button" onClick={() => go(1)} disabled={busy} className={back}>Volver</button>
                 <button type="button" onClick={reserve} disabled={disabled || busy} className={primary}>
-                  {busy ? "Apartando…" : summary.method === "courier" ? "Apartar y pedir recolectora" : `Apartar · anticipo ${formatPriceMXN(quote.depositMxn)}`}
+                  {busy ? "Apartando…" : summary.method === "courier" ? "Apartar y pedir recolección" : `Apartar · anticipo ${formatPriceMXN(quote.depositMxn)}`}
                 </button>
               </div>
             </>

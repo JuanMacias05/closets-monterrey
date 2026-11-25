@@ -4,7 +4,7 @@ import { timeLeftLabel, type CourierRequestStatus } from "@/features/couriers/co
 import { requireCourier } from "@/features/couriers/require-courier";
 import { formatPriceMXN } from "@/features/products/format-price";
 
-export const metadata = { title: "Solicitudes | Closets Monterrey" };
+export const metadata = { title: "Solicitudes | BZRS Monterrey" };
 
 type InboxRow = {
   request_id: string; status: CourierRequestStatus; requested_at: string; expires_at: string; resolved_at: string | null;
@@ -17,7 +17,7 @@ const OUTCOME: Record<CourierRequestStatus, string> = {
   accepted: "Aceptaste",
   rejected: "Rechazaste",
   expired: "Se venció sin respuesta",
-  withdrawn: "La clienta cambió de entrega",
+  withdrawn: "Tu cliente cambió de entrega",
 };
 
 const timeFormat = new Intl.DateTimeFormat("es-MX", { dateStyle: "medium", timeStyle: "short", timeZone: "America/Monterrey" });
@@ -38,7 +38,7 @@ export default async function CourierRequestsPage() {
     <section>
       <h1 className="font-serif text-3xl tracking-tight text-stone-900">Solicitudes</h1>
       <p className="mt-2 max-w-2xl text-sm text-stone-600">
-        Cada solicitud espera tu respuesta {COURIER_REQUEST_HOURS} horas; si no contestas, se vence y la clienta elige otra entrega. Al aceptar ves su nombre y dirección en Mis entregas. Ella no paga nada hasta que aceptas.
+        Cada solicitud espera tu respuesta {COURIER_REQUEST_HOURS} horas; si no contestas, se vence y tu cliente elige otra entrega. Al aceptar ves su nombre y dirección en Mis entregas. Tu cliente no paga nada hasta que aceptas.
       </p>
       {courier.status !== "approved" && (
         <p className="mt-4 text-sm text-stone-700">Cuando la administración te verifique, aquí te llegan las entregas que te pidan.</p>
@@ -62,7 +62,7 @@ export default async function CourierRequestsPage() {
                 <p className="text-sm text-stone-700"><strong>Entregas en:</strong> {row.buyer_municipality}</p>
                 <p className="text-sm text-stone-700"><strong>Prendas:</strong> {(row.garments ?? []).join(", ")}</p>
                 <p className="text-sm text-stone-700">
-                  <strong>Tu tarifa:</strong> {formatPriceMXN(row.fee_mxn)} · {row.fee_payment === "with_deposit" ? "te la paga la vendedora (va en el anticipo)" : "te la paga la clienta al recibir"}
+                  <strong>Tu tarifa:</strong> {formatPriceMXN(row.fee_mxn)} · {row.fee_payment === "with_deposit" ? "te la paga la tienda (va en el anticipo)" : "te la paga tu cliente al recibir"}
                 </p>
                 <p className="mt-1 text-xs text-stone-600">Responde antes de {timeFormat.format(new Date(row.expires_at))}.</p>
                 <div className="mt-4"><CourierRequestActions requestId={row.request_id} storeName={row.store_name} /></div>

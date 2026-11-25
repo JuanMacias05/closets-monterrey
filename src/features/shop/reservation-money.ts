@@ -53,7 +53,7 @@ export type DeliveryFeeInput = {
   delivery_fee_adjusted_at: string | null;
 };
 
-// "La vendedora ajustó el envío de $90 a $120": only when she changed it and it no longer
+// "La tienda ajustó el envío de $90 a $120": only when she changed it and it no longer
 // matches what the buyer saw at checkout (setting it back to the estimate is no news).
 export function deliveryFeeChange(reservation: DeliveryFeeInput): { fromMxn: number; toMxn: number } | null {
   if (reservation.delivery_method !== "home_delivery" || !reservation.delivery_fee_adjusted_at) return null;
@@ -71,8 +71,8 @@ export function deliveryGroup(reservation: DeliveryGroupInput): { key: string; l
     return { key: `punto:${name}`, label: name };
   }
   if (reservation.delivery_method === "courier") {
-    const name = reservation.courier?.full_name ?? "Recolectora";
-    return { key: `recolectora:${name}`, label: `Recolectora ${name}` };
+    const name = reservation.courier?.full_name ?? "Recolección";
+    return { key: `recolectora:${name}`, label: `Recolección · ${name}` };
   }
   if (reservation.delivery_method === "home_delivery") return { key: "domicilio", label: "A domicilio" };
   return { key: "acordar", label: "Acordar por WhatsApp" };

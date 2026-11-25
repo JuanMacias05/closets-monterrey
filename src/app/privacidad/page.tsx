@@ -2,7 +2,7 @@ import Link from "next/link";
 import { LegalPage, LegalSection } from "@/components/legal/legal-page";
 import { LEGAL_CONTACT } from "@/features/legal/legal-contact";
 
-export const metadata = { title: "Aviso de privacidad | Closets Monterrey" };
+export const metadata = { title: "Aviso de privacidad | BZRS Monterrey" };
 
 // Privacy notice (aviso de privacidad integral). Every data point listed here must match what
 // the app really stores: if a migration adds a personal field, add it here in the same change.
@@ -12,7 +12,7 @@ export default function PrivacyPage() {
       <LegalSection title="Quién es responsable de tus datos">
         <p>
           {LEGAL_CONTACT.responsibleName}, con domicilio en {LEGAL_CONTACT.city}, es responsable del tratamiento de los datos personales
-          que nos das al usar Closets Monterrey. Para cualquier tema de privacidad escríbenos a <a href={`mailto:${LEGAL_CONTACT.email}`} className="text-pine underline underline-offset-4">{LEGAL_CONTACT.email}</a>.
+          que nos das al usar BZRS Monterrey. Para cualquier tema de privacidad escríbenos a <a href={`mailto:${LEGAL_CONTACT.email}`} className="text-pine underline underline-offset-4">{LEGAL_CONTACT.email}</a>.
         </p>
       </LegalSection>
 
@@ -42,7 +42,7 @@ export default function PrivacyPage() {
 
       <LegalSection title="Quién más los ve">
         <ul className="list-disc space-y-2 pl-5">
-          <li><strong>Cuando apartas una prenda,</strong> la vendedora ve tu nombre, tu link de Facebook, tu celular y tu indicador de confianza. Tú ves su WhatsApp, su CLABE y, si la dio, su tarjeta para OXXO. La foto de tu comprobante solo la ven tú, esa vendedora y la administración de Closets Monterrey, y se borra si borras tu cuenta.</li>
+          <li><strong>Cuando apartas una prenda,</strong> la vendedora ve tu nombre, tu link de Facebook, tu celular y tu indicador de confianza. Tú ves su WhatsApp, su CLABE y, si la dio, su tarjeta para OXXO. La foto de tu comprobante solo la ven tú, esa vendedora y la administración de BZRS Monterrey, y se borra si borras tu cuenta.</li>
           <li><strong>Si eliges recolectora,</strong> ella ve tu nombre, tu dirección, tu municipio y tu celular para entregarte.</li>
           <li><strong>Lo que es público:</strong> el nombre y la foto de cada tienda, sus prendas, y el nombre, municipios y tarifa de las recolectoras verificadas.</li>
         </ul>

@@ -58,22 +58,22 @@ test("an admin opens the panel from the green bar and can view the store as a bu
   await login(page, ADMIN_PHONE);
   // (Also the admin login check that used to live in auth.spec: one login less for the SMS cap.)
   await expect(page.getByRole("heading", { name: "Admin de prueba" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Mi tienda", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Mi bazar", exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Administración del sitio" })).toBeVisible();
-  await expect(page.getByRole("link", { name: /Vendedoras por aprobar/ })).toBeVisible();
+  await expect(page.getByRole("link", { name: /Bazares por aprobar/ })).toBeVisible();
   await expect(page.getByRole("link", { name: "Subir prenda" }).first()).toHaveAttribute("href", "/panel/prendas/nueva");
 
   // The panel keeps the store's look: store nav and banner, PANEL ▾ in the green bar.
   await expect(page.getByRole("navigation", { name: "Categorías" })).toBeVisible();
   await page.getByRole("button", { name: /^Panel · Inicio/ }).click();
   const menu = page.getByRole("group", { name: "Panel" });
-  await expect(menu.getByText("Tu clóset", { exact: true })).toBeVisible();
+  await expect(menu.getByText("Tu bazar", { exact: true })).toBeVisible();
   await expect(menu.getByRole("link", { name: "Soporte" })).toHaveAttribute("href", "/panel/admin/soporte");
   await expect(menu.getByRole("link", { name: "Inicio" })).toHaveAttribute("aria-current", "page");
 
   // "Ver como clienta": no green bar, buyer menu, an amber strip to come back.
-  await menu.getByRole("button", { name: "Ver como clienta" }).click();
-  await expect(page.getByText("Estás viendo la tienda como una clienta.")).toBeVisible({ timeout: 15_000 });
+  await menu.getByRole("button", { name: "Ver como cliente" }).click();
+  await expect(page.getByText("Estás viendo la tienda como cliente.")).toBeVisible({ timeout: 15_000 });
   await expect(page.getByRole("button", { name: /^Panel/ })).toHaveCount(0);
   await page.getByRole("button", { name: /Mi cuenta/ }).click();
   await expect(page.getByRole("group", { name: "Mi cuenta" }).getByRole("link", { name: "Quiero vender" })).toBeVisible();
@@ -86,7 +86,7 @@ test("an admin opens the panel from the green bar and can view the store as a bu
 // the local stack allows 30 an hour for the whole suite.
 test("a seller's PANEL menu says where she is and opens as a sheet on a phone", async ({ page }) => {
   await login(page, SELLER_PHONE);
-  await expect(page.getByRole("heading", { name: "Mi tienda", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Mi bazar", exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Administración del sitio" })).toHaveCount(0);
 
   // Laptop: hovering PANEL opens one column, hers.
@@ -95,7 +95,7 @@ test("a seller's PANEL menu says where she is and opens as a sheet on a phone", 
   await expect(button).toHaveText(/Panel · Inicio/);
   await button.hover();
   const menu = page.getByRole("group", { name: "Panel" });
-  await expect(menu.getByText("Tu clóset", { exact: true })).toBeVisible();
+  await expect(menu.getByText("Tu bazar", { exact: true })).toBeVisible();
   await expect(menu.getByText("Administración del sitio")).toHaveCount(0);
   await expect(menu.getByText("Próximamente")).toBeVisible();
   await expect(menu.getByRole("link", { name: /Mensajes/ })).toHaveCount(0);

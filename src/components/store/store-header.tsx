@@ -1,3 +1,4 @@
+import { BrandWordmark } from "@/components/brand/brand-wordmark";
 import Link from "next/link";
 import { AccountMenu } from "@/components/store/account-menu";
 import { CategoriesMenu } from "@/components/store/categories-menu";
@@ -18,7 +19,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 //   * a green bar with "PANEL ▾" for accounts that sell, deliver or administer (one column per
 //     activity); a buyer-only account has no green bar at all;
 //   * "MI CUENTA ▾" in the white nav for every signed-in account.
-// "Ver como clienta" draws it as a buyer-only account sees it, with an amber strip to go back.
+// "Ver como cliente" draws it as a buyer-only account sees it, with an amber strip to go back.
 export async function StoreHeader({ activeAudience }: { activeAudience?: CatalogAudience } = {}) {
   const [viewer, shop, viewAsBuyer] = await Promise.all([getViewer(), getShopState(), getViewAsBuyer()]);
   const signedIn = viewer.kind !== "guest";
@@ -38,7 +39,7 @@ export async function StoreHeader({ activeAudience }: { activeAudience?: Catalog
     <div className="sticky top-0 z-40 bg-white">
       {viewAsBuyer && (
         <form action={stopViewingAsBuyer} className="flex flex-wrap items-center justify-center gap-x-3 bg-amber-300 px-3 py-1.5 text-center text-sm text-stone-900">
-          <span>Estás viendo la tienda como una clienta.</span>
+          <span>Estás viendo la tienda como cliente.</span>
           <button type="submit" className="min-h-9 font-semibold underline underline-offset-4">Volver a admin</button>
         </form>
       )}
@@ -55,11 +56,10 @@ export async function StoreHeader({ activeAudience }: { activeAudience?: Catalog
             <Link href="/" className="link-underline hover:text-stone-600">Nuevo</Link>
             <StoreSearchTrigger variant="desktop" />
           </nav>
-          <Link href="/recolectoras" className="link-underline hidden hover:text-stone-600 lg:inline">Recolectoras</Link>
         </div>
 
         {/* Smaller under 400px: the phone header also holds search and cart on the right. */}
-        <Link href="/" className="absolute left-1/2 -translate-x-1/2 whitespace-nowrap font-serif text-lg normal-case tracking-tight text-stone-900 min-[400px]:text-xl sm:text-2xl">Closets Monterrey</Link>
+        <Link href="/" className="absolute left-1/2 -translate-x-1/2 whitespace-nowrap font-serif text-lg normal-case tracking-tight text-stone-900 min-[400px]:text-xl sm:text-2xl"><BrandWordmark /></Link>
 
         <nav aria-label="Cuenta" className="hidden items-center gap-6 lg:flex">
           <Link href="/favoritos" className="link-underline hover:text-stone-600">Favoritos</Link>
@@ -84,7 +84,7 @@ export async function StoreHeader({ activeAudience }: { activeAudience?: Catalog
       </header>
 
       <p className="bg-pine px-4 py-2 text-center font-condensed text-sm font-bold uppercase tracking-[0.04em] text-white sm:text-base">
-        Moda circular · Prendas únicas de clósets de Monterrey
+        Compra y vende ropa en Monterrey
       </p>
     </div>
     </StoreSearchProvider>

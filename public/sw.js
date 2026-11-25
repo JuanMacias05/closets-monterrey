@@ -1,4 +1,4 @@
-// Closets Monterrey service worker: web push only (no offline cache). The server sends
+// BZRS Monterrey service worker: web push only (no offline cache). The server sends
 // { title, body, url, tag } (src/features/push/push-config.ts, buildPushPayload).
 
 self.addEventListener("push", (event) => {
@@ -8,7 +8,7 @@ self.addEventListener("push", (event) => {
   } catch {
     data = { body: event.data ? event.data.text() : "" };
   }
-  const title = data.title || "Closets Monterrey";
+  const title = data.title || "BZRS Monterrey";
   event.waitUntil(
     self.registration.showNotification(title, {
       body: data.body || "",

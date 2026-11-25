@@ -6,7 +6,7 @@ import { isKnownMunicipality } from "@/features/delivery/zone-rates";
 import { isAdminUser } from "@/features/viewer/is-admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
-export const metadata = { title: "Tarifas de envío | Closets Monterrey" };
+export const metadata = { title: "Tarifas de envío | BZRS Monterrey" };
 
 type RateRow = { origin_municipality: string; destination_municipality: string; fee_mxn: number; updated_at: string; updated_by: string | null };
 
@@ -37,7 +37,7 @@ export default async function AdminZoneRatesPage({ searchParams }: { searchParam
     <section className="max-w-3xl">
       <div className="border-b border-stone-200 pb-5">
         <h1 className="font-serif text-3xl tracking-tight text-stone-900">Tarifas de envío</h1>
-        <p className="mt-2 text-sm leading-6 text-stone-600">Lo que cuesta el envío a domicilio desde el municipio de la vendedora hasta el de la clienta. La clienta lo ve como precio aproximado al apartar, y la vendedora puede ajustarlo en cada apartado antes de recibir el anticipo.</p>
+        <p className="mt-2 text-sm leading-6 text-stone-600">Lo que cuesta el envío a domicilio desde el municipio de la tienda hasta el de quien compra. Quien compra lo ve como precio aproximado al apartar, y la tienda puede ajustarlo en cada apartado antes de recibir el anticipo.</p>
         {unreviewed.size > 0 && (
           <p className="mt-3 bg-amber-50 p-3 text-sm text-amber-900">
             <strong>{unreviewed.size === MUNICIPALITIES.length ? "Todas las tarifas son de ejemplo" : `${unreviewed.size} municipios tienen tarifas de ejemplo`}</strong> ($60 en el mismo municipio, $100 a otro). Cámbialas por los precios reales y guarda cada municipio de origen.
@@ -46,7 +46,7 @@ export default async function AdminZoneRatesPage({ searchParams }: { searchParam
       </div>
 
       <nav aria-label="Municipio de origen" className="mt-5">
-        <p className="text-xs uppercase tracking-[0.14em] text-stone-600">La vendedora envía desde</p>
+        <p className="text-xs uppercase tracking-[0.14em] text-stone-600">La tienda envía desde</p>
         <ul className="mt-2 flex flex-wrap gap-2">
           {MUNICIPALITIES.map((name) => (
             <li key={name}>

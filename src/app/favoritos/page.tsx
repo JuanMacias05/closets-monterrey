@@ -6,7 +6,7 @@ import { getProductImageUrl } from "@/features/products/public-images";
 import type { CatalogImage, CatalogProduct } from "@/features/products/types";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
-export const metadata = { title: "Favoritos | Closets Monterrey" };
+export const metadata = { title: "Favoritos | BZRS Monterrey" };
 
 type FavoriteRow = { product: (Omit<CatalogProduct, "images"> & { images: Omit<CatalogImage, "url">[] | null }) | null };
 

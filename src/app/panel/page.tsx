@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { PRIMARY_BUTTON_CLASS } from "@/components/panel/panel-styles";
-import { ShareLinkButton } from "@/components/panel/share-link-button";
+import { SellerChecklistCard } from "@/components/panel/seller-checklist-card";
+import { ShareButton } from "@/components/share/share-button";
+import { sellerChecklist } from "@/features/sellers/seller-checklist";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
-// Panel home. Two groups, so a seller only ever sees her own tools: "Mi tienda" for every
+// Panel home. Two groups, so a seller only ever sees her own tools: "Mi bazar" for every
 // approved seller, "Administración del sitio" only for admins (public.admins). The summary cards up top are
 // what needs attention today; each links to the list behind it.
 //
@@ -23,6 +25,7 @@ export default async function PanelHomePage() {
   let storeName = "";
   let storeSlug = "";
   let approved = false;
+  let checklist: ReturnType<typeof sellerChecklist> | null = null;
   let stats: { available: Count; reserved: Count; sold: Count; toConfirm: Count; proofsToReview: Count; pendingSellers: Count; pendingCouriers: Count; openSupport: Count } = {
     available: null, reserved: null, sold: null, toConfirm: null, proofsToReview: null, pendingSellers: null, pendingCouriers: null, openSupport: null,
   };
@@ -32,9 +35,22 @@ export default async function PanelHomePage() {
     if (user) {
       await supabase.rpc("release_expired_reservations");
       const [{ data: profile }, { data: adminRow }] = await Promise.all([
-        supabase.from("profiles").select("store_name,slug,status").eq("id", user.id).maybeSingle(),
+        supabase.from("profiles").select("store_name,slug,status,home_delivery_enabled,home_delivery_origin").eq("id", user.id).maybeSingle(),
         supabase.from("admins").select("user_id").eq("user_id", user.id).maybeSingle(),
       ]);
+      if (profile?.status === "approved") {
+        const [{ data: settings }, { count: points }, { count: products }] = await Promise.all([
+          supabase.from("seller_private_settings").select("clabe,store_shared_at").eq("seller_id", user.id).maybeSingle(),
+          supabase.from("seller_delivery_points").select("point_id", { count: "exact", head: true }).eq("seller_id", user.id),
+          supabase.from("products").select("id", { count: "exact", head: true }).eq("seller_id", user.id),
+        ]);
+        checklist = sellerChecklist({
+          hasClabe: Boolean(settings?.clabe),
+          hasDelivery: (points ?? 0) > 0 || Boolean(profile.home_delivery_enabled && profile.home_delivery_origin),
+          productCount: products ?? 0,
+          sharedStore: Boolean(settings?.store_shared_at),
+        });
+      }
       // Admin is its own flag (20261127000100), not a kind of store.
       isAdmin = Boolean(adminRow);
       storeName = profile?.store_name ?? "";
@@ -62,17 +78,17 @@ export default async function PanelHomePage() {
     <div className="space-y-10">
       <section className="flex flex-col gap-5 border-b border-stone-200 pb-8 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="text-[10px] uppercase tracking-[0.22em] text-stone-500">{isAdmin ? "Administración" : "Panel de vendedora"}</p>
+          <p className="text-[10px] uppercase tracking-[0.22em] text-stone-500">{isAdmin ? "Administración" : "Tu bazar"}</p>
           <h1 className="mt-2 font-serif text-3xl tracking-tight text-stone-900">{storeName || "Tu panel"}</h1>
           <p className="mt-2 max-w-xl text-sm leading-6 text-stone-600">
             {isAdmin
               ? "Sube y administra tus prendas, revisa tus apartados y aprueba cuentas nuevas."
-              : "Sube y administra tus prendas, revisa tus apartados y edita tu tienda."}
+              : "Sube y administra tus prendas, revisa tus apartados y edita tu bazar."}
           </p>
           {approved && storeSlug && (
             <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
-              <Link href={`/tiendas/${storeSlug}`} className="inline-flex min-h-10 items-center text-pine underline underline-offset-4">Ver mi tienda</Link>
-              <ShareLinkButton path={`/tiendas/${storeSlug}`} title={storeName} text={`Mira mi closet ${storeName} en Closets Monterrey`} label="Compartir mi tienda" />
+              <Link href={`/tiendas/${storeSlug}`} className="inline-flex min-h-10 items-center text-pine underline underline-offset-4">Ver mi bazar</Link>
+              <span id="compartir-tienda"><ShareButton path={`/tiendas/${storeSlug}`} title={storeName} text={`Mira mi bazar ${storeName} en BZRS Monterrey`} label="Compartir mi bazar" trackStoreShare /></span>
             </div>
           )}
         </div>
@@ -82,6 +98,8 @@ export default async function PanelHomePage() {
         </Link>
       </section>
 
+      {checklist && !checklist.allDone && <SellerChecklistCard steps={checklist.steps} clabeMissing={checklist.clabeMissing} />}
+
       <section aria-labelledby="summary-title">
         <h2 id="summary-title" className="text-[10px] uppercase tracking-[0.22em] text-stone-500">Resumen</h2>
         <div className="mt-3 grid grid-cols-2 gap-3 lg:grid-cols-4">
@@ -90,26 +108,26 @@ export default async function PanelHomePage() {
           <StatCard label="Vendidas" value={stats.sold} href="/panel/prendas" />
           <StatCard label="Apartados por confirmar" value={stats.toConfirm} href="/panel/apartados" highlight />
           <StatCard label="Comprobantes por revisar" value={stats.proofsToReview} href="/panel/apartados" highlight />
-          {isAdmin && <StatCard label="Vendedoras por aprobar" value={stats.pendingSellers} href="/panel/admin/vendedoras" highlight />}
-          {isAdmin && <StatCard label="Recolectoras por aprobar" value={stats.pendingCouriers} href="/panel/admin/recolectoras" highlight />}
+          {isAdmin && <StatCard label="Bazares por aprobar" value={stats.pendingSellers} href="/panel/admin/vendedoras" highlight />}
+          {isAdmin && <StatCard label="Personas por verificar" value={stats.pendingCouriers} href="/panel/admin/recolectoras" highlight />}
           {isAdmin && <StatCard label="Soporte por atender" value={stats.openSupport} href="/panel/admin/soporte" highlight />}
         </div>
       </section>
 
-      <PanelGroup title="Mi tienda" id="group-store">
+      <PanelGroup title="Mi bazar" id="group-store">
         <PanelCard href="/panel/prendas/nueva" title="Subir prenda" description="Fotos, talla, precio y entrega." />
         <PanelCard href="/panel/prendas" title="Mis prendas" description="Edita, marca vendida o retira tus prendas." />
         <PanelCard href="/panel/apartados" title="Apartados" description="Revisa comprobantes, confirma anticipos y entregas." />
-        <PanelCard href="/panel/tienda" title="Editar tienda" description="Nombre, foto, contacto y cómo te pagan." />
+        <PanelCard href="/panel/tienda" title="Editar bazar" description="Nombre, foto, contacto y cómo te pagan." />
       </PanelGroup>
 
       {isAdmin && (
         <PanelGroup title="Administración del sitio" id="group-admin">
-          <PanelCard href="/panel/admin/vendedoras" title="Vendedoras" description="Aprueba o suspende cuentas de vendedora." />
-          <PanelCard href="/panel/admin/clientas" title="Clientas" description="Cuentas de compradoras." />
-          <PanelCard href="/panel/admin/recolectoras" title="Recolectoras" description="Verifica recolectoras y sus rutas." />
-          <PanelCard href="/panel/admin/prendas" title="Todas las prendas" description="Modera las prendas de todas las tiendas." />
-          <PanelCard href="/panel/admin/soporte" title="Soporte" description="Clientas que piden ayuda y comprobantes sin revisar." />
+          <PanelCard href="/panel/admin/vendedoras" title="Bazares" description="Aprueba o suspende bazares." />
+          <PanelCard href="/panel/admin/clientas" title="Clientes" description="Cuentas de clientes." />
+          <PanelCard href="/panel/admin/recolectoras" title="Recolección" description="Verifica a quien entrega y sus rutas." />
+          <PanelCard href="/panel/admin/prendas" title="Todas las prendas" description="Modera las prendas de todos los bazares." />
+          <PanelCard href="/panel/admin/soporte" title="Soporte" description="Clientes que piden ayuda y comprobantes sin revisar." />
         </PanelGroup>
       )}
     </div>

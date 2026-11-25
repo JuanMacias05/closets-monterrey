@@ -4,7 +4,7 @@ import { TRUST_LABELS, TRUST_STYLES } from "@/features/shop/reservation-labels";
 import { isAdminUser } from "@/features/viewer/is-admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
-export const metadata = { title: "Clientas | Closets Monterrey" };
+export const metadata = { title: "Clientes | BZRS Monterrey" };
 
 export default async function AdminBuyersPage() {
   const supabase = await createSupabaseServerClient();
@@ -16,7 +16,7 @@ export default async function AdminBuyersPage() {
   const { data: buyers, error } = await supabase.from("buyer_profiles")
     .select("id,full_name,facebook_url,phone_e164,trust_override,created_at")
     .order("created_at", { ascending: false });
-  if (error) throw new Error("No pudimos cargar las clientas.");
+  if (error) throw new Error("No pudimos cargar las cuentas de clientes.");
   const lights = new Map(await Promise.all((buyers ?? []).map(async (buyer) =>
     [buyer.id, (await supabase.rpc("buyer_trust_light", { target: buyer.id })).data as string | null] as const)));
 
@@ -24,12 +24,12 @@ export default async function AdminBuyersPage() {
     <section>
       <div className="flex flex-wrap items-end justify-between gap-3 border-b border-stone-200 pb-5">
         <div>
-          <h1 className="font-serif text-3xl tracking-tight text-stone-900">Clientas</h1>
-          <p className="mt-2 max-w-xl text-sm text-stone-600">El semáforo es automático: verde con compras cumplidas, amarillo si dejó vencer un apartado, rojo si una vendedora reportó que le quedó mal. Puedes fijarlo a mano.</p>
+          <h1 className="font-serif text-3xl tracking-tight text-stone-900">Clientes</h1>
+          <p className="mt-2 max-w-xl text-sm text-stone-600">El semáforo es automático: verde con compras cumplidas, amarillo si dejó vencer un apartado, rojo si una tienda reportó que le quedó mal. Puedes fijarlo a mano.</p>
         </div>
       </div>
       {(buyers ?? []).length === 0 ? (
-        <p className="py-6 text-sm text-stone-600">Aún no hay clientas registradas.</p>
+        <p className="py-6 text-sm text-stone-600">Aún no hay cuentas de clientes.</p>
       ) : (
         <ul className="divide-y divide-stone-200">
           {(buyers ?? []).map((buyer) => {

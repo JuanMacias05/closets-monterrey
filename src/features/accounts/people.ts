@@ -24,5 +24,5 @@ export function parseAddPerson(input: AddPersonInput): { ok: true; person: Parse
 
 // "Cómo llegó" in the admin lists: added_by is null when she signed up herself.
 export function arrivalLabel(addedBy: string | null | undefined): string {
-  return addedBy ? "Agregada por admin" : "Se registró sola";
+  return addedBy ? "Registro: lo hizo un admin" : "Registro: por su cuenta";
 }

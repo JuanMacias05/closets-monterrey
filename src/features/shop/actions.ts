@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { isKnownMunicipality } from "@/features/delivery/zone-rates";
 import type { DeliveryChoice } from "@/features/shop/checkout-steps";
-import { notifyCourierRequested, notifyNewReservation } from "@/features/push/notifications";
+import { notifyCourierRequested, notifyNewReservation, notifySellerRated } from "@/features/push/notifications";
 import { isValidFacebookUrl, normalizeFacebookUrl } from "@/features/shop/facebook-url";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -65,18 +65,18 @@ export async function setInCart(productId: string, inCart: boolean): Promise<Res
 const RESERVE_ERRORS: Record<string, string> = {
   buyer_profile_required: "Antes de apartar, completa tu nombre y tu perfil de Facebook.",
   items_unavailable: "Una o más prendas acaban de ser apartadas por otra persona. Revisa tu carrito.",
-  seller_without_clabe: "Esta vendedora todavía no registra su CLABE; no se puede apartar por ahora.",
-  seller_unavailable: "Esta vendedora no está disponible por ahora.",
+  seller_without_clabe: "Esta tienda todavía no registra su CLABE; no se puede apartar por ahora.",
+  seller_unavailable: "Esta tienda no está disponible por ahora.",
   own_products: "No puedes apartar prendas de tu propia tienda.",
-  empty_cart: "No tienes prendas de esta vendedora en tu carrito.",
+  empty_cart: "No tienes prendas de esta tienda en tu carrito.",
   invalid_delivery: "Elige cómo quieres recibir tus prendas (y escribe tu dirección si es envío a domicilio).",
-  no_delivery_rate: "Todavía no hay tarifa de envío a tu municipio para esta vendedora. Elige otra forma de entrega.",
+  no_delivery_rate: "Todavía no hay tarifa de envío a tu municipio para esta tienda. Elige otra forma de entrega.",
   // change_reservation_delivery (20261124000100)
   not_pending: "Este apartado ya no está esperando anticipo.",
   delivery_locked: "La entrega de este apartado ya quedó y no se puede cambiar.",
-  courier_unchanged: "Ya le pediste a esa recolectora; espera su respuesta o elige otra.",
-  courier_declined: "Esa recolectora ya no puede llevar este pedido. Elige otra o cambia de entrega.",
-  too_many_courier_requests: "Ya pediste recolectora 3 veces para este apartado. Elige punto fijo o envío a domicilio.",
+  courier_unchanged: "Ya le pediste a esa persona; espera su respuesta o elige otra.",
+  courier_declined: "Esa persona ya no puede llevar este pedido. Elige otra o cambia de entrega.",
+  too_many_courier_requests: "Ya pediste recolección 3 veces para este apartado. Elige punto fijo o envío a domicilio.",
 };
 
 function reserveError(message: string) {
@@ -96,7 +96,7 @@ function deliveryInputError(delivery: DeliveryChoice): string | null {
   if (delivery.method === "courier" && (!UUID.test(delivery.courierId) || !isKnownMunicipality(delivery.municipality)
     || !["on_delivery", "with_deposit"].includes(delivery.feePayment)
     || typeof delivery.address !== "string" || delivery.address.trim().length < 10 || delivery.address.length > 300)) {
-    return "Elige tu municipio, una recolectora, cómo pagas su tarifa y escribe tu dirección.";
+    return "Elige tu municipio, quién recolecta, cómo pagas su tarifa y escribe tu dirección.";
   }
   return null;
 }
@@ -195,9 +195,36 @@ export async function rateCourier(reservationId: string, stars: number): Promise
   return { ok: true };
 }
 
+const RATE_SELLER_ERRORS: Record<string, string> = {
+  invalid_comment: "El comentario es demasiado largo (máximo 280 caracteres).",
+  own_store: "No puedes calificar tu propia tienda.",
+  cannot_rate: "Ya calificaste esta compra, o todavía no se entrega.",
+};
+
+// The buyer rates the store once, after the purchase is completed (rate_seller,
+// 20261128000100). The seller hears about it by push.
+export async function rateSeller(reservationId: string, stars: number, comment: string): Promise<Result> {
+  if (!UUID.test(reservationId) || !Number.isInteger(stars) || stars < 1 || stars > 5) return { ok: false, error: "Calificación no válida." };
+  const text = typeof comment === "string" ? comment.trim() : "";
+  if (text.length > 280) return { ok: false, error: RATE_SELLER_ERRORS.invalid_comment! };
+  const context = await signedInClient();
+  if (!context.ok) return context;
+  const { error } = await context.supabase.rpc("rate_seller", { target: reservationId, stars, comment: text || null });
+  if (error) {
+    const code = Object.keys(RATE_SELLER_ERRORS).find((key) => error.message.includes(key));
+    return { ok: false, error: code ? RATE_SELLER_ERRORS[code]! : "No pudimos guardar tu calificación." };
+  }
+  notifySellerRated(reservationId, stars);
+  revalidatePath("/cuenta");
+  revalidatePath("/tiendas/[storeSlug]", "page");
+  revalidatePath("/prendas/[slug]", "page");
+  revalidatePath("/panel/calificaciones");
+  return { ok: true };
+}
+
 const PROOF_ERRORS: Record<string, string> = {
   not_pending: "Este apartado ya no está esperando anticipo.",
-  courier_pending: "Tu recolectora todavía no acepta. Podrás pagar tu anticipo en cuanto acepte.",
+  courier_pending: "Quien recolecta todavía no acepta. Podrás pagar tu anticipo en cuanto acepte.",
   invalid_method: "Esa forma de pago no está disponible para este apartado.",
   invalid_reference: "La clave o folio es demasiado largo.",
   invalid_proof: "No encontramos la foto que subiste. Inténtalo de nuevo.",

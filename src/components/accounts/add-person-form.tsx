@@ -9,7 +9,7 @@ const label = "block text-xs uppercase tracking-[0.14em] text-stone-600";
 const field = "mt-1 min-h-11 w-full border border-stone-300 bg-white px-2 text-sm";
 const check = "flex min-h-11 items-center gap-2 text-sm text-stone-800";
 
-// "+ Agregar persona" on Vendedoras and Verificar recolectoras: whoever an admin adds is already
+// "+ Agregar persona" on Bazares and Verificar quién entrega: whoever an admin adds is already
 // approved, and the first time she logs in with her phone she sees her tools.
 export function AddPersonForm({ defaultActivity }: { defaultActivity: "sell" | "deliver" }) {
   const router = useRouter();
@@ -77,7 +77,7 @@ export function AddPersonForm({ defaultActivity }: { defaultActivity: "sell" | "
           <input id="person-store" value={storeName} onChange={(event) => setStoreName(event.target.value)} maxLength={60} placeholder="Si lo dejas vacío, usamos su nombre" className={field} />
         </div>
       )}
-      <p className="text-xs text-stone-600">Queda aprobada desde ahora. Si el teléfono ya tiene cuenta, le agregamos lo que marques. Entra con un código por SMS a su teléfono.</p>
+      <p className="text-xs text-stone-600">Queda con acceso desde ahora. Si el teléfono ya tiene cuenta, le agregamos lo que marques. Entra con un código por SMS a su teléfono.</p>
       <div className="flex flex-wrap gap-3">
         <button type="submit" disabled={busy} className="min-h-11 bg-pine px-4 font-condensed text-sm font-bold uppercase text-white disabled:opacity-60">{busy ? "Agregando…" : "Agregar"}</button>
         <button type="button" disabled={busy} onClick={() => { setOpen(false); setMessage(null); }} className="min-h-11 text-sm text-stone-700 underline underline-offset-4">Cancelar</button>

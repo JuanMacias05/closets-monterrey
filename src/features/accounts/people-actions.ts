@@ -9,7 +9,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 type Result = { ok: true; existed?: boolean } | { ok: false; error: string };
 
 const ACTIVITY_ERRORS: Record<string, string> = {
-  own_admin: "No puedes quitarte a ti misma la administración.",
+  own_admin: "No puedes quitarte tu propia administración.",
   invalid_name: "Escribe su nombre para darle la actividad de entregar.",
   invalid_store_name: "El nombre de su tienda es demasiado largo (máximo 60).",
   not_allowed: "Solo la administración puede cambiar actividades.",

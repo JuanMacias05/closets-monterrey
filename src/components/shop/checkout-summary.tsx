@@ -15,7 +15,7 @@ export function CheckoutSummary({ label, itemsTotalMxn, depositPercent, summary,
     <dl aria-live="polite" aria-label={label} className="grid grid-cols-[1fr_auto] gap-x-4 gap-y-1 text-sm text-stone-700 sm:max-w-sm">
       <dt>Prendas</dt><dd className="text-right text-stone-900">{formatPriceMXN(itemsTotalMxn)}</dd>
       {summary.method === "home_delivery" && <><dt>Envío aprox.</dt><dd className="text-right text-stone-900" data-testid="checkout-delivery-fee">{summary.feeMxn !== null ? formatPriceMXN(summary.feeMxn) : "elige tu municipio"}</dd></>}
-      {courier && <><dt>Recolectora</dt><dd className="text-right text-stone-900">{summary.feeMxn !== null ? formatPriceMXN(summary.feeMxn) : "elige una"}</dd></>}
+      {courier && <><dt>Recolección</dt><dd className="text-right text-stone-900">{summary.feeMxn !== null ? formatPriceMXN(summary.feeMxn) : "elige quién"}</dd></>}
       <dt className="font-semibold text-stone-900">Total</dt><dd className="text-right font-semibold text-stone-900" data-testid="checkout-total">{formatPriceMXN(quote.totalMxn)}</dd>
       {/* With a courier she pays only once the courier accepts. */}
       <dt>Anticipo ({depositPercent} %), {courier ? "cuando acepte" : "ahora"}</dt><dd className="text-right font-semibold text-stone-900" data-testid="checkout-deposit">{formatPriceMXN(quote.depositMxn)}</dd>

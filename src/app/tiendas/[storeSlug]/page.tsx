@@ -5,6 +5,10 @@ import { notFound } from "next/navigation";
 import { ProductCard } from "@/components/catalog/product-card";
 import { SellerDeliveryList } from "@/components/sellers/seller-delivery";
 import { StoreFooter } from "@/components/store/store-footer";
+import { SellerRatingBadge } from "@/components/sellers/seller-rating-badge";
+import { getSellerRating } from "@/features/sellers/seller-rating";
+import { ShareButton } from "@/components/share/share-button";
+import { storeShareDescription } from "@/features/share/share-text";
 import { StoreHeader } from "@/components/store/store-header";
 import { getSellerProducts } from "@/features/products/product-detail-data";
 import { getSellerPublicProfile } from "@/features/sellers/seller-storefront";
@@ -15,8 +19,16 @@ type PageProps = { params: Promise<{ storeSlug: string }> };
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const seller = await getSellerPublicProfile((await params).storeSlug);
-  if (!seller) return { title: "Tienda no encontrada | Closets Monterrey" };
-  return { title: `${seller.storeName} | Closets Monterrey`, description: `Prendas de ${seller.storeName} en Closets Monterrey.` };
+  if (!seller) return { title: "Bazar no encontrado | BZRS Monterrey" };
+  const available = (await getSellerProducts((await params).storeSlug)).filter((product) => product.sale_status === "available").length;
+  const description = storeShareDescription(seller.storeName, available);
+  // The image is opengraph-image.tsx next to this page (store photo or a collage of its garments).
+  return {
+    title: `${seller.storeName} | BZRS Monterrey`,
+    description,
+    openGraph: { type: "website", title: seller.storeName, description, url: `/tiendas/${seller.slug}`, siteName: "BZRS Monterrey", locale: "es_MX" },
+    twitter: { card: "summary_large_image", title: seller.storeName, description },
+  };
 }
 
 // A seller's public storefront: who she is, where she delivers and everything she has for
@@ -28,7 +40,7 @@ export default async function SellerStorefrontPage({ params }: PageProps) {
   const { storeSlug } = await params;
   const seller = await getSellerPublicProfile(storeSlug);
   if (!seller) notFound();
-  const [products, shop, viewer] = await Promise.all([getSellerProducts(storeSlug), getShopState(), getViewer()]);
+  const [products, shop, viewer, rating] = await Promise.all([getSellerProducts(storeSlug), getShopState(), getViewer(), getSellerRating(seller.id)]);
   const viewerId = viewer.kind === "guest" ? undefined : viewer.userId;
   const available = products.filter((product) => product.sale_status === "available").length;
 
@@ -48,9 +60,11 @@ export default async function SellerStorefrontPage({ params }: PageProps) {
               <span aria-hidden="true" className="grid size-20 place-items-center rounded-full bg-stone-200 font-serif text-3xl text-stone-700 sm:size-24">{seller.storeName.slice(0, 1).toUpperCase()}</span>
             )}
             <div>
-              <p className="text-[10px] uppercase tracking-[0.22em] text-stone-500">Vendedora</p>
+              <p className="text-[10px] uppercase tracking-[0.22em] text-stone-500">Bazar</p>
               <h1 className="mt-1 font-serif text-3xl tracking-tight text-stone-900 sm:text-4xl">{seller.storeName}</h1>
               <p className="mt-2 text-sm text-stone-600">{available} {available === 1 ? "prenda disponible" : "prendas disponibles"}</p>
+              <p className="mt-1"><SellerRatingBadge rating={rating} /></p>
+              <div className="mt-2"><ShareButton path={`/tiendas/${seller.slug}`} title={seller.storeName} text={storeShareDescription(seller.storeName, available)} trackStoreShare={viewerId !== undefined && viewerId === seller.id} /></div>
             </div>
           </div>
           <div className="border border-stone-200 bg-white p-5">
@@ -60,7 +74,7 @@ export default async function SellerStorefrontPage({ params }: PageProps) {
         </section>
 
         {products.length === 0 ? (
-          <p className="py-16 text-center text-sm text-stone-600">Esta tienda todavía no tiene prendas publicadas.</p>
+          <p className="py-16 text-center text-sm text-stone-600">Este bazar todavía no tiene prendas publicadas.</p>
         ) : (
           <div data-testid="seller-product-grid" className="mt-8 grid grid-cols-2 gap-x-3 gap-y-9 sm:grid-cols-3 sm:gap-x-5 lg:grid-cols-4 lg:gap-x-6">
             {products.map((product, index) => (

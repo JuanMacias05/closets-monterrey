@@ -1,5 +1,6 @@
 "use client";
 
+import { BrandWordmark } from "@/components/brand/brand-wordmark";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
@@ -53,7 +54,7 @@ export function MobileMenu({ signedIn, accountItems = [], accountExtra = [], ini
             <button type="button" aria-label="Cerrar menú" onClick={() => setOpen(false)} className="grid size-11 place-items-center">
               <svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M6 6l12 12M18 6L6 18" /></svg>
             </button>
-            <span className="font-serif text-xl normal-case tracking-tight">Closets Monterrey</span>
+            <BrandWordmark className="text-xl text-stone-900" />
             <span aria-hidden="true" className="size-11" />
           </div>
 
@@ -83,10 +84,6 @@ export function MobileMenu({ signedIn, accountItems = [], accountExtra = [], ini
           </nav>
 
           <div className="border-t border-stone-200 p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] font-condensed font-bold uppercase">
-            <Link href="/recolectoras" onClick={() => setOpen(false)} className="mb-2 flex min-h-11 items-center justify-between border-b border-stone-100">
-              Recolectoras verificadas
-              <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M9 6l6 6-6 6" /></svg>
-            </Link>
             {signedIn ? (
               <div className="mb-3">
                 <p id="mobile-account" className="pb-1 text-[10px] uppercase tracking-[0.22em] text-stone-500">Mi cuenta</p>

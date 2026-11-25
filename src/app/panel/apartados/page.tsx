@@ -13,7 +13,7 @@ import { deliveryFeeChange, deliveryGroup, sellerBalanceAtDelivery } from "@/fea
 import { proofReviewCutoff } from "@/features/support/support-contact";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
-export const metadata = { title: "Apartados | Closets Monterrey" };
+export const metadata = { title: "Apartados | BZRS Monterrey" };
 
 type ReservationRow = {
   id: string; buyer_id: string | null; status: string; items_total_mxn: number; deposit_percent: number; deposit_mxn: number;
@@ -87,7 +87,7 @@ export default async function SellerReservationsPage({ searchParams }: { searchP
   function renderReservation(reservation: ReservationRow) {
     const buyer = reservation.buyer_id ? buyerById.get(reservation.buyer_id) : undefined;
     const light = (reservation.buyer_id && lightById.get(reservation.buyer_id)) || "new";
-    const buyerName = buyer?.full_name ?? (reservation.buyer_id ? "Compradora" : "Cuenta borrada");
+    const buyerName = buyer?.full_name ?? (reservation.buyer_id ? "Cliente" : "Cuenta borrada");
     return (
       <li key={reservation.id} className={`bg-white p-5 ${underReview(reservation) ? "border-2 border-pine" : "border border-stone-200"}`}>
         <div className="flex flex-wrap items-center justify-between gap-2">
@@ -116,11 +116,11 @@ export default async function SellerReservationsPage({ searchParams }: { searchP
           <strong>Entrega:</strong>{" "}
           {reservation.delivery_method === "pickup_point" ? `Punto fijo · ${reservation.point?.name ?? ""}`
             : reservation.delivery_method === "home_delivery" ? `A domicilio${reservation.buyer_municipality ? ` en ${reservation.buyer_municipality}` : ""} (envío ${formatPriceMXN(reservation.delivery_fee_mxn)}) · ${reservation.delivery_address ?? ""}`
-            : reservation.delivery_method === "courier" ? `Recolectora ${reservation.courier?.full_name ?? ""} la recoge contigo en un punto fijo y la lleva a ${reservation.buyer_municipality ?? ""}${reservation.courier_fee_payment === "with_deposit" ? `; su tarifa (${formatPriceMXN(reservation.delivery_fee_mxn)}) viene en el anticipo: págasela tú` : ""}`
+            : reservation.delivery_method === "courier" ? `${reservation.courier?.full_name ?? "Recolección"} (recolección) la recoge contigo en un punto fijo y la lleva a ${reservation.buyer_municipality ?? ""}${reservation.courier_fee_payment === "with_deposit" ? `; su tarifa (${formatPriceMXN(reservation.delivery_fee_mxn)}) viene en el anticipo: págasela tú` : ""}`
             : "Acordar por WhatsApp"}
-          {reservation.status === "confirmed" && reservation.delivery_status === "picked_up" && " · Con la recolectora"}
+          {reservation.status === "confirmed" && reservation.delivery_status === "picked_up" && " · En recolección"}
           {reservation.status === "confirmed" && reservation.delivery_status === "on_the_way" && " · En camino"}
-          {reservation.delivery_method === "courier" && reservation.courier_whatsapp && <> · <a href={`https://wa.me/${reservation.courier_whatsapp.replace("+", "")}`} className="text-pine underline underline-offset-4">WhatsApp de la recolectora</a></>}
+          {reservation.delivery_method === "courier" && reservation.courier_whatsapp && <> · <a href={`https://wa.me/${reservation.courier_whatsapp.replace("+", "")}`} className="text-pine underline underline-offset-4">WhatsApp de quien recolecta</a></>}
         </p>
         <DeliveryFeeNote reservation={reservation} />
         {reservation.status === "pending_deposit" && <CourierRequestNote reservation={reservation} />}
@@ -137,8 +137,8 @@ export default async function SellerReservationsPage({ searchParams }: { searchP
         </div>
         {(chats.get(reservation.id)?.order || chats.get(reservation.id)?.pickup) && (
           <div className="mt-3 flex flex-wrap gap-2">
-            {chats.get(reservation.id)?.order && <ChatLink href={`/cuenta/mensajes/${chats.get(reservation.id)!.order!.id}`} label={`Mensajes con ${buyer?.full_name ?? "la clienta"}`} unread={chats.get(reservation.id)!.order!.unread} />}
-            {chats.get(reservation.id)?.pickup && <ChatLink href={`/cuenta/mensajes/${chats.get(reservation.id)!.pickup!.id}`} label="Mensajes con la recolectora" unread={chats.get(reservation.id)!.pickup!.unread} />}
+            {chats.get(reservation.id)?.order && <ChatLink href={`/cuenta/mensajes/${chats.get(reservation.id)!.order!.id}`} label={`Mensajes con ${buyer?.full_name ?? "tu cliente"}`} unread={chats.get(reservation.id)!.order!.unread} />}
+            {chats.get(reservation.id)?.pickup && <ChatLink href={`/cuenta/mensajes/${chats.get(reservation.id)!.pickup!.id}`} label="Mensajes con quien recolecta" unread={chats.get(reservation.id)!.pickup!.unread} />}
           </div>
         )}
       </li>
@@ -161,7 +161,7 @@ export default async function SellerReservationsPage({ searchParams }: { searchP
           ))}
         </nav>
       )}
-      {open.length === 0 ? <p className="py-6 text-sm text-stone-600">{activeGroup ? "No hay apartados abiertos con esta entrega." : "No tienes apartados abiertos. Cuando una clienta aparte una de tus prendas, aparece aquí para que confirmes su anticipo."}</p> : <ul className="mt-5 space-y-4">{open.map(renderReservation)}</ul>}
+      {open.length === 0 ? <p className="py-6 text-sm text-stone-600">{activeGroup ? "No hay apartados abiertos con esta entrega." : "No tienes apartados abiertos. Cuando alguien aparte una de tus prendas, aparece aquí para que confirmes su anticipo."}</p> : <ul className="mt-5 space-y-4">{open.map(renderReservation)}</ul>}
       {closed.length > 0 && (
         <details className="mt-8">
           <summary className="cursor-pointer py-3 text-sm font-medium text-stone-700">Historial ({closed.length})</summary>
@@ -187,7 +187,7 @@ function DeliveryFeeNote({ reservation }: { reservation: ReservationRow }) {
   if (canAdjustDeliveryFee(reservation) && reservation.delivery_fee_estimate_mxn !== null) {
     return (
       <p className="mt-1 text-sm text-stone-700">
-        Envío estimado{reservation.delivery_origin_municipality && reservation.buyer_municipality ? ` de ${reservation.delivery_origin_municipality} a ${reservation.buyer_municipality}` : ""} con las tarifas de Closets Monterrey. Si su dirección queda lejos, ajústalo antes de que te pague el anticipo.
+        Envío estimado{reservation.delivery_origin_municipality && reservation.buyer_municipality ? ` de ${reservation.delivery_origin_municipality} a ${reservation.buyer_municipality}` : ""} con las tarifas de BZRS Monterrey. Si su dirección queda lejos, ajústalo antes de que te pague el anticipo.
       </p>
     );
   }
@@ -199,20 +199,20 @@ function DeliveryFeeNote({ reservation }: { reservation: ReservationRow }) {
 function CourierRequestNote({ reservation }: { reservation: ReservationRow }) {
   const state = courierDeliveryState(reservation, reservation.requests);
   if (state.kind === "none") return null;
-  const name = state.request?.courier?.full_name ?? reservation.courier?.full_name ?? "La recolectora";
+  const name = state.request?.courier?.full_name ?? reservation.courier?.full_name ?? "Quien recolecta";
   if (state.kind === "accepted") {
     return <p className="mt-1 text-sm text-pine" data-testid="courier-status">✓ {name} aceptó la entrega.</p>;
   }
   if (state.kind === "waiting") {
     return (
       <p className="mt-2 bg-stone-100 p-3 text-sm text-stone-800" data-testid="courier-status">
-        Esperando a que <strong>{name}</strong> acepte la entrega{state.request ? ` (responde a más tardar ${dateFormat.format(new Date(state.request.expires_at))})` : ""}. La clienta paga su anticipo hasta que acepte; las prendas siguen apartadas.
+        Esperando a que <strong>{name}</strong> acepte la entrega{state.request ? ` (responde a más tardar ${dateFormat.format(new Date(state.request.expires_at))})` : ""}. Tu cliente paga su anticipo hasta que acepte; las prendas siguen apartadas.
       </p>
     );
   }
   return (
     <p className="mt-2 bg-amber-50 p-3 text-sm text-amber-900" data-testid="courier-status">
-      {name} {state.request?.status === "expired" ? "no respondió a tiempo" : "no aceptó"}. La clienta está eligiendo otra entrega; tiene hasta {dateFormat.format(new Date(reservation.expires_at))} o las prendas se liberan.
+      {name} {state.request?.status === "expired" ? "no respondió a tiempo" : "no aceptó"}. Tu cliente está eligiendo otra entrega; tiene hasta {dateFormat.format(new Date(reservation.expires_at))} o las prendas se liberan.
     </p>
   );
 }

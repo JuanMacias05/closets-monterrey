@@ -71,7 +71,7 @@ export function StoreSettingsForm(props: Props) {
         const { error: uploadError } = await supabase.storage
           .from("product-images")
           .upload(newAvatarPath, prepared.file, { contentType: "image/jpeg", upsert: false });
-        if (uploadError) throw new Error("No pudimos subir la foto de tu tienda.");
+        if (uploadError) throw new Error("No pudimos subir la foto de tu bazar.");
         nextAvatarPath = newAvatarPath;
       }
 
@@ -97,7 +97,7 @@ export function StoreSettingsForm(props: Props) {
         const { data, error: removeError } = await supabase?.storage.from("product-images").remove([newAvatarPath]) ?? { data: null, error: null };
         if (removeError || data?.length !== 1) console.error("No se pudo limpiar una foto de tienda que no se guardó.", removeError ?? { requested: 1, removed: data?.length ?? 0 });
       }
-      setError(cause instanceof Error ? cause.message : "No pudimos guardar la tienda.");
+      setError(cause instanceof Error ? cause.message : "No pudimos guardar tu bazar.");
     } finally {
       setBusy(false);
     }
@@ -111,10 +111,10 @@ export function StoreSettingsForm(props: Props) {
           // through the image optimizer at all.
           <Image src={shownAvatar} alt={`Foto de ${storeName}`} width={80} height={80} unoptimized className="size-20 shrink-0 rounded-full object-cover" />
         ) : (
-          <div aria-label="Sin foto de tienda" className="flex size-20 shrink-0 items-center justify-center rounded-full bg-stone-200 font-serif text-2xl text-stone-500">{storeName.trim().charAt(0).toUpperCase()}</div>
+          <div aria-label="Sin foto del bazar" className="flex size-20 shrink-0 items-center justify-center rounded-full bg-stone-200 font-serif text-2xl text-stone-500">{storeName.trim().charAt(0).toUpperCase()}</div>
         )}
         <div className="min-w-0 flex-1">
-          <p className="text-xs uppercase tracking-[0.16em] text-stone-600">Foto de tienda</p>
+          <p className="text-xs uppercase tracking-[0.16em] text-stone-600">Foto del bazar</p>
           <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1">
             {/* The native file input shows the browser's own text ("Choose file / No file chosen",
                 often in English), so it's hidden and this label opens it. */}
@@ -127,12 +127,12 @@ export function StoreSettingsForm(props: Props) {
               <button type="button" onClick={() => { setAvatarPath(null); setAvatarUrl(null); }} className="min-h-11 text-xs text-stone-600 underline underline-offset-4">Quitar foto</button>
             )}
           </div>
-          {avatarFile && <p className="mt-1 text-xs text-stone-500">Se guarda al dar “Guardar tienda”.</p>}
+          {avatarFile && <p className="mt-1 text-xs text-stone-500">Se guarda al dar “Guardar bazar”.</p>}
         </div>
       </div>
 
       <div>
-        <label htmlFor="store-name" className="block text-xs uppercase tracking-[0.16em] text-stone-600">Nombre de la tienda</label>
+        <label htmlFor="store-name" className="block text-xs uppercase tracking-[0.16em] text-stone-600">Nombre de tu bazar</label>
         <input id="store-name" value={storeName} onChange={(event) => setStoreName(event.target.value)} maxLength={80} required className="mt-2 min-h-12 w-full border-b border-stone-400 bg-transparent px-1 text-base outline-none focus:border-stone-900" />
       </div>
       <div>
@@ -155,13 +155,13 @@ export function StoreSettingsForm(props: Props) {
           <option value={10}>10 % del total</option>
           <option value={20}>20 % del total</option>
         </select>
-        <p className="mt-2 text-xs leading-5 text-stone-500">Lo que la clienta te transfiere para apartar. Tiene 24 horas; el resto se paga en la entrega.</p>
+        <p className="mt-2 text-xs leading-5 text-stone-500">Lo que tu cliente te transfiere para apartar. Tiene 24 horas; el resto se paga en la entrega.</p>
       </div>
 
       {error && <p role="alert" className="text-sm text-red-700">{error}</p>}
-      {saved && <p role="status" className="text-sm text-green-800">Tienda guardada.</p>}
+      {saved && <p role="status" className="text-sm text-green-800">Bazar guardado.</p>}
       <button type="submit" disabled={busy} className={`${PRIMARY_BUTTON_CLASS} w-full`}>
-        {busy ? "Guardando…" : "Guardar tienda"}
+        {busy ? "Guardando…" : "Guardar bazar"}
       </button>
     </form>
   );

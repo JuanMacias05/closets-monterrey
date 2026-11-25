@@ -32,27 +32,27 @@ test("admin can update her own store name, WhatsApp and valid CLABE", async ({ p
   await page.goto("/panel/tienda");
 
   await page.locator("#store-avatar").setInputFiles("e2e/fixtures/store-photo-800x600.jpg");
-  await page.getByLabel("Nombre de la tienda").fill("Closet admin de prueba");
+  await page.getByLabel("Nombre de tu bazar").fill("Closet admin de prueba");
   await page.getByLabel("WhatsApp").fill("81 1234 5678");
   await page.getByLabel("CLABE para recibir pagos").fill("000000000000000000");
-  await page.getByRole("button", { name: "Guardar tienda" }).click();
-  await expect(page.getByRole("status")).toHaveText("Tienda guardada.");
+  await page.getByRole("button", { name: "Guardar bazar" }).click();
+  await expect(page.getByRole("status")).toHaveText("Bazar guardado.");
   await expect(page.getByAltText("Foto de Closet admin de prueba")).toBeVisible();
 
   await page.reload();
-  await expect(page.getByLabel("Nombre de la tienda")).toHaveValue("Closet admin de prueba");
+  await expect(page.getByLabel("Nombre de tu bazar")).toHaveValue("Closet admin de prueba");
   await expect(page.getByLabel("WhatsApp")).toHaveValue("+52 81 1234 5678");
   await expect(page.getByLabel("CLABE para recibir pagos")).toHaveValue("000000000000000000");
 
   await page.locator("#store-avatar").setInputFiles("e2e/fixtures/store-photo.png");
-  await page.getByRole("button", { name: "Guardar tienda" }).click();
-  await expect(page.getByRole("status")).toHaveText("Tienda guardada.");
+  await page.getByRole("button", { name: "Guardar bazar" }).click();
+  await expect(page.getByRole("status")).toHaveText("Bazar guardado.");
 });
 
 test("store settings reject a CLABE with an invalid check digit", async ({ page }) => {
   await loginWithTestPhone(page, "+528100000001");
   await page.goto("/panel/tienda");
   await page.getByLabel("CLABE para recibir pagos").fill("000000000000000001");
-  await page.getByRole("button", { name: "Guardar tienda" }).click();
+  await page.getByRole("button", { name: "Guardar bazar" }).click();
   await expect(page.getByText("La CLABE debe tener 18 dígitos y un dígito verificador válido.", { exact: true })).toBeVisible();
 });

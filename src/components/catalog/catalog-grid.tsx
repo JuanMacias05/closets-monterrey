@@ -25,7 +25,7 @@ export function CatalogGrid({ result, filters, viewerId, favoriteIds, signedIn =
     return (
       <div className="border-y border-stone-200 py-20 text-center">
         <p className="font-serif text-2xl text-stone-800">Muy pronto, nuevas prendas.</p>
-        <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-stone-600">Nuestras vendedoras están preparando sus clósets. Vuelve en unos días para ver lo nuevo.</p>
+        <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-stone-600">Los bazares se están preparando. Vuelve en unos días para ver lo nuevo.</p>
       </div>
     );
   }

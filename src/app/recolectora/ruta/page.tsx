@@ -1,7 +1,7 @@
 import { CourierRouteForm } from "@/app/recolectora/courier-route-form";
 import { requireCourier } from "@/features/couriers/require-courier";
 
-export const metadata = { title: "Mi ruta | Closets Monterrey" };
+export const metadata = { title: "Mi ruta | BZRS Monterrey" };
 
 export default async function CourierRoutePage() {
   const { viewer, supabase } = await requireCourier("/recolectora/ruta");
@@ -14,7 +14,7 @@ export default async function CourierRoutePage() {
   return (
     <section>
       <h1 className="font-serif text-3xl tracking-tight text-stone-900">Mi ruta</h1>
-      <p className="mt-2 mb-6 max-w-2xl text-sm text-stone-600">Las clientas te pueden pedir si entregas en su municipio y recoges en un punto al que llega la vendedora.</p>
+      <p className="mt-2 mb-6 max-w-2xl text-sm text-stone-600">La clientela te puede pedir si entregas en su municipio y recoges en un punto al que llega la tienda.</p>
       <CourierRouteForm
         municipalities={courier?.municipalities ?? []}
         days={courier?.days ?? []}

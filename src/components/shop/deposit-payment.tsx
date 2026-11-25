@@ -165,7 +165,7 @@ export function DepositPayment(props: Props) {
             {method === "oxxo" ? "Folio del ticket (opcional)" : "Clave de rastreo (opcional)"}
           </label>
           <input id={`proof-ref-${props.reservationId}`} value={reference} maxLength={40} onChange={(event) => setReference(event.target.value)} autoComplete="off" className="mt-1 min-h-11 w-full border border-stone-300 bg-white px-2 font-mono text-sm" />
-          <p className="mt-1 text-xs text-stone-600">{method === "oxxo" ? "Viene impreso en tu ticket." : "Viene en tu comprobante; con ella la vendedora verifica tu transferencia en Banxico."} Solo {props.sellerName} y tú ven tu comprobante.</p>
+          <p className="mt-1 text-xs text-stone-600">{method === "oxxo" ? "Viene impreso en tu ticket." : "Viene en tu comprobante; con ella la tienda verifica tu transferencia en Banxico."} Solo {props.sellerName} y tú ven tu comprobante.</p>
         </div>
         <div className="flex flex-wrap gap-3">
           <button type="submit" disabled={busy} className="min-h-12 bg-pine px-5 font-condensed text-base font-bold uppercase text-white disabled:opacity-60">{busy ? "Enviando…" : `Enviar ${proofWord}`}</button>

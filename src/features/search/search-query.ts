@@ -1,4 +1,5 @@
-import { PRODUCT_CATEGORIES, type CatalogProduct } from "@/features/products/types";
+import { categoryLabel } from "@/features/products/section-categories";
+import type { CatalogProduct } from "@/features/products/types";
 
 // Query rules for the store search. They mirror private.search_tokens / search_tsquery in
 // supabase/migrations/20261122000100_store_search.sql, which does the real matching; this copy
@@ -62,8 +63,9 @@ export function isLiveSearchable(query: string): boolean {
 }
 
 function productSearchWords(product: CatalogProduct): string[] {
-  const categoryLabel = PRODUCT_CATEGORIES.find((category) => category.value === product.category)?.label ?? product.category;
-  return normalizeSearchText([product.name, product.size, categoryLabel, product.description].join(" ")).split(" ");
+  // Every wording of its category matches ("blusa" and "playera" both find a top), labelled by audience elsewhere.
+  const labels = [categoryLabel(product.category, product.audience), categoryLabel(product.category, "women"), categoryLabel(product.category, "unisex")];
+  return normalizeSearchText([product.name, product.size, ...labels, product.description].join(" ")).split(" ");
 }
 
 export function productMatchesSearch(product: CatalogProduct, tokens: string[]): boolean {

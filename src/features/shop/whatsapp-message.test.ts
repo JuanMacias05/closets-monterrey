@@ -15,7 +15,7 @@ describe("reservationNoticeMessage", () => {
       items: [{ name: "Jeans rectos", priceMxn: 42000 }],
       delivery_method: "pickup_point", point: { name: "Estación Padre Mier" }, courier: null,
     });
-    expect(message).toContain("Hola, Closet de Renata, soy Ana. Te aparté en Closets Monterrey:");
+    expect(message).toContain("Hola, Closet de Renata, soy Ana. Te aparté en BZRS Monterrey:");
     expect(message).toContain("• Jeans rectos ($420.00 MXN)");
     expect(message).toContain("Anticipo: $84.00 MXN. Entrega: Estación Padre Mier.");
   });

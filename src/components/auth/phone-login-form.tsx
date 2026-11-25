@@ -60,7 +60,7 @@ export function PhoneLoginForm({ mode = "login", nextPath, onVerified }: {
     }
     const trimmedStoreName = storeName.trim();
     if (mode === "seller-signup" && (trimmedStoreName.length === 0 || trimmedStoreName.length > 60)) {
-      setError("Escribe el nombre de tu clóset (máximo 60 caracteres).");
+      setError("Escribe el nombre de tu bazar (máximo 60 caracteres).");
       return;
     }
     const trimmedFullName = fullName.trim();
@@ -174,7 +174,7 @@ export function PhoneLoginForm({ mode = "login", nextPath, onVerified }: {
               <input id="full-name" type="text" autoComplete="name" placeholder="Ana López" value={fullName} onChange={(event) => setFullName(event.target.value)} maxLength={80} required className="min-h-12 w-full border-b border-stone-400 bg-transparent px-1 text-base outline-none focus:border-stone-900" />
               <label htmlFor="facebook-url" className="block text-xs uppercase tracking-[0.16em] text-stone-600">Link de tu perfil de Facebook</label>
               <input id="facebook-url" type="text" inputMode="url" autoCapitalize="none" autoCorrect="off" placeholder="https://facebook.com/tu.nombre" value={facebookUrl} onChange={(event) => setFacebookUrl(event.target.value)} required className="min-h-12 w-full border-b border-stone-400 bg-transparent px-1 text-base outline-none focus:border-stone-900" />
-              <p className="text-xs leading-5 text-stone-600">Las vendedoras lo ven solo cuando les apartas una prenda, para saber con quién tratan.</p>
+              <p className="text-xs leading-5 text-stone-600">Las tiendas lo ven solo cuando les apartas una prenda, para saber con quién tratan.</p>
             </>
           )}
           {mode === "courier-signup" && (
@@ -185,12 +185,12 @@ export function PhoneLoginForm({ mode = "login", nextPath, onVerified }: {
           )}
           {mode === "seller-signup" && (
             <>
-              <label htmlFor="store-name" className="block text-xs uppercase tracking-[0.16em] text-stone-600">Nombre de tu clóset</label>
+              <label htmlFor="store-name" className="block text-xs uppercase tracking-[0.16em] text-stone-600">Nombre de tu bazar</label>
               <input
                 id="store-name"
                 type="text"
                 autoComplete="organization"
-                placeholder="El clóset de Ana"
+                placeholder="El bazar de Ana"
                 value={storeName}
                 onChange={(event) => setStoreName(event.target.value)}
                 maxLength={60}

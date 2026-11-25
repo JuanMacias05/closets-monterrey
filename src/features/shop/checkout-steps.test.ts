@@ -45,13 +45,13 @@ describe("deliveryDraftError", () => {
   it("asks for municipality, a courier and an address in order", () => {
     const courier = { ...base, wantsCourier: true };
     expect(deliveryDraftError(options, courier)).toMatch(/Elige tu municipio/);
-    expect(deliveryDraftError(options, { ...courier, municipality: "Apodaca" })).toMatch(/Ninguna recolectora disponible cubre Apodaca/);
-    expect(deliveryDraftError(options, { ...courier, municipality: "Monterrey" })).toBe("Elige una recolectora.");
+    expect(deliveryDraftError(options, { ...courier, municipality: "Apodaca" })).toMatch(/Nadie más recolecta en Apodaca/);
+    expect(deliveryDraftError(options, { ...courier, municipality: "Monterrey" })).toBe("Elige quién recolecta.");
     expect(deliveryDraftError(options, { ...courier, municipality: "Monterrey", courierId: "c1" })).toMatch(/dirección completa/);
     expect(deliveryDraftError(options, { ...courier, municipality: "Monterrey", courierId: "c1", address })).toBeNull();
   });
   it("does not accept a courier who already said no", () => {
-    expect(deliveryDraftError(options, { ...base, wantsCourier: true, municipality: "Monterrey", courierId: "c1", address }, ["c1"])).toBe("Elige una recolectora.");
+    expect(deliveryDraftError(options, { ...base, wantsCourier: true, municipality: "Monterrey", courierId: "c1", address }, ["c1"])).toBe("Elige quién recolecta.");
   });
   it("needs a zone rate for home delivery", () => {
     expect(deliveryDraftError(options, { ...base, choice: "home", municipality: "Apodaca", address })).toMatch(/no hay tarifa de envío a Apodaca/);
@@ -65,7 +65,7 @@ describe("summarizeDraft / draftToChoice / describeDraft", () => {
     const summary = summarizeDraft(options, draft);
     expect(summary).toMatchObject({ method: "courier", feeMxn: 5000 });
     expect(draftToChoice(options, draft)).toEqual({ method: "courier", courierId: "c2", municipality: "Monterrey", address: "Calle 1 #2, Centro", feePayment: "with_deposit" });
-    expect(describeDraft(summary, draft)).toBe("Recolectora ✓ Rosa a Monterrey · su tarifa va incluida en tu anticipo");
+    expect(describeDraft(summary, draft)).toBe("Recolección ✓ Rosa a Monterrey · su tarifa va incluida en tu anticipo");
   });
   it("keeps the fee unknown until a municipality prices home delivery", () => {
     expect(summarizeDraft(options, { ...initialDeliveryDraft(options), choice: "home" }).feeMxn).toBeNull();

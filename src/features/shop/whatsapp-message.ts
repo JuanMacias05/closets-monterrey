@@ -21,9 +21,9 @@ export function reservationNoticeMessage(notice: ReservationNotice) {
   const who = notice.buyerName ? `, soy ${notice.buyerName}` : "";
   const items = notice.items.map((item) => `• ${item.name} (${formatPriceMXN(item.priceMxn)})`);
   return [
-    `${greeting}${who}. Te aparté en Closets Monterrey:`,
+    `${greeting}${who}. Te aparté en BZRS Monterrey:`,
     ...items,
     `Anticipo: ${formatPriceMXN(notice.depositMxn)}. Entrega: ${deliveryGroup(notice).label}.`,
-    "Te subo el comprobante en Closets Monterrey para que lo revises.",
+    "Te subo el comprobante en BZRS Monterrey para que lo revises.",
   ].join("\n");
 }

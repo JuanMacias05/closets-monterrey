@@ -32,6 +32,20 @@ function mockAdmin() {
   return { supabase, filters, update, remove };
 }
 
+describe("garment category rules on the server", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("rejects a dress for Hombre without writing anything", async () => {
+    const { supabase, update } = mockAdmin();
+    vi.mocked(createSupabaseServerClient).mockResolvedValue(supabase as never);
+    const result = await updateProduct(foreignProductId, {
+      name: "Vestido", description: "", category: "dresses", audience: "men", size: "M", condition: "new", price_mxn: 10000,
+    });
+    expect(result).toEqual({ ok: false, error: "Para Hombre no hay categoría Vestidos. Elige otra categoría." });
+    expect(update).not.toHaveBeenCalled();
+  });
+});
+
 describe("product actions enforce ownership for admins too", () => {
   beforeEach(() => vi.clearAllMocks());
 
@@ -58,7 +72,7 @@ describe("product actions enforce ownership for admins too", () => {
       name: "Cambio ajeno", description: "", category: "tops", size: "M", condition: "new", price_mxn: 10000,
     });
 
-    expect(result).toEqual({ ok: false, error: "No encontramos esa prenda en tu tienda." });
+    expect(result).toEqual({ ok: false, error: "No encontramos esa prenda en tu bazar." });
     expect(filters).toContainEqual(["seller_id", adminId]);
     expect(update).not.toHaveBeenCalled();
   });
@@ -69,7 +83,7 @@ describe("product actions enforce ownership for admins too", () => {
 
     const result = await deleteProductWithImages(foreignProductId);
 
-    expect(result).toEqual({ ok: false, error: "No encontramos esa prenda en tu tienda." });
+    expect(result).toEqual({ ok: false, error: "No encontramos esa prenda en tu bazar." });
     expect(filters).toContainEqual(["seller_id", adminId]);
     expect(remove).not.toHaveBeenCalled();
   });
@@ -80,7 +94,7 @@ describe("product actions enforce ownership for admins too", () => {
 
     const result = await setProductPrice(foreignProductId, 25000);
 
-    expect(result).toEqual({ ok: false, error: "No encontramos esa prenda en tu tienda." });
+    expect(result).toEqual({ ok: false, error: "No encontramos esa prenda en tu bazar." });
     expect(filters).toContainEqual(["seller_id", adminId]);
     expect(update).not.toHaveBeenCalled();
   });

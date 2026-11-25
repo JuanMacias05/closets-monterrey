@@ -74,9 +74,9 @@ async function reservationInfo(reservationIds: string[]) {
 // Who she is talking to, seen from her side. order: buyer-seller; pickup: seller-courier;
 // delivery: buyer-courier (20261126000200).
 function counterpart(area: ChatArea, kind: ConversationKind, reservation: ReservationInfo | undefined, buyers: Map<string, string>) {
-  const buyer = (reservation?.buyer_id && buyers.get(reservation.buyer_id)) || (reservation?.buyer_id ? "Compradora" : "Cuenta borrada");
-  const courier = `Recolectora ${reservation?.courier?.full_name ?? ""}`.trim();
-  const store = reservation?.seller?.store_name ?? "Vendedora";
+  const buyer = (reservation?.buyer_id && buyers.get(reservation.buyer_id)) || (reservation?.buyer_id ? "Cliente" : "Cuenta borrada");
+  const courier = `Recolección · ${reservation?.courier?.full_name ?? ""}`.trim();
+  const store = reservation?.seller?.store_name ?? "Tienda";
   if (area === "buyer") return kind === "delivery" ? courier : store;
   if (area === "courier") return kind === "delivery" ? buyer : store;
   return kind === "pickup" ? courier : buyer;
@@ -130,9 +130,9 @@ export async function loadConversation(conversationId: string): Promise<LoadedCo
   const { data: sellerRow } = await supabase.from("reservations").select("seller_id,courier_id").eq("id", mine.reservation_id).maybeSingle();
   // Names by sender id: the other participants as she knows them, and "Tú" for herself.
   const names: Record<string, string> = { [user.id]: "Tú" };
-  if (sellerRow?.seller_id && sellerRow.seller_id !== user.id) names[sellerRow.seller_id] = reservation?.seller?.store_name ?? "Vendedora";
-  if (reservation?.buyer_id && reservation.buyer_id !== user.id) names[reservation.buyer_id] = buyers.get(reservation.buyer_id) ?? "Compradora";
-  if (sellerRow?.courier_id && sellerRow.courier_id !== user.id) names[sellerRow.courier_id] = reservation?.courier?.full_name ?? "Recolectora";
+  if (sellerRow?.seller_id && sellerRow.seller_id !== user.id) names[sellerRow.seller_id] = reservation?.seller?.store_name ?? "Tienda";
+  if (reservation?.buyer_id && reservation.buyer_id !== user.id) names[reservation.buyer_id] = buyers.get(reservation.buyer_id) ?? "Cliente";
+  if (sellerRow?.courier_id && sellerRow.courier_id !== user.id) names[sellerRow.courier_id] = reservation?.courier?.full_name ?? "Recolección";
 
   const messages = ((latest ?? []) as ChatMessage[]).toReversed();
   // Private bucket: photos are read through signed URLs, which row security lets only the

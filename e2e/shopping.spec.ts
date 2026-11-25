@@ -9,7 +9,7 @@ const OXXO_CARD = "4111111111111111"; // test card number with a valid check dig
 const PRODUCT_ID = "20000000-0000-4000-8000-000000000003"; // Jeans rectos azul medio, $420
 const PRODUCT_SLUG = "jeans-rectos-azul";
 const PRODUCT_NAME = "Jeans rectos azul medio";
-const WRONG_PIN_ERROR = "Ese código no coincide. Pídeselo de nuevo a la clienta.";
+const WRONG_PIN_ERROR = "Ese código no coincide. Pídeselo de nuevo a tu cliente.";
 const SERVER_ACTION_TIMEOUT = 15_000;
 
 function adminHeaders() {
@@ -188,4 +188,13 @@ test("a shopper saves a favorite, reserves from her cart and the seller complete
 
   await page.reload();
   await expect(page.locator('[aria-current="step"]').filter({ hasText: "Entregada" })).toBeVisible();
+
+  // Once delivered she rates the store, once (20261128000100); its page shows the average.
+  const rating = page.getByRole("form", { name: "Calificar a Closet de Renata" }).first();
+  await rating.getByRole("button", { name: "5 de 5 estrellas para la tienda" }).click();
+  await rating.getByLabel(/Comentario/).fill("Todo perfecto, muy amable.");
+  await rating.getByRole("button", { name: "Enviar calificación" }).click();
+  await expect(page.getByText("Calificaste a la tienda con 5 ★").first()).toBeVisible({ timeout: SERVER_ACTION_TIMEOUT });
+  await page.goto("/tiendas/closet-de-renata");
+  await expect(page.getByTestId("seller-rating")).toContainText(/★ \d\.\d · \d+ calificaci/);
 });

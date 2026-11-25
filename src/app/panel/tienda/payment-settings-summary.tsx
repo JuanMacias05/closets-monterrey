@@ -2,7 +2,7 @@ import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 // One line under "Entregas" on the garment screens. Sellers look for store-wide settings
-// there, and how buyers pay lives in "Editar tienda", so this says what's set and links to it.
+// there, and how buyers pay lives in "Editar bazar", so this says what's set and links to it.
 export async function PaymentSettingsSummary({ sellerId }: { sellerId: string }) {
   const supabase = await createSupabaseServerClient();
   if (!supabase) return null;

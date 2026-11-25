@@ -83,7 +83,7 @@ export type CourierNotice = { tone: "info" | "success" | "warning"; title: strin
 // formatted deadline that matters in each state: the courier's answer while waiting, the
 // payment deadline once accepted, the time to choose again after a no.
 export function buyerCourierNotice(state: CourierDeliveryState, deadlineLabel: string): CourierNotice | null {
-  const name = state.kind === "none" ? "" : state.request?.courier?.full_name ?? "La recolectora";
+  const name = state.kind === "none" ? "" : state.request?.courier?.full_name ?? "Quien recolecta";
   switch (state.kind) {
     case "none":
       return null;
@@ -107,8 +107,8 @@ export function buyerCourierNotice(state: CourierDeliveryState, deadlineLabel: s
           : `${name} no puede llevar tu pedido.`;
       return {
         tone: "warning",
-        title: state.request?.status === "expired" ? "Tu recolectora no respondió" : "Tu recolectora no aceptó",
-        body: `${why} Elige otra recolectora o cambia a punto fijo o envío a domicilio antes del ${deadlineLabel}; si no, tus prendas se liberan. No has pagado nada.`,
+        title: state.request?.status === "expired" ? "Quien recolecta no respondió" : "Quien recolecta no aceptó",
+        body: `${why} Pide a alguien más o cambia a punto fijo o envío a domicilio antes del ${deadlineLabel}; si no, tus prendas se liberan. No has pagado nada.`,
       };
     }
   }

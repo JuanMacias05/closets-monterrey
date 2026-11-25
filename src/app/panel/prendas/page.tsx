@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { getProductImageUrl } from "@/features/products/public-images";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { PRIMARY_BUTTON_CLASS } from "@/components/panel/panel-styles";
-import { ShareLinkButton } from "@/components/panel/share-link-button";
+import { ShareButton } from "@/components/share/share-button";
 import { formatPriceMXN } from "@/features/products/format-price";
 import { ProductListActions } from "@/app/panel/prendas/product-list-actions";
 import { ProductPriceEditor } from "@/app/panel/prendas/product-price-editor";
@@ -49,7 +49,7 @@ export default async function ProductsPage() {
             const actions = (
               <div className="flex flex-wrap items-start gap-x-4 sm:flex-col sm:items-end">
                 <ProductListActions productId={product.id} saleStatus={product.sale_status} />
-                {shareable && <ShareLinkButton path={`/prendas/${product.slug}`} title={product.name} text={`${product.name} · ${formatPriceMXN(product.price_mxn)}`} />}
+                {shareable && <ShareButton path={`/prendas/${product.slug}`} title={product.name} text={`${product.name} · ${formatPriceMXN(product.price_mxn)}`} />}
               </div>
             );
             return (

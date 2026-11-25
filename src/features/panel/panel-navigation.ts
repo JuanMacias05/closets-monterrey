@@ -1,6 +1,6 @@
 // What the "PANEL ▾" menu in the green top bar and the "MI CUENTA ▾" menu list (accounts and menu
 // proposal, approved 2026-11-21). One account can hold several activities (20261127000100), so
-// the panel menu shows one column per activity: "Tu clóset" (selling), "Tus entregas"
+// the panel menu shows one column per activity: "Tu bazar" (selling), "Tus entregas"
 // (delivering) and "Administración del sitio" (admin).
 //
 // IMPORTANT: these lists only decide which links to draw. Every page re-checks access on the
@@ -21,7 +21,7 @@ export type PanelNavItem = {
   href: string | null;
   // Things waiting for her there (e.g. courier requests to answer). Hidden at 0.
   badge?: { count: number; label: string };
-  // Not a page: "Ver como clienta" switches how the store is drawn (a server action).
+  // Not a page: "Ver como cliente" switches how the store is drawn (a server action).
   action?: "view-as-buyer";
 };
 
@@ -32,7 +32,7 @@ export type ActivityFlags = { seller: ActivityStatus | null; courier: ActivitySt
 
 export const SELLER_NAV_GROUP: PanelNavGroup = {
   id: "panel-nav-store",
-  label: "Tu clóset",
+  label: "Tu bazar",
   items: [
     { label: "Inicio", icon: "home", href: "/panel" },
     { label: "Mis prendas", icon: "garments", href: "/panel/prendas" },
@@ -40,9 +40,10 @@ export const SELLER_NAV_GROUP: PanelNavGroup = {
     // and two names for one action read as two different things.
     { label: "Subir prenda", icon: "add", href: "/panel/prendas/nueva" },
     { label: "Apartados", icon: "reservations", href: "/panel/apartados" },
+    { label: "Calificaciones", icon: "ratings", href: "/panel/calificaciones" },
     // Couriers who collect at her points: who can take her buyers' orders.
-    { label: "Recolectoras", icon: "couriers", href: "/panel/recolectoras" },
-    { label: "Mi tienda", icon: "store", href: "/panel/tienda" },
+    { label: "Recolección", icon: "couriers", href: "/panel/recolectoras" },
+    { label: "Mi bazar", icon: "store", href: "/panel/tienda" },
     // Live sales are planned, not built: the item announces them without a route behind it.
     { label: "En vivo", icon: "live", href: null },
   ],
@@ -52,21 +53,21 @@ export const ADMIN_NAV_GROUP: PanelNavGroup = {
   id: "panel-nav-admin",
   label: "Administración del sitio",
   items: [
-    { label: "Vendedoras", icon: "sellers", href: "/panel/admin/vendedoras" },
-    { label: "Clientas", icon: "buyers", href: "/panel/admin/clientas" },
-    // Not just "Recolectoras": a seller-admin also has "Recolectoras" in Tu clóset.
-    { label: "Verificar recolectoras", icon: "verify", href: "/panel/admin/recolectoras" },
+    { label: "Bazares", icon: "sellers", href: "/panel/admin/vendedoras" },
+    { label: "Clientes", icon: "buyers", href: "/panel/admin/clientas" },
+    // Not just "Recolección": a seller-admin also has "Recolección" in Tu bazar.
+    { label: "Verificar quién entrega", icon: "verify", href: "/panel/admin/recolectoras" },
     { label: "Tarifas de envío", icon: "rates", href: "/panel/admin/tarifas-envio" },
     { label: "Todas las prendas", icon: "allGarments", href: "/panel/admin/prendas" },
     { label: "Soporte", icon: "support", href: "/panel/admin/soporte" },
-    { label: "Ver como clienta", icon: "eye", href: null, action: "view-as-buyer" },
+    { label: "Ver como cliente", icon: "eye", href: null, action: "view-as-buyer" },
   ],
 };
 
-export const SELLER_PENDING_NOTE = "Tu clóset está en revisión. Te avisamos en cuanto la administración lo apruebe.";
-export const SELLER_SUSPENDED_NOTE = "Tu clóset está suspendido. Comunícate con la administración si necesitas ayuda.";
+export const SELLER_PENDING_NOTE = "Tu bazar está en revisión. Te avisamos en cuanto la administración lo apruebe.";
+export const SELLER_SUSPENDED_NOTE = "Tu bazar está suspendido. Comunícate con la administración si necesitas ayuda.";
 export const COURIER_PENDING_NOTE = "Falta tu verificación: la administración te cita para revisar tu identificación.";
-export const COURIER_SUSPENDED_NOTE = "Tu cuenta de recolectora está suspendida. Comunícate con la administración.";
+export const COURIER_SUSPENDED_NOTE = "Tu cuenta para entregar está suspendida. Comunícate con la administración.";
 
 // A courier's sections. "Solicitudes" carries the count of requests waiting for her answer:
 // each one expires in 2 hours, so it is the thing she must not miss. Her chats are in Mi cuenta.
@@ -114,7 +115,7 @@ export function canUploadGarments(flags: ActivityFlags): boolean {
 // The green bar's tag: who she is in the panel.
 export function panelTag(flags: ActivityFlags): string {
   if (flags.admin) return "Administración";
-  return [flags.seller && "Vendedora", flags.courier && "Recolectora"].filter(Boolean).join(" · ");
+  return [flags.seller && "Vende", flags.courier && "Entrega"].filter(Boolean).join(" · ");
 }
 
 export function panelBadgeTotal(groups: readonly PanelNavGroup[]): number {
@@ -163,5 +164,5 @@ export function accountMenu(flags: ActivityFlags, unreadMessages: number): { ite
   return { items, extra };
 }
 
-// What a buyer-only account has: "Ver como clienta" draws the store with these flags.
+// What a buyer-only account has: "Ver como cliente" draws the store with these flags.
 export const BUYER_ONLY: ActivityFlags = { seller: null, courier: null, admin: false };

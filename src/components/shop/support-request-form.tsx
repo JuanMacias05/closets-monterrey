@@ -6,9 +6,9 @@ import { requestSupport, type SupportReason } from "@/features/shop/actions";
 import { SUPPORT_CONTACT } from "@/features/support/support-contact";
 
 const INTRO: Record<SupportReason, string> = {
-  proof_rejected: "¿Sí pagaste? Si el dinero salió de tu cuenta o pagaste en OXXO, revisamos tu caso con la vendedora.",
+  proof_rejected: "¿Sí pagaste? Si el dinero salió de tu cuenta o pagaste en OXXO, revisamos tu caso con la tienda.",
   proof_not_reviewed: "Te ayudamos a que revisen tu comprobante.",
-  released_after_paying: "¿Ya habías pagado tu anticipo? Cuéntanos y lo revisamos con la vendedora.",
+  released_after_paying: "¿Ya habías pagado tu anticipo? Cuéntanos y lo revisamos con la tienda.",
   other: "Cuéntanos qué pasó con tu apartado.",
 };
 

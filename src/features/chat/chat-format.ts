@@ -40,7 +40,7 @@ export function conversationHref(conversationId: string): string {
 
 // The label on each conversation in the inbox: what the chat is about, from her side.
 export function conversationRoleLabel(kind: ConversationKind, role: ChatArea): string {
-  if (kind === "order") return role === "seller" ? "Como vendedora" : "Como clienta";
+  if (kind === "order") return role === "seller" ? "Venta" : "Compra";
   return "Entrega";
 }
 

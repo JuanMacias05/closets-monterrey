@@ -10,7 +10,7 @@ import { getProductImageUrl } from "@/features/products/public-images";
 import { getSellerDeliveryOptions } from "@/features/shop/seller-delivery-options";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
-export const metadata = { title: "Carrito | Closets Monterrey" };
+export const metadata = { title: "Carrito | BZRS Monterrey" };
 
 type CartRow = {
   product: {
@@ -57,7 +57,7 @@ export default async function CartPage() {
       <StoreHeader />
       <main className="mx-auto min-h-screen w-full max-w-4xl px-4 pb-16 pt-8 sm:px-8">
         <h1 className="font-heavy text-4xl uppercase tracking-tight text-stone-900 sm:text-5xl">Carrito</h1>
-        <p className="mt-3 max-w-2xl text-sm leading-6 text-stone-600">Tener una prenda aquí no la aparta. Se aparta en tres pasos: tus prendas, cómo las recibes y el anticipo. Tienes 24 horas para transferir el anticipo a la vendedora (si pides recolectora, desde que ella acepta) y el resto se paga en la entrega.</p>
+        <p className="mt-3 max-w-2xl text-sm leading-6 text-stone-600">Tener una prenda aquí no la aparta. Se aparta en tres pasos: tus prendas, cómo las recibes y el anticipo. Tienes 24 horas para transferir el anticipo a la tienda (si pides recolección, desde que te la aceptan) y el resto se paga en la entrega.</p>
 
         {groups.length === 0 ? (
           <div className="mt-10 border-y border-stone-200 py-16 text-center">
@@ -69,7 +69,7 @@ export default async function CartPage() {
             {!buyer && (
               <section className="mt-8 border border-amber-700 bg-amber-50 p-5">
                 <h2 className="font-condensed text-lg font-bold uppercase text-stone-900">Antes de apartar</h2>
-                <p className="mt-1 mb-4 text-sm text-stone-700">Las vendedoras necesitan saber quién aparta. Completa tu nombre y tu perfil de Facebook.</p>
+                <p className="mt-1 mb-4 text-sm text-stone-700">Las tiendas necesitan saber quién aparta. Completa tu nombre y tu perfil de Facebook.</p>
                 <BuyerProfileForm submitLabel="Guardar mis datos" />
               </section>
             )}
@@ -107,7 +107,7 @@ export default async function CartPage() {
                     disabled={!buyer || !group.accepting || group.availableCount === 0 || group.unavailableCount > 0}
                   />
                 </div>
-                {!group.accepting && <p className="mt-2 text-sm text-stone-600">Esta vendedora todavía no registra su CLABE, así que aún no se puede apartar.</p>}
+                {!group.accepting && <p className="mt-2 text-sm text-stone-600">Esta tienda todavía no registra su CLABE, así que aún no se puede apartar.</p>}
                 {group.accepting && group.unavailableCount > 0 && <p className="mt-2 text-sm text-stone-600">Quita las prendas que ya no están disponibles para poder apartar.</p>}
               </section>
             ))}

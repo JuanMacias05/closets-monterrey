@@ -94,7 +94,7 @@ describe("buyerCourierNotice", () => {
   });
   it("quotes the courier's reason after a no", () => {
     const notice = buyerCourierNotice({ kind: "needs_choice", request: request({ status: "rejected", rejection_reason: "Muy lejos" }) }, "20 nov 22:00");
-    expect(notice?.title).toBe("Tu recolectora no aceptó");
+    expect(notice?.title).toBe("Quien recolecta no aceptó");
     expect(notice?.body).toContain("Lupita no puede llevar tu pedido: “Muy lejos”.");
   });
   it("says when she simply didn't answer", () => {

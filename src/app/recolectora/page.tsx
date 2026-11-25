@@ -5,7 +5,7 @@ import { conversationLinks, type ChatLinks } from "@/features/chat/chat-data";
 import { requireCourier } from "@/features/couriers/require-courier";
 import { formatPriceMXN } from "@/features/products/format-price";
 
-export const metadata = { title: "Mis entregas | Closets Monterrey" };
+export const metadata = { title: "Mis entregas | BZRS Monterrey" };
 
 type Assignment = {
   id: string; status: string; buyer_id: string | null; delivery_status: string; delivery_address: string | null; buyer_municipality: string | null;
@@ -53,7 +53,7 @@ export default async function CourierDeliveriesPage() {
 
       <h2 className="mt-8 font-condensed text-2xl font-bold uppercase text-stone-900">Por entregar</h2>
       {toDeliver.length === 0 ? (
-        <p className="mt-3 text-sm text-stone-600">No tienes entregas por ahora. Te aparecen aquí cuando la vendedora confirma el anticipo de un pedido que aceptaste.</p>
+        <p className="mt-3 text-sm text-stone-600">No tienes entregas por ahora. Te aparecen aquí cuando la tienda confirma el anticipo de un pedido que aceptaste.</p>
       ) : (
         <ul className="mt-4 space-y-4">
           {toDeliver.map((assignment) => {
@@ -61,15 +61,15 @@ export default async function CourierDeliveriesPage() {
             return (
               <li key={assignment.id} className="border border-stone-200 bg-white p-5">
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <p className="font-medium text-stone-900">Para {buyer?.full_name ?? "la clienta"} · {assignment.buyer_municipality}</p>
+                  <p className="font-medium text-stone-900">Para {buyer?.full_name ?? "tu cliente"} · {assignment.buyer_municipality}</p>
                   <span className="bg-stone-100 px-2 py-1 font-condensed text-sm font-bold uppercase text-stone-800">{STEP_LABELS[assignment.delivery_status] ?? assignment.delivery_status}</span>
                 </div>
-                <p className="mt-2 text-sm text-stone-700"><strong>Recoges con:</strong> {assignment.seller?.store_name ?? "la vendedora"}{assignment.seller_whatsapp && <> · <a href={`https://wa.me/${assignment.seller_whatsapp.replace("+", "")}`} className="text-pine underline underline-offset-4">WhatsApp</a></>}</p>
-                <p className="text-sm text-stone-700"><strong>Entregas en:</strong> {assignment.delivery_address}{buyer?.phone_e164 && <> · <a href={`https://wa.me/${buyer.phone_e164.replace("+", "")}`} className="text-pine underline underline-offset-4">WhatsApp de la clienta</a></>}</p>
+                <p className="mt-2 text-sm text-stone-700"><strong>Recoges con:</strong> {assignment.seller?.store_name ?? "la tienda"}{assignment.seller_whatsapp && <> · <a href={`https://wa.me/${assignment.seller_whatsapp.replace("+", "")}`} className="text-pine underline underline-offset-4">WhatsApp</a></>}</p>
+                <p className="text-sm text-stone-700"><strong>Entregas en:</strong> {assignment.delivery_address}{buyer?.phone_e164 && <> · <a href={`https://wa.me/${buyer.phone_e164.replace("+", "")}`} className="text-pine underline underline-offset-4">WhatsApp de tu cliente</a></>}</p>
                 <p className="text-sm text-stone-700"><strong>Prendas:</strong> {(assignment.items ?? []).map((item) => item.product?.name ?? "Prenda").join(", ")}</p>
-                <p className="text-sm text-stone-700"><strong>Tu tarifa:</strong> {formatPriceMXN(assignment.delivery_fee_mxn)} · {assignment.courier_fee_payment === "with_deposit" ? "te la paga la vendedora" : "te la paga la clienta al recibir"}</p>
+                <p className="text-sm text-stone-700"><strong>Tu tarifa:</strong> {formatPriceMXN(assignment.delivery_fee_mxn)} · {assignment.courier_fee_payment === "with_deposit" ? "te la paga la tienda" : "te la paga tu cliente al recibir"}</p>
                 <CourierChatLinks links={chats.get(assignment.id)} />
-                <div className="mt-4"><CourierDeliveryActions reservationId={assignment.id} deliveryStatus={assignment.delivery_status} buyerName={buyer?.full_name ?? "La clienta"} /></div>
+                <div className="mt-4"><CourierDeliveryActions reservationId={assignment.id} deliveryStatus={assignment.delivery_status} buyerName={buyer?.full_name ?? "Tu cliente"} /></div>
               </li>
             );
           })}
@@ -79,13 +79,13 @@ export default async function CourierDeliveriesPage() {
       {upcoming.length > 0 && (
         <>
           <h2 className="mt-10 font-condensed text-2xl font-bold uppercase text-stone-900">Aceptadas · esperando anticipo</h2>
-          <p className="mt-1 text-sm text-stone-600">La clienta ya puede pagar. Cuando la vendedora confirme su anticipo, pasan a Por entregar.</p>
+          <p className="mt-1 text-sm text-stone-600">Tu cliente ya puede pagar. Cuando la tienda confirme su anticipo, pasan a Por entregar.</p>
           <ul className="mt-4 space-y-3">
             {upcoming.map((assignment) => {
               const buyer = assignment.buyer_id ? buyerById.get(assignment.buyer_id) : undefined;
               return (
                 <li key={assignment.id} className="border border-stone-200 bg-white p-4 text-sm text-stone-700">
-                  <p className="font-medium text-stone-900">{assignment.seller?.store_name ?? "Vendedora"} → {buyer?.full_name ?? "la clienta"}, {assignment.buyer_municipality}</p>
+                  <p className="font-medium text-stone-900">{assignment.seller?.store_name ?? "Tienda"} → {buyer?.full_name ?? "tu cliente"}, {assignment.buyer_municipality}</p>
                   <p>{(assignment.items ?? []).map((item) => item.product?.name ?? "Prenda").join(", ")} · tu tarifa {formatPriceMXN(assignment.delivery_fee_mxn)}</p>
                   <p className="text-stone-600">Tiene hasta {dateFormat.format(new Date(assignment.expires_at))} para pagar; si no, el pedido se libera.</p>
                   <CourierChatLinks links={chats.get(assignment.id)} />
@@ -104,8 +104,8 @@ function CourierChatLinks({ links }: { links: ChatLinks | undefined }) {
   if (!links?.pickup && !links?.delivery) return null;
   return (
     <div className="mt-3 flex flex-wrap gap-2">
-      {links.pickup && <ChatLink href={`/cuenta/mensajes/${links.pickup.id}`} label="Mensajes con la vendedora" unread={links.pickup.unread} />}
-      {links.delivery && <ChatLink href={`/cuenta/mensajes/${links.delivery.id}`} label="Mensajes con la clienta" unread={links.delivery.unread} />}
+      {links.pickup && <ChatLink href={`/cuenta/mensajes/${links.pickup.id}`} label="Mensajes con la tienda" unread={links.pickup.unread} />}
+      {links.delivery && <ChatLink href={`/cuenta/mensajes/${links.delivery.id}`} label="Mensajes con tu cliente" unread={links.delivery.unread} />}
     </div>
   );
 }

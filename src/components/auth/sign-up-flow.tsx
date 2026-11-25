@@ -22,7 +22,7 @@ export function SignUpFlow({ nextPath }: { nextPath?: string }) {
   async function finish(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (sell && storeName.trim().length === 0) {
-      setError("Escribe el nombre de tu clóset.");
+      setError("Escribe el nombre de tu bazar.");
       return;
     }
     setBusy(true);
@@ -42,7 +42,7 @@ export function SignUpFlow({ nextPath }: { nextPath?: string }) {
       <>
         <p className="mt-8 text-[11px] uppercase tracking-[0.24em] text-stone-600">Paso 1 de 2</p>
         <h1 className="mt-3 font-serif text-3xl tracking-tight text-stone-900">Crea tu cuenta.</h1>
-        <p className="mt-3 text-sm leading-6 text-stone-600">Te mandamos un código por SMS. Después nos dices qué quieres hacer en Closets.</p>
+        <p className="mt-3 text-sm leading-6 text-stone-600">Te mandamos un código por SMS. Después nos dices qué quieres hacer en BZRS.</p>
         <PhoneLoginForm mode="buyer-signup" nextPath={nextPath} onVerified={() => setStep("activities")} />
       </>
     );
@@ -52,19 +52,19 @@ export function SignUpFlow({ nextPath }: { nextPath?: string }) {
     <form onSubmit={finish} className="mt-8 space-y-4">
       <p className="text-[11px] uppercase tracking-[0.24em] text-stone-600">Paso 2 de 2</p>
       <fieldset className="space-y-3">
-        <legend className="font-serif text-3xl tracking-tight text-stone-900">¿Qué quieres hacer en Closets?</legend>
+        <legend className="font-serif text-3xl tracking-tight text-stone-900">¿Qué quieres hacer en BZRS?</legend>
         <label className={`${check} mt-4 bg-stone-50`}>
           <input type="checkbox" checked disabled className="mt-0.5 size-4 shrink-0 accent-pine" />
           <span><strong className="block text-stone-900">Comprar</strong>Todas las cuentas pueden comprar y apartar.</span>
         </label>
         <label className={check}>
           <input type="checkbox" checked={sell} onChange={(event) => setSell(event.target.checked)} className="mt-0.5 size-4 shrink-0 accent-pine" />
-          <span><strong className="block text-stone-900">Vender mis prendas</strong>Abres tu clóset. La administración lo revisa antes de que puedas publicar.</span>
+          <span><strong className="block text-stone-900">Vender mis prendas</strong>Abres tu bazar. La administración lo revisa antes de que puedas publicar.</span>
         </label>
         {sell && (
           <div className="pl-4">
-            <label htmlFor="store-name" className="block text-xs uppercase tracking-[0.16em] text-stone-600">Nombre de tu clóset</label>
-            <input id="store-name" type="text" autoComplete="organization" placeholder="El clóset de Ana" value={storeName} onChange={(event) => setStoreName(event.target.value)} maxLength={60} className="min-h-12 w-full border-b border-stone-400 bg-transparent px-1 text-base outline-none focus:border-stone-900" />
+            <label htmlFor="store-name" className="block text-xs uppercase tracking-[0.16em] text-stone-600">Nombre de tu bazar</label>
+            <input id="store-name" type="text" autoComplete="organization" placeholder="El bazar de Ana" value={storeName} onChange={(event) => setStoreName(event.target.value)} maxLength={60} className="min-h-12 w-full border-b border-stone-400 bg-transparent px-1 text-base outline-none focus:border-stone-900" />
           </div>
         )}
         <label className={check}>

@@ -65,7 +65,7 @@ export function canShop(viewer: Viewer): viewer is AccountViewer {
   return viewer.kind === "account";
 }
 
-// "Ver como clienta" (admins): the header draws the store as a buyer-only account sees it. It is
+// "Ver como cliente" (admins): the header draws the store as a buyer-only account sees it. It is
 // presentation only and never feeds a permission check: pages and the database still use the
 // real activities above.
 export const getViewAsBuyer = cache(async (): Promise<boolean> => {

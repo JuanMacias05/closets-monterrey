@@ -3,7 +3,7 @@ import { NotificationsToggle } from "@/components/push/notifications-toggle";
 import { StoreHeader } from "@/components/store/store-header";
 import { getViewer } from "@/features/viewer/get-viewer";
 
-export const metadata = { title: "Avisos | Closets Monterrey" };
+export const metadata = { title: "Avisos | BZRS Monterrey" };
 
 // Push notifications for this device: new messages, apartados and deliveries.
 export default async function NotificationsPage() {

@@ -6,14 +6,14 @@ import { arrivalLabel } from "@/features/accounts/people";
 import { isAdminUser } from "@/features/viewer/is-admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
-const statusLabels: Record<string, string> = { pending: "En revisión", approved: "Aprobada", suspended: "Suspendida" };
+const statusLabels: Record<string, string> = { pending: "En revisión", approved: "Bazar aprobado", suspended: "Cuenta suspendida" };
 const statusStyles: Record<string, string> = {
   pending: "border border-amber-700 text-amber-800",
   approved: "bg-pine text-white",
   suspended: "border border-[#a3261b] text-[#a3261b]",
 };
 
-export const metadata = { title: "Vendedoras | Closets Monterrey" };
+export const metadata = { title: "Bazares | BZRS Monterrey" };
 
 export default async function AdminAccountsPage() {
   const supabase = await createSupabaseServerClient();
@@ -48,7 +48,7 @@ export default async function AdminAccountsPage() {
     <section>
       <div className="flex flex-wrap items-end justify-between gap-3 border-b border-stone-200 pb-5">
         <div>
-          <h1 className="font-serif text-3xl tracking-tight text-stone-900">Vendedoras</h1>
+          <h1 className="font-serif text-3xl tracking-tight text-stone-900">Bazares</h1>
           <p className="mt-2 text-sm text-stone-600">
             {pendingCount > 0 ? `${pendingCount} ${pendingCount === 1 ? "cuenta espera" : "cuentas esperan"} aprobación.` : "No hay cuentas pendientes."} Aprueba a quien pide vender, o agrega tú a alguien.
           </p>

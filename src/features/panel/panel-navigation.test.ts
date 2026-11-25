@@ -28,17 +28,17 @@ describe("panelMenuGroups", () => {
   });
 
   it("gives a seller who also delivers both columns, in a fixed order", () => {
-    expect(labels({ seller: "approved", courier: "approved", admin: false })).toEqual(["Tu clóset", "Tus entregas"]);
+    expect(labels({ seller: "approved", courier: "approved", admin: false })).toEqual(["Tu bazar", "Tus entregas"]);
   });
 
   it("adds the site administration for an admin, who may also deliver", () => {
-    expect(labels({ seller: "approved", courier: "approved", admin: true })).toEqual(["Tu clóset", "Tus entregas", "Administración del sitio"]);
+    expect(labels({ seller: "approved", courier: "approved", admin: true })).toEqual(["Tu bazar", "Tus entregas", "Administración del sitio"]);
     expect(labels({ seller: null, courier: null, admin: true })).toEqual(["Administración del sitio"]);
   });
 
   it("shows only a note while an activity waits for approval", () => {
     const [store, deliveries] = panelMenuGroups({ seller: "pending", courier: "pending", admin: false });
-    expect(store).toMatchObject({ label: "Tu clóset", items: [], note: SELLER_PENDING_NOTE });
+    expect(store).toMatchObject({ label: "Tu bazar", items: [], note: SELLER_PENDING_NOTE });
     expect(deliveries).toMatchObject({ label: "Tus entregas", items: [], note: COURIER_PENDING_NOTE });
     expect(hasPanel({ seller: "pending", courier: null, admin: false })).toBe(true);
   });
@@ -48,8 +48,8 @@ describe("panelMenuGroups", () => {
     expect(hrefs.some((href) => href?.includes("mensajes"))).toBe(false);
   });
 
-  it("ends the admin group with Ver como clienta, an action, not a page", () => {
-    expect(ADMIN_NAV_GROUP.items.at(-1)).toMatchObject({ label: "Ver como clienta", href: null, action: "view-as-buyer" });
+  it("ends the admin group with Ver como cliente, an action, not a page", () => {
+    expect(ADMIN_NAV_GROUP.items.at(-1)).toMatchObject({ label: "Ver como cliente", href: null, action: "view-as-buyer" });
   });
 
   it("announces live sales without linking anywhere", () => {
@@ -66,8 +66,8 @@ describe("the green bar", () => {
   });
 
   it("tags who she is", () => {
-    expect(panelTag({ seller: "approved", courier: "approved", admin: false })).toBe("Vendedora · Recolectora");
-    expect(panelTag({ seller: null, courier: "pending", admin: false })).toBe("Recolectora");
+    expect(panelTag({ seller: "approved", courier: "approved", admin: false })).toBe("Vende · Entrega");
+    expect(panelTag({ seller: null, courier: "pending", admin: false })).toBe("Entrega");
     expect(panelTag({ seller: "approved", courier: null, admin: true })).toBe("Administración");
   });
 
@@ -82,7 +82,7 @@ describe("the green bar", () => {
     expect(panelMenuLabel("/panel/prendas/nueva", groups)).toBe("Panel · Subir prenda");
     expect(panelMenuLabel("/panel/prendas/3f1c2a9e-0000-4000-8000-000000000001", groups)).toBe("Panel · Mis prendas");
     expect(panelMenuLabel("/recolectora/solicitudes", groups)).toBe("Panel · Solicitudes");
-    expect(panelMenuLabel("/panel/admin/vendedoras", groups)).toBe("Panel · Vendedoras");
+    expect(panelMenuLabel("/panel/admin/vendedoras", groups)).toBe("Panel · Bazares");
   });
 });
 

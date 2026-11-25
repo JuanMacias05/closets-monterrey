@@ -8,7 +8,7 @@ export const SUPPORT_CONTACT: { whatsappE164: string | null; email: string | nul
 
 export const SUPPORT_REASON_LABELS: Record<string, string> = {
   proof_rejected: "Le rechazaron su comprobante",
-  proof_not_reviewed: "La vendedora no revisa su comprobante",
+  proof_not_reviewed: "La tienda no revisa su comprobante",
   released_after_paying: "Se liberó su apartado pero ya había pagado",
   other: "Otro problema",
 };

@@ -6,7 +6,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 type Result = { ok: true } | { ok: false; error: string };
 
 const ERRORS: Record<string, string> = {
-  invalid_store_name: "El nombre de tu clóset es demasiado largo (máximo 60 caracteres).",
+  invalid_store_name: "El nombre de tu bazar es demasiado largo (máximo 60 caracteres).",
   invalid_name: "Escribe tu nombre (2 a 80 caracteres).",
 };
 

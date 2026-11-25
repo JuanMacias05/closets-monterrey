@@ -25,7 +25,7 @@ describe("courierExpiryPushes", () => {
   it("tells the buyer to choose again and the seller that she is choosing", () => {
     const pushes = courierExpiryPushes(claim);
     expect(pushes.map((push) => push.userId)).toEqual(["b1", "s1"]);
-    expect(pushes[0]!.message).toMatchObject({ title: "Tu recolectora no respondió", url: "/cuenta#apartado-r1" });
+    expect(pushes[0]!.message).toMatchObject({ title: "Quien recolecta no respondió", url: "/cuenta#apartado-r1" });
     expect(pushes[0]!.message.body).toContain("Lupita Recolectora no contestó en 2 horas");
     expect(pushes[1]!.message.url).toBe("/panel/apartados");
   });

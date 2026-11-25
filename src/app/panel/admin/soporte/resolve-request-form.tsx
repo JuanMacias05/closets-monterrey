@@ -23,7 +23,7 @@ export function ResolveRequestForm({ requestId }: { requestId: string }) {
   return (
     <form onSubmit={resolve} className="space-y-2" aria-label="Resolver solicitud">
       <label htmlFor={`resolve-${requestId}`} className="block text-xs uppercase tracking-[0.14em] text-stone-600">Cómo se resolvió (opcional)</label>
-      <input id={`resolve-${requestId}`} value={note} maxLength={1000} onChange={(event) => setNote(event.target.value)} placeholder="Ej.: la vendedora confirmó que sí le llegó" className="min-h-11 w-full border border-stone-300 bg-white px-2 text-sm" />
+      <input id={`resolve-${requestId}`} value={note} maxLength={1000} onChange={(event) => setNote(event.target.value)} placeholder="Ej.: la tienda confirmó que sí le llegó" className="min-h-11 w-full border border-stone-300 bg-white px-2 text-sm" />
       <button type="submit" disabled={busy} className="min-h-11 bg-pine px-4 font-condensed text-sm font-bold uppercase text-white disabled:opacity-60">{busy ? "Guardando…" : "Marcar resuelta"}</button>
       {error && <p role="alert" className="text-xs text-red-700">{error}</p>}
     </form>

@@ -6,6 +6,8 @@ import { notFound } from "next/navigation";
 import { ProductGallery } from "@/components/products/product-gallery";
 import { ProductGridSkeleton, SkeletonBlock } from "@/components/catalog/catalog-skeleton";
 import { ProductCard } from "@/components/catalog/product-card";
+import { SellerRatingBadge } from "@/components/sellers/seller-rating-badge";
+import { getSellerRating } from "@/features/sellers/seller-rating";
 import { SellerDeliveryList } from "@/components/sellers/seller-delivery";
 import { StoreFooter } from "@/components/store/store-footer";
 import { StoreHeader } from "@/components/store/store-header";
@@ -16,7 +18,9 @@ import { getViewer } from "@/features/viewer/get-viewer";
 import { getMoreFromSeller, getProductDetail } from "@/features/products/product-detail-data";
 import { getSellerPublicProfile } from "@/features/sellers/seller-storefront";
 import { formatPriceMXN } from "@/features/products/format-price";
-import { PRODUCT_CATEGORIES } from "@/features/products/types";
+import { categoryLabel } from "@/features/products/section-categories";
+import { garmentShareDescription, garmentShareTitle } from "@/features/share/share-text";
+import { ShareButton } from "@/components/share/share-button";
 
 type PageProps = { params: Promise<{ slug: string }> };
 
@@ -32,46 +36,22 @@ const measurementLabels: Record<string, string> = {
   alto_cm: "Alto",
 };
 
-function siteOrigin() {
-  const site = process.env.NEXT_PUBLIC_SITE_URL ?? process.env.VERCEL_URL;
-  if (!site) return new URL("http://localhost:3000");
-  return new URL(site.startsWith("http") ? site : `https://${site}`);
-}
-
+// Title and description travel with the link; the image is opengraph-image.tsx next to this
+// page (a stable public URL, with the price and the size drawn on the photo).
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
   const product = await getProductDetail(slug);
-  if (!product) return { title: "Prenda no encontrada | Closets Monterrey" };
+  if (!product) return { title: "Prenda no encontrada | BZRS Monterrey" };
 
-  const title = `${product.name} | Closets Monterrey`;
-  const description = `${formatPriceMXN(product.price_mxn)} · Talla ${product.size} · ${product.seller.store_name}`;
-  const image = product.images[0];
-  const imageUrl = image ? new URL(image.url, siteOrigin()).toString() : undefined;
+  const title = garmentShareTitle(product);
+  const description = garmentShareDescription(product);
 
   return {
-    title,
+    title: `${title} | BZRS Monterrey`,
     description,
     alternates: { canonical: `/prendas/${product.slug}` },
-    openGraph: {
-      type: "website",
-      title: product.name,
-      description,
-      url: `/prendas/${product.slug}`,
-      ...(imageUrl && {
-        images: [{
-          url: imageUrl,
-          width: image?.width ?? 900,
-          height: image?.height ?? 1100,
-          alt: image?.alt_text || product.name,
-        }],
-      }),
-    },
-    twitter: {
-      card: "summary_large_image",
-      title: product.name,
-      description,
-      ...(imageUrl && { images: [imageUrl] }),
-    },
+    openGraph: { type: "website", title, description, url: `/prendas/${product.slug}`, siteName: "BZRS Monterrey", locale: "es_MX" },
+    twitter: { card: "summary_large_image", title, description },
   };
 }
 
@@ -99,9 +79,9 @@ export default async function ProductDetailPage({ params }: PageProps) {
   const product = await getProductDetail(slug);
   if (!product) notFound();
 
-  const [shop, viewer, sellerProfile] = await Promise.all([getShopState(), getViewer(), getSellerPublicProfile(product.seller.slug)]);
+  const [shop, viewer, sellerProfile, sellerRating] = await Promise.all([getShopState(), getViewer(), getSellerPublicProfile(product.seller.slug), product.seller_id ? getSellerRating(product.seller_id) : Promise.resolve(null)]);
   const isOwn = viewer.kind !== "guest" && product.seller_id === viewer.userId;
-  const category = PRODUCT_CATEGORIES.find((item) => item.value === product.category)?.label ?? product.category;
+  const category = categoryLabel(product.category, product.audience);
   const saleLabel = product.sale_status === "reserved" ? "Apartada" : product.sale_status === "sold" ? "Vendida" : null;
   const unavailable = product.sale_status !== "available";
 
@@ -155,7 +135,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
               ) : (
                 <span aria-hidden="true" className="grid size-12 place-items-center rounded-full bg-stone-200 font-serif text-lg text-stone-700">{product.seller.store_name.slice(0, 1).toUpperCase()}</span>
               )}
-              <span><span className="block text-[10px] uppercase tracking-[0.18em] text-stone-500">Vendido por</span><span className="mt-1 block text-sm text-stone-900 underline-offset-4 group-hover:underline">{product.seller.store_name}</span><span className="mt-0.5 block text-xs text-pine">Ver su tienda →</span></span>
+              <span><span className="block text-[10px] uppercase tracking-[0.18em] text-stone-500">Vendido por</span><span className="mt-1 block text-sm text-stone-900 underline-offset-4 group-hover:underline">{product.seller.store_name}</span><SellerRatingBadge rating={sellerRating} className="block text-xs" /><span className="mt-0.5 block text-xs text-pine">Ver su tienda →</span></span>
             </Link>
           </div>
 
@@ -168,9 +148,10 @@ export default async function ProductDetailPage({ params }: PageProps) {
           )}
 
           <AddToCartButton productId={product.id} initial={shop.cartIds.has(product.id)} signedIn={shop.signedIn} available={!unavailable} isOwn={isOwn} />
-          {isOwn && <p className="mt-7 text-center text-sm text-stone-600">Es una prenda de tu tienda. <Link href={`/panel/prendas/${product.id}`} className="text-pine underline underline-offset-4">Editarla</Link></p>}
+          {isOwn && <p className="mt-7 text-center text-sm text-stone-600">Es una prenda de tu bazar. <Link href={`/panel/prendas/${product.id}`} className="text-pine underline underline-offset-4">Editarla</Link></p>}
           {unavailable && !isOwn && <p className="mt-2 text-center text-xs text-stone-500">Esta prenda ya no está disponible.</p>}
-          {!unavailable && !isOwn && <p className="mt-3 text-center text-xs leading-5 text-stone-600">Agregarla al carrito no la aparta. Se aparta al dar &ldquo;Apartar&rdquo; en tu carrito, con un anticipo a la vendedora.</p>}
+          {!unavailable && !isOwn && <p className="mt-3 text-center text-xs leading-5 text-stone-600">Agregarla al carrito no la aparta. Se aparta al dar &ldquo;Apartar&rdquo; en tu carrito, con un anticipo a la tienda.</p>}
+          <div className="mt-5 flex justify-center"><ShareButton path={`/prendas/${product.slug}`} title={garmentShareTitle(product)} text={garmentShareTitle(product)} /></div>
         </section>
       </div>
 
@@ -195,7 +176,7 @@ async function RelatedProducts({ sellerSlug, sellerName, productId }: { sellerSl
     <section className="mt-16 border-t border-stone-200 pt-10 sm:mt-24 sm:pt-14">
       <div className="mb-7 flex items-end justify-between gap-4">
         <div><p className="text-[10px] uppercase tracking-[0.22em] text-stone-500">Explora su selección</p><h2 className="mt-2 font-serif text-2xl text-stone-900 sm:text-3xl">Más prendas de {sellerName}</h2></div>
-        <Link href={`/tiendas/${sellerSlug}`} className="inline-flex min-h-11 items-center text-sm text-pine underline underline-offset-4">Ver toda su tienda</Link>
+        <Link href={`/tiendas/${sellerSlug}`} className="inline-flex min-h-11 items-center text-sm text-pine underline underline-offset-4">Ver todo su bazar</Link>
       </div>
       <div className="grid grid-cols-2 gap-x-3 gap-y-9 sm:grid-cols-3 sm:gap-x-5 lg:grid-cols-4 lg:gap-x-6">
         {related.map((item, index) => <ProductCard key={item.id} index={index} product={item} />)}

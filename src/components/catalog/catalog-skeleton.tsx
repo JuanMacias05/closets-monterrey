@@ -1,3 +1,4 @@
+import { BrandWordmark } from "@/components/brand/brand-wordmark";
 // Placeholder shapes for the store's loading.tsx files. They copy the real layout's sizes so
 // nothing jumps when the content arrives, and shimmer (.skeleton in globals.css) unless the
 // visitor prefers reduced motion. The header is drawn as plain blocks: rendering StoreHeader
@@ -12,7 +13,7 @@ export function StoreHeaderSkeleton() {
     <>
       <div className="flex items-center justify-between border-b border-stone-200 bg-white px-4 py-4 sm:px-6">
         <SkeletonBlock className="h-5 w-40" />
-        <span className="font-serif text-lg tracking-tight text-stone-900 min-[400px]:text-xl sm:text-2xl">Closets Monterrey</span>
+        <BrandWordmark className="text-lg text-stone-900 min-[400px]:text-xl sm:text-2xl" />
         <SkeletonBlock className="h-5 w-24" />
       </div>
       <div className="h-9 bg-pine-light" />

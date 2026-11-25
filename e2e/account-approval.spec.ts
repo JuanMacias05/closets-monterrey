@@ -69,32 +69,32 @@ test("she signs up to sell and deliver, waits for review, and gets both columns 
   await page.getByRole("button", { name: "Verificar código" }).click();
 
   // After the code, one question with checkboxes; buying is always on.
-  await expect(page.getByText("¿Qué quieres hacer en Closets?")).toBeVisible();
+  await expect(page.getByText("¿Qué quieres hacer en BZRS?")).toBeVisible();
   await expect(page.getByRole("checkbox", { name: /Comprar/ })).toBeDisabled();
   await page.getByRole("checkbox", { name: /Vender mis prendas/ }).check();
-  await page.getByLabel("Nombre de tu clóset").fill("Closet de Prueba Registro");
+  await page.getByLabel("Nombre de tu bazar").fill("Closet de Prueba Registro");
   await page.getByRole("checkbox", { name: /Entregar pedidos/ }).check();
   await page.getByRole("button", { name: "Crear mi cuenta" }).click();
   await expect(page.getByRole("heading", { name: "Tu cuenta está en revisión." })).toBeVisible({ timeout: 20_000 });
   let menu = await openPanel(page);
-  await expect(menu.getByText(/Tu clóset está en revisión/)).toBeVisible();
+  await expect(menu.getByText(/Tu bazar está en revisión/)).toBeVisible();
   await expect(menu.getByText(/Falta tu verificación/)).toBeVisible();
 
   // The admin approves her store and verifies her as a courier.
   await admin.goto("/panel/admin/vendedoras");
   const row = admin.getByRole("listitem").filter({ hasText: "Closet de Prueba Registro" });
   await expect(row.getByText("En revisión")).toBeVisible();
-  await expect(row.getByText("Se registró sola")).toBeVisible();
+  await expect(row.getByText("Registro: por su cuenta")).toBeVisible();
   await expect(row.getByText("También entrega")).toBeVisible();
   await row.getByRole("button", { name: "Aprobar" }).click();
-  await expect(row.getByText("Aprobada")).toBeVisible();
+  await expect(row.getByText("Bazar aprobado")).toBeVisible();
   // The admin's own row never offers to suspend her store.
   await expect(admin.getByRole("listitem").filter({ hasText: "(tú)" }).getByRole("button", { name: "Suspender" })).toHaveCount(0);
   await admin.goto("/panel/admin/recolectoras");
   const courierRow = admin.getByRole("listitem").filter({ hasText: "Vendedora Recolectora" });
   admin.once("dialog", (dialog) => dialog.accept());
   await courierRow.getByRole("button", { name: "Verificar" }).click();
-  await expect(courierRow.getByText("Verificada")).toBeVisible();
+  await expect(courierRow.getByText("Identidad verificada")).toBeVisible();
 
   // Seller + courier: both columns, and still no admin.
   await page.reload();
@@ -114,14 +114,14 @@ test("an admin adds a courier by phone, who logs in already verified and sees on
   await form.getByRole("button", { name: "Agregar" }).click();
   await expect(form.getByText(/Repartidora Agregada ya puede entrar/)).toBeVisible({ timeout: 20_000 });
   const row = admin.getByRole("listitem").filter({ hasText: "Repartidora Agregada" });
-  await expect(row.getByText("Verificada")).toBeVisible();
-  await expect(row.getByText("Agregada por admin")).toBeVisible();
+  await expect(row.getByText("Identidad verificada")).toBeVisible();
+  await expect(row.getByText("Registro: lo hizo un admin")).toBeVisible();
 
   // She logs in with her phone: verified, only "Tus entregas".
   await login(page, ADDED_COURIER_PHONE, /\/recolectora$/);
   const menu = await openPanel(page);
   await expect(menu.getByText("Tus entregas", { exact: true })).toBeVisible();
-  await expect(menu.getByText("Tu clóset", { exact: true })).toHaveCount(0);
+  await expect(menu.getByText("Tu bazar", { exact: true })).toHaveCount(0);
   await expect(menu.getByText("Administración del sitio")).toHaveCount(0);
   await expect(menu.getByText(/Falta tu verificación/)).toHaveCount(0);
   await page.keyboard.press("Escape");

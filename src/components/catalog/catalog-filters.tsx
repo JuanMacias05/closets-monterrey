@@ -4,8 +4,8 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { categoriesForSection } from "@/features/products/section-categories";
 import {
-  PRODUCT_CATEGORIES,
   PRODUCT_CONDITIONS,
   PRODUCT_SIZES,
   type CatalogFilters,
@@ -22,7 +22,8 @@ function FilterFields({ filters, prefix, deliveryPoints }: { filters: CatalogFil
         Categoría
         <select id={`${prefix}-category`} name="category" defaultValue={filters.category ?? ""} className="min-h-11 border-b border-stone-300 bg-transparent px-1 text-sm normal-case tracking-normal text-stone-800 outline-none focus:border-stone-900">
           <option value="">Todas</option>
-          {PRODUCT_CATEGORIES.map((category) => <option key={category.value} value={category.value}>{category.label}</option>)}
+          {/* Words for the section she is in (Hombre: no dresses); the whole catalog uses neutral ones. */}
+          {categoriesForSection(filters.audience).map((category) => <option key={category.value} value={category.value}>{category.label}</option>)}
         </select>
       </label>
 

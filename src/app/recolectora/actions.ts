@@ -70,7 +70,7 @@ export async function saveCourierFee(fee: string): Promise<Result> {
 }
 
 const REQUEST_ERRORS: Record<string, string> = {
-  request_closed: "Esta solicitud ya no está abierta: se venció, la clienta cambió de entrega o ya la respondiste.",
+  request_closed: "Esta solicitud ya no está abierta: se venció, tu cliente cambió de entrega o ya la respondiste.",
   courier_not_approved: "Tu cuenta aún no está verificada, así que todavía no puedes aceptar entregas.",
   invalid_reason: "El motivo es demasiado largo (máximo 160 caracteres).",
   not_found: "No encontramos esta solicitud.",
@@ -125,7 +125,7 @@ export async function courierComplete(reservationId: string, pin: string): Promi
   const context = await signedIn();
   if (!context.ok) return context;
   const { error } = await context.supabase.rpc("complete_reservation_with_pin", { target: reservationId, pin });
-  if (error) return { ok: false, error: error.message.includes("wrong_pin") ? "Ese código no coincide. Pídeselo de nuevo a la clienta." : "No se pudo marcar como entregada." };
+  if (error) return { ok: false, error: error.message.includes("wrong_pin") ? "Ese código no coincide. Pídeselo de nuevo a tu cliente." : "No se pudo marcar como entregada." };
   revalidateCourierArea();
   revalidatePath("/");
   return { ok: true };

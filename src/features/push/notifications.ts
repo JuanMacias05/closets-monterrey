@@ -23,15 +23,15 @@ async function reservationPeople(reservationId: string): Promise<{ admin: NonNul
 }
 
 async function buyerName(admin: NonNullable<ReturnType<typeof createSupabaseAdminClient>>, buyerId: string | null) {
-  if (!buyerId) return "Una clienta";
+  if (!buyerId) return "Alguien";
   const { data } = await admin.from("buyer_profiles").select("full_name").eq("id", buyerId).maybeSingle();
-  return data?.full_name ?? "Una clienta";
+  return data?.full_name ?? "Alguien";
 }
 
 async function courierName(admin: NonNullable<ReturnType<typeof createSupabaseAdminClient>>, courierId: string | null) {
-  if (!courierId) return "La recolectora";
+  if (!courierId) return "Quien recolecta";
   const { data } = await admin.from("couriers").select("full_name").eq("id", courierId).maybeSingle();
-  return data?.full_name ?? "La recolectora";
+  return data?.full_name ?? "Quien recolecta";
 }
 
 // A new apartado: the seller hears about it (before, the buyer had to message her on WhatsApp).
@@ -43,7 +43,7 @@ export function notifyNewReservation(reservationId: string, withCourier: boolean
     const { admin, reservation } = found;
     await pushToUsers([reservation.seller_id], {
       title: "Nuevo apartado",
-      body: `${await buyerName(admin, reservation.buyer_id)} apartó prendas de tu clóset.`,
+      body: `${await buyerName(admin, reservation.buyer_id)} apartó prendas de tu bazar.`,
       url: "/panel/apartados",
       tag: `apartado-${reservation.id}`,
     });
@@ -63,7 +63,7 @@ async function notifyCourierRequestNow({ reservation }: { reservation: Reservati
   if (!reservation.courier_id) return;
   await pushToUsers([reservation.courier_id], {
     title: "Nueva solicitud de entrega",
-    body: `${reservation.seller?.store_name ?? "Una vendedora"}: tienes 2 horas para aceptarla o rechazarla.`,
+    body: `${reservation.seller?.store_name ?? "Una tienda"}: tienes 2 horas para aceptarla o rechazarla.`,
     url: "/recolectora/solicitudes",
     tag: `solicitud-${reservation.id}`,
   });
@@ -90,13 +90,13 @@ export function notifyCourierAnswer(requestId: string, accepted: boolean) {
       });
       await pushToUsers([reservation.seller_id], {
         title: `${name} llevará un pedido`,
-        body: "Aceptó recoger un apartado de tu clóset. Coordínense en Mensajes.",
+        body: "Aceptó recoger un apartado de tu bazar. Coordínense en Mensajes.",
         url: "/panel/apartados",
         tag: `apartado-${reservation.id}`,
       });
     } else {
       await pushToUsers([reservation.buyer_id], {
-        title: "Tu recolectora no aceptó",
+        title: "Quien recolecta no aceptó",
         body: `${name} no puede llevar tu pedido. Elige otra entrega en tu cuenta.`,
         url: `/cuenta#apartado-${reservation.id}`,
         tag: `apartado-${reservation.id}`,
@@ -116,7 +116,7 @@ export function notifyNewMessage(conversationId: string, senderId: string, body:
     const found = await reservationPeople(conversation.reservation_id);
     if (!found) return;
     const { reservation } = found;
-    const store = reservation.seller?.store_name ?? "La vendedora";
+    const store = reservation.seller?.store_name ?? "La tienda";
     const preview = body.length > 120 ? `${body.slice(0, 119)}…` : body;
     const tag = `chat-${conversation.id}`;
     // Each kind has two participants: tell the one who didn't write, in her own area.
@@ -137,5 +137,19 @@ export function notifyNewMessage(conversationId: string, senderId: string, body:
     } else {
       await pushToUsers([reservation.seller_id], { title: await courierName(admin, reservation.courier_id), body: preview, url: `/cuenta/mensajes/${conversation.id}`, tag });
     }
+  });
+}
+
+// A new rating for the store: the stars, never who gave them.
+export function notifySellerRated(reservationId: string, stars: number) {
+  after(async () => {
+    const found = await reservationPeople(reservationId);
+    if (!found) return;
+    await pushToUsers([found.reservation.seller_id], {
+      title: "Nueva calificación",
+      body: `Te calificaron con ${"★".repeat(stars)} (${stars} de 5).`,
+      url: "/panel/calificaciones",
+      tag: `calificacion-${reservationId}`,
+    });
   });
 }

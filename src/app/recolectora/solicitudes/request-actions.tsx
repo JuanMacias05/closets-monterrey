@@ -42,7 +42,7 @@ export function CourierRequestActions({ requestId, storeName }: { requestId: str
       aria-label={`Rechazar la entrega de ${storeName}`}
       className="space-y-2 border border-red-200 bg-red-50 p-3"
     >
-      <p className="text-sm font-medium text-stone-900">¿Por qué no puedes? Es opcional; la clienta verá tu motivo.</p>
+      <p className="text-sm font-medium text-stone-900">¿Por qué no puedes? Es opcional; tu cliente verá tu motivo.</p>
       <div role="group" aria-label="Motivos frecuentes" className="flex flex-wrap gap-2">
         {COURIER_REJECT_REASONS.map((text) => (
           <button key={text} type="button" aria-pressed={reason === text} onClick={() => setReason(reason === text ? "" : text)} className={`min-h-10 border px-3 text-sm ${reason === text ? "border-[#a3261b] bg-white text-[#a3261b]" : "border-stone-300 bg-white text-stone-800"}`}>{text}</button>

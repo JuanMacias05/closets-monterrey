@@ -5,7 +5,7 @@ import { MUNICIPALITIES } from "@/features/couriers/constants";
 import { getCourierDirectory } from "@/features/couriers/directory";
 import { formatPriceMXN } from "@/features/products/format-price";
 
-export const metadata = { title: "Recolectoras verificadas | Closets Monterrey" };
+export const metadata = { title: "Recolección verificada | BZRS Monterrey" };
 
 export default async function CourierDirectoryPage() {
   const couriers = await getCourierDirectory();
@@ -13,10 +13,10 @@ export default async function CourierDirectoryPage() {
     <>
       <StoreHeader />
       <main className="mx-auto min-h-screen w-full max-w-5xl px-4 pb-16 pt-8 sm:px-8">
-        <h1 className="font-heavy text-4xl uppercase tracking-tight text-stone-900 sm:text-5xl">Recolectoras verificadas</h1>
-        <p className="mt-3 max-w-2xl text-sm leading-6 text-stone-600">¿No puedes ir al punto? Una recolectora recoge tu prenda con la vendedora en el punto fijo y te la lleva a tu municipio. La eliges en tu carrito, al apartar; ella acepta la entrega (tiene 2 horas) y hasta entonces no pagas nada. Todas fueron verificadas en persona por la administración.</p>
+        <h1 className="font-heavy text-4xl uppercase tracking-tight text-stone-900 sm:text-5xl">Recolección verificada</h1>
+        <p className="mt-3 max-w-2xl text-sm leading-6 text-stone-600">¿No puedes ir al punto? Una persona verificada recoge tu prenda en la tienda, en el punto fijo, y te la lleva a tu municipio. La pides en tu carrito, al apartar; quien recolecta acepta la entrega (tiene 2 horas) y hasta entonces no pagas nada. La administración revisó en persona la identidad de cada quien.</p>
         {couriers.length === 0 ? (
-          <p className="mt-8 text-sm text-stone-600">Aún no hay recolectoras verificadas.</p>
+          <p className="mt-8 text-sm text-stone-600">Aún no hay recolección verificada.</p>
         ) : (
           <>
             {/* Who reaches each municipality, so a buyer finds hers at a glance. */}
@@ -43,7 +43,7 @@ export default async function CourierDirectoryPage() {
             </div>
           </>
         )}
-        <p className="mt-10 text-sm text-stone-600">¿Haces entregas en tu ruta? <Link href="/cuenta/entregar" className="text-pine underline underline-offset-4">Pide entregar con Closets</Link></p>
+        <p className="mt-10 text-sm text-stone-600">¿Haces entregas en tu ruta? <Link href="/cuenta/entregar" className="text-pine underline underline-offset-4">Pide entregar con BZRS</Link></p>
       </main>
     </>
   );

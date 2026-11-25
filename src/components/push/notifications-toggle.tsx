@@ -93,7 +93,7 @@ export function NotificationsToggle({ compact = false }: { compact?: boolean }) 
   return (
     <div className={`${text} text-stone-700`}>
       {state === "denied" ? (
-        <p>Bloqueaste las notificaciones de Closets Monterrey. Para recibir avisos, permítelas en la configuración de tu navegador.</p>
+        <p>Bloqueaste las notificaciones de BZRS Monterrey. Para recibir avisos, permítelas en la configuración de tu navegador.</p>
       ) : state === "on" ? (
         <p className="flex flex-wrap items-center gap-x-3">
           <span>🔔 Avisos activados en este dispositivo.</span>

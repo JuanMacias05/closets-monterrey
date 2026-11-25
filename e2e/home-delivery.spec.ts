@@ -135,7 +135,7 @@ test("an admin prices a zone, the buyer reserves with that estimate and the sell
   // The buyer sees the change and the new total, and can still back out.
   await page.reload();
   const change = page.getByTestId("delivery-fee-change");
-  await expect(change).toContainText("La vendedora ajustó el envío de $95.00 MXN a $120.00 MXN.");
+  await expect(change).toContainText("La tienda ajustó el envío de $95.00 MXN a $120.00 MXN.");
   await expect(change).toContainText("Nuevo total con envío: $600.00 MXN.");
   page.once("dialog", (dialog) => dialog.accept());
   await page.getByRole("button", { name: "Cancelar apartado" }).click();

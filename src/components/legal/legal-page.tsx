@@ -1,3 +1,4 @@
+import { BrandWordmark } from "@/components/brand/brand-wordmark";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { StoreFooter } from "@/components/store/store-footer";
@@ -10,7 +11,7 @@ export function LegalPage({ title, children }: { title: string; children: ReactN
     <div className="min-h-screen bg-[#faf9f6]">
       <header className="border-b border-stone-200 bg-white px-4 py-4 sm:px-8">
         <div className="mx-auto flex max-w-3xl items-center justify-between gap-4">
-          <Link href="/" className="whitespace-nowrap font-serif text-xl tracking-tight text-stone-900">Closets Monterrey</Link>
+          <Link href="/" className="text-xl text-stone-900"><BrandWordmark /></Link>
           <Link href="/" className="inline-flex min-h-11 items-center whitespace-nowrap text-xs uppercase tracking-[0.14em] text-stone-600 underline-offset-4 hover:underline">← Tienda</Link>
         </div>
       </header>

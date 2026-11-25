@@ -91,11 +91,11 @@ export function summarizeDraft(options: SellerDeliveryOptions, draft: DeliveryDr
 export function deliveryDraftError(options: SellerDeliveryOptions, draft: DeliveryDraft, excludedIds: readonly string[] = []): string | null {
   const needsAddress = draft.wantsCourier || draft.choice === "home";
   if (draft.wantsCourier) {
-    if (!draft.municipality) return "Elige tu municipio para ver qué recolectoras llegan.";
+    if (!draft.municipality) return "Elige tu municipio para ver quién llega.";
     if (couriersFor(options, draft.municipality, excludedIds).length === 0) {
-      return `Ninguna recolectora disponible cubre ${draft.municipality} para esta vendedora. Elige “No, gracias” para ver las otras formas de entrega.`;
+      return `Nadie más recolecta en ${draft.municipality} para esta tienda. Elige “No, gracias” para ver las otras formas de entrega.`;
     }
-    if (!summarizeDraft(options, draft, excludedIds).courier) return "Elige una recolectora.";
+    if (!summarizeDraft(options, draft, excludedIds).courier) return "Elige quién recolecta.";
   } else if (draft.choice === "home") {
     if (!draft.municipality) return "Elige tu municipio para calcular el envío.";
     if (homeFeeFor(options, draft.municipality) === null) return `Todavía no hay tarifa de envío a ${draft.municipality}. Elige otra forma de entrega.`;
@@ -118,10 +118,10 @@ export function draftToChoice(options: SellerDeliveryOptions, draft: DeliveryDra
 // Step 3's explanation of when she pays.
 export function depositTimingNote(summary: DraftSummary): string {
   if (summary.method === "courier") {
-    const name = summary.courier?.fullName ?? "La recolectora";
+    const name = summary.courier?.fullName ?? "Quien recolecta";
     return `Al apartar le enviamos tu solicitud a ${name}. Tiene ${COURIER_REQUEST_HOURS} horas para aceptar; mientras tanto tus prendas quedan apartadas y no pagas nada. Cuando acepte, tienes 24 horas para transferir el anticipo.`;
   }
-  return "Al apartar tienes 24 horas para transferir el anticipo a la vendedora; si no, las prendas se liberan.";
+  return "Al apartar tienes 24 horas para transferir el anticipo a la tienda; si no, las prendas se liberan.";
 }
 
 // One line for step 3's "Entrega:".
@@ -129,7 +129,7 @@ export function describeDraft(summary: DraftSummary, draft: Pick<DeliveryDraft, 
   if (summary.method === "pickup_point") return `Punto fijo · ${summary.pointName ?? ""}`;
   if (summary.method === "home_delivery") return `Envío a domicilio a ${draft.municipality}`;
   if (summary.method === "courier") {
-    return `Recolectora ✓ ${summary.courier?.fullName ?? ""} a ${draft.municipality} · su tarifa ${draft.feePayment === "with_deposit" ? "va incluida en tu anticipo" : "se la pagas al recibir"}`;
+    return `Recolección ✓ ${summary.courier?.fullName ?? ""} a ${draft.municipality} · su tarifa ${draft.feePayment === "with_deposit" ? "va incluida en tu anticipo" : "se la pagas al recibir"}`;
   }
-  return "La acuerdas con la vendedora por WhatsApp";
+  return "La acuerdas con la tienda por WhatsApp";
 }

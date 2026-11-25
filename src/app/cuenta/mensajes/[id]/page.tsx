@@ -5,7 +5,7 @@ import { StoreHeader } from "@/components/store/store-header";
 import { loadConversation, type LoadedConversation } from "@/features/chat/chat-data";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
-export const metadata = { title: "Mensajes | Closets Monterrey" };
+export const metadata = { title: "Mensajes | BZRS Monterrey" };
 
 export default async function ConversationPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -39,7 +39,7 @@ function reservationHref(conversation: LoadedConversation) {
 }
 
 function placeholder(conversation: LoadedConversation) {
-  if (conversation.kind === "order") return conversation.myRole === "seller" ? "Escríbele a la clienta" : "Escríbele a la vendedora";
-  if (conversation.kind === "pickup") return conversation.myRole === "seller" ? "Escríbele a la recolectora" : "Escríbele a la vendedora";
-  return conversation.myRole === "courier" ? "Escríbele a la clienta" : "Escríbele a la recolectora";
+  if (conversation.kind === "order") return conversation.myRole === "seller" ? "Escríbele a tu cliente" : "Escríbele a la tienda";
+  if (conversation.kind === "pickup") return conversation.myRole === "seller" ? "Escríbele a quien recolecta" : "Escríbele a la tienda";
+  return conversation.myRole === "courier" ? "Escríbele a tu cliente" : "Escríbele a quien recolecta";
 }

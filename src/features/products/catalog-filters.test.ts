@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { categoriesForSection } from "@/features/products/section-categories";
+import { categoriesFor, categoriesForSection, categoryLabel, isCategoryAllowed } from "@/features/products/section-categories";
 import { demoProducts } from "@/features/products/demo-catalog";
 import { applyCatalogFilters } from "@/features/products/filter-products";
 import { buildCatalogQueryString, parseCatalogFilters } from "@/features/products/catalog-filters";
@@ -98,16 +98,37 @@ describe("applyCatalogFilters", () => {
   });
 });
 
-describe("categoriesForSection", () => {
+describe("audience-aware category labels", () => {
   it("uses men's labels and drops dresses under Hombre", () => {
     const men = categoriesForSection("men");
     expect(men.map(({ value }) => value)).not.toContain("dresses");
-    expect(men.find(({ value }) => value === "tops")?.label).toBe("Playeras y camisas");
+    expect(men.map(({ label }) => label)).toEqual(["Camisas y playeras", "Pantalones y shorts", "Chamarras y sacos", "Calzado", "Accesorios"]);
   });
 
-  it("keeps every category for Mujer and for the whole catalog", () => {
-    expect(categoriesForSection("women")).toHaveLength(6);
+  it("keeps the original labels for Mujer", () => {
+    expect(categoriesForSection("women").map(({ label }) => label)).toEqual(["Blusas y tops", "Pantalones y faldas", "Vestidos", "Chamarras y sacos", "Calzado", "Accesorios"]);
+  });
+
+  it("uses neutral labels and every category for Unisex and the whole catalog", () => {
+    expect(categoriesFor("unisex")).toHaveLength(6);
     expect(categoriesForSection()).toHaveLength(6);
+    expect(categoryLabel("tops", "unisex")).toBe("Playeras, camisas y tops");
+    expect(categoryLabel("bottoms")).toBe("Pantalones, shorts y faldas");
+  });
+
+  it("labels one garment by its audience", () => {
+    expect(categoryLabel("tops", "men")).toBe("Camisas y playeras");
+    expect(categoryLabel("tops", "women")).toBe("Blusas y tops");
+    // A men's dress saved before the rule still reads as a word.
+    expect(categoryLabel("dresses", "men")).toBe("Vestidos");
+  });
+
+  it("rejects dresses for Hombre only", () => {
+    expect(isCategoryAllowed("dresses", "men")).toBe(false);
+    expect(isCategoryAllowed("dresses", "women")).toBe(true);
+    expect(isCategoryAllowed("dresses", "unisex")).toBe(true);
+    expect(isCategoryAllowed("tops", "men")).toBe(true);
+    expect(isCategoryAllowed("socks", "women")).toBe(false);
   });
 });
 

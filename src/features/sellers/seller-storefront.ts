@@ -13,6 +13,7 @@ export type SellerDelivery = {
 };
 
 export type SellerPublicProfile = {
+  id: string;
   storeName: string;
   slug: string;
   avatarUrl: string | null;
@@ -33,14 +34,14 @@ export const getSellerPublicProfile = cache(async (slug: string): Promise<Seller
     ? demoProducts.find((product) => product.seller.slug === slug)?.seller
     : undefined;
 
-  if (!supabase) return demoSeller ? { storeName: demoSeller.store_name, slug, avatarUrl: null, delivery: NO_DELIVERY } : null;
+  if (!supabase) return demoSeller ? { id: "", storeName: demoSeller.store_name, slug, avatarUrl: null, delivery: NO_DELIVERY } : null;
 
   const profileQuery = supabase.from("profiles").select("id,store_name,slug,avatar_path,home_delivery_enabled,home_delivery_origin,home_delivery_note");
   const { data: profile } = demoSeller
     ? await profileQuery.eq("store_name", demoSeller.store_name).maybeSingle()
     : await profileQuery.eq("slug", slug).maybeSingle();
 
-  if (!profile) return demoSeller ? { storeName: demoSeller.store_name, slug, avatarUrl: null, delivery: NO_DELIVERY } : null;
+  if (!profile) return demoSeller ? { id: "", storeName: demoSeller.store_name, slug, avatarUrl: null, delivery: NO_DELIVERY } : null;
 
   const origin = profile.home_delivery_enabled ? profile.home_delivery_origin as string | null : null;
   const [{ data: points }, { data: rateRows }] = await Promise.all([
@@ -59,6 +60,7 @@ export const getSellerPublicProfile = cache(async (slug: string): Promise<Seller
     .map((row) => row.point!.name);
 
   return {
+    id: profile.id,
     storeName: profile.store_name,
     slug,
     avatarUrl: getSellerAvatarUrl(supabase, profile.avatar_path),

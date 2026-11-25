@@ -25,7 +25,17 @@ test("seller creates, manages photos, sells, restores and deletes her product", 
   await page.getByRole("main").getByRole("link", { name: "Subir prenda", exact: true }).click();
   await page.getByLabel("Nombre", { exact: true }).fill("Prenda de prueba E2E");
   await page.getByLabel("Descripción").fill("Descripción para probar la ficha de producto.");
-  await page.getByLabel("Categoría", { exact: true }).selectOption("tops");
+  // "Para" comes first and decides the category words: Hombre has no dresses, so a dress chosen
+  // for Mujer is cleared when she switches.
+  const category = page.getByLabel("Categoría", { exact: true });
+  await category.selectOption("dresses");
+  await page.getByLabel("Para").selectOption("men");
+  await expect(category).toHaveValue("");
+  await expect(page.getByText(/Esa categoría no existe para Hombre/)).toBeVisible();
+  await expect(category.locator("option", { hasText: "Vestidos" })).toHaveCount(0);
+  await category.selectOption({ label: "Camisas y playeras" });
+  await page.getByLabel("Para").selectOption("women");
+  await expect(category.locator("option:checked")).toHaveText("Blusas y tops");
   await page.getByLabel("Talla").selectOption("M");
   await page.getByLabel("Condición").selectOption("like_new");
   await page.getByLabel("Precio (MXN)").fill("350.00");
@@ -82,7 +92,7 @@ test("seller publishes a new garment with its photos in one step", async ({ page
   await loginAsSeller(page);
   await page.goto("/panel/prendas/nueva");
   await expect(page.getByText(/Entregas \(para todas tus prendas\)/)).toBeVisible();
-  // How buyers pay is store-wide too; the line says what's set and links to Editar tienda.
+  // How buyers pay is store-wide too; the line says what's set and links to Editar bazar.
   await expect(page.getByText("transferencia (CLABE ••••0000)")).toBeVisible();
   await expect(page.getByRole("link", { name: "Cambiar" })).toHaveAttribute("href", "/panel/tienda");
   await page.locator("#product-photos").setInputFiles(["e2e/fixtures/store-photo-800x600.jpg", "e2e/fixtures/store-photo.png"]);
@@ -102,8 +112,10 @@ test("seller publishes a new garment with its photos in one step", async ({ page
   await page.addInitScript(() => Object.defineProperty(navigator, "share", { value: undefined, configurable: true }));
   await page.goto("/panel/prendas");
   const row = page.getByRole("listitem").filter({ hasText: "Prenda con foto E2E" });
-  await row.getByRole("button", { name: "Compartir" }).click();
-  await expect(row.getByText("Liga copiada. Pégala en WhatsApp o Facebook.")).toBeVisible();
+  // No share sheet on desktop Chromium: WhatsApp link and "Copiar link".
+  await expect(row.getByRole("link", { name: "WhatsApp" })).toHaveAttribute("href", /^https:\/\/wa\.me\/\?text=/);
+  await row.getByRole("button", { name: "Copiar link" }).click();
+  await expect(row.getByText("Link copiado. Pégalo en WhatsApp o Facebook.")).toBeVisible();
   expect(await page.evaluate(() => navigator.clipboard.readText())).toMatch(/\/prendas\/prenda-con-foto-e2e/);
   await row.getByRole("link", { name: "Prenda con foto E2E", exact: true }).click();
 
@@ -114,6 +126,6 @@ test("seller publishes a new garment with its photos in one step", async ({ page
 
 test("the panel home offers the seller her store link to share", async ({ page }) => {
   await loginAsSeller(page);
-  await expect(page.getByRole("link", { name: "Ver mi tienda" })).toHaveAttribute("href", /^\/tiendas\/[a-z0-9-]+$/);
-  await expect(page.getByRole("button", { name: "Compartir mi tienda" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Ver mi bazar" })).toHaveAttribute("href", /^\/tiendas\/[a-z0-9-]+$/);
+  await expect(page.getByRole("group", { name: "Compartir mi bazar" }).getByRole("button", { name: "Copiar link" })).toBeVisible();
 });

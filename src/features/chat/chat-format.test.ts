@@ -28,8 +28,8 @@ describe("chat paths and labels", () => {
     expect(conversationHref("abc")).toBe("/cuenta/mensajes/abc");
   });
   it("labels each chat by what it is about, from her side", () => {
-    expect(conversationRoleLabel("order", "buyer")).toBe("Como clienta");
-    expect(conversationRoleLabel("order", "seller")).toBe("Como vendedora");
+    expect(conversationRoleLabel("order", "buyer")).toBe("Compra");
+    expect(conversationRoleLabel("order", "seller")).toBe("Venta");
     expect(conversationRoleLabel("pickup", "seller")).toBe("Entrega");
     expect(conversationRoleLabel("pickup", "courier")).toBe("Entrega");
     expect(conversationRoleLabel("delivery", "buyer")).toBe("Entrega");

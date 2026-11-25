@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { RatingCommentToggle } from "@/app/panel/admin/soporte/rating-comment-actions";
 import { ResolveRequestForm } from "@/app/panel/admin/soporte/resolve-request-form";
 import { ProofPurgedNote } from "@/components/shop/proof-purged-note";
 import { formatPriceMXN } from "@/features/products/format-price";
@@ -8,7 +9,7 @@ import { PROOF_REVIEW_HOURS, proofReviewCutoff, SUPPORT_REASON_LABELS } from "@/
 import { isAdminUser } from "@/features/viewer/is-admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
-export const metadata = { title: "Soporte | Closets Monterrey" };
+export const metadata = { title: "Soporte | BZRS Monterrey" };
 
 type ReservationInfo = {
   id: string; status: string; deposit_mxn: number; seller_whatsapp: string | null; created_at: string; expires_at: string;
@@ -53,6 +54,8 @@ export default async function AdminSupportPage() {
   const stale = (staleRows ?? []) as unknown as ReservationInfo[];
   const open = requests.filter((request) => request.status === "open");
   const resolved = requests.filter((request) => request.status === "resolved");
+  const { data: ratingRows } = await supabase.rpc("admin_seller_ratings");
+  const ratingComments = (ratingRows ?? []) as { reservation_id: string; store_name: string; stars: number; comment: string; rated_at: string; hidden: boolean }[];
 
   const reservations = [...requests.map((request) => request.reservation), ...stale].filter((r): r is ReservationInfo => r !== null);
   const buyerIds = [...new Set(reservations.map((r) => r.buyer_id).filter((id): id is string => id !== null))];
@@ -70,7 +73,7 @@ export default async function AdminSupportPage() {
     return (
       <div className="space-y-3 text-sm text-stone-700">
         <p>
-          <strong className="text-stone-900">{buyer?.full_name ?? "Cuenta borrada"}</strong> apartó con <strong className="text-stone-900">{reservation.seller?.store_name ?? "una vendedora"}</strong>
+          <strong className="text-stone-900">{buyer?.full_name ?? "Cuenta borrada"}</strong> apartó con <strong className="text-stone-900">{reservation.seller?.store_name ?? "una tienda"}</strong>
           {" · "}{(reservation.items ?? []).map((item) => item.product?.name ?? "Prenda").join(", ")}
           {" · "}anticipo {formatPriceMXN(reservation.deposit_mxn)}{reservation.proof_method === "oxxo" ? " en OXXO" : reservation.proof_method === "transfer" ? " por transferencia" : ""}
           {" · "}<span className="font-condensed font-bold uppercase">{RESERVATION_STATUS_LABELS[reservation.status] ?? reservation.status}</span>
@@ -92,7 +95,7 @@ export default async function AdminSupportPage() {
         </div>
         <p className="flex flex-wrap gap-x-4">
           {buyer?.phone_e164 && <a href={whatsappLink(buyer.phone_e164)} target="_blank" rel="noopener noreferrer" className="text-pine underline underline-offset-4">WhatsApp a {buyer.full_name}</a>}
-          {reservation.seller_whatsapp && <a href={whatsappLink(reservation.seller_whatsapp)} target="_blank" rel="noopener noreferrer" className="text-pine underline underline-offset-4">WhatsApp a {reservation.seller?.store_name ?? "la vendedora"}</a>}
+          {reservation.seller_whatsapp && <a href={whatsappLink(reservation.seller_whatsapp)} target="_blank" rel="noopener noreferrer" className="text-pine underline underline-offset-4">WhatsApp a {reservation.seller?.store_name ?? "la tienda"}</a>}
         </p>
       </div>
     );
@@ -102,7 +105,7 @@ export default async function AdminSupportPage() {
     <section className="space-y-10">
       <div className="border-b border-stone-200 pb-5">
         <h1 className="font-serif text-3xl tracking-tight text-stone-900">Soporte</h1>
-        <p className="mt-2 max-w-2xl text-sm text-stone-600">Aquí llegan las clientas que piden ayuda con un apartado y los comprobantes que una vendedora lleva más de {PROOF_REVIEW_HOURS} horas sin revisar. Mientras no haya canal de soporte, contesta por WhatsApp.</p>
+        <p className="mt-2 max-w-2xl text-sm text-stone-600">Aquí llegan los pedidos de ayuda de clientes con un apartado y los comprobantes que una tienda lleva más de {PROOF_REVIEW_HOURS} horas sin revisar. Mientras no haya canal de soporte, contesta por WhatsApp.</p>
       </div>
 
       <section aria-labelledby="open-requests">
@@ -126,10 +129,25 @@ export default async function AdminSupportPage() {
 
       <section aria-labelledby="stale-proofs">
         <h2 id="stale-proofs" className="font-condensed text-xl font-bold uppercase text-stone-900">Comprobantes sin revisar más de {PROOF_REVIEW_HOURS} h ({stale.length})</h2>
-        {stale.length === 0 ? <p className="mt-3 text-sm text-stone-600">Ninguno: las vendedoras están al día.</p> : (
+        {stale.length === 0 ? <p className="mt-3 text-sm text-stone-600">Ninguno: las tiendas están al día.</p> : (
           <ul className="mt-4 space-y-4">
             {stale.map((reservation) => (
               <li key={reservation.id} className="border border-amber-300 bg-white p-5"><ReservationSummary reservation={reservation} /></li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      {/* Store-rating comments only reach the store and the admins; an abusive one is hidden here. */}
+      <section aria-labelledby="rating-comments" className="border-t border-stone-200 pt-6">
+        <h2 id="rating-comments" className="font-condensed text-xl font-bold uppercase text-stone-900">Comentarios de calificaciones</h2>
+        {ratingComments.length === 0 ? <p className="mt-3 text-sm text-stone-600">Todavía no hay comentarios.</p> : (
+          <ul className="mt-3 divide-y divide-stone-200">
+            {ratingComments.map((rating) => (
+              <li key={rating.reservation_id} className="flex flex-col gap-2 py-3 text-sm text-stone-700 sm:flex-row sm:items-center sm:justify-between">
+                <span><strong className="text-stone-900">{rating.store_name}</strong> · {"★".repeat(rating.stars)} · <span className={rating.hidden ? "text-stone-400 line-through" : ""}>“{rating.comment}”</span>{rating.hidden && " (oculto)"}</span>
+                <RatingCommentToggle reservationId={rating.reservation_id} hidden={rating.hidden} />
+              </li>
             ))}
           </ul>
         )}

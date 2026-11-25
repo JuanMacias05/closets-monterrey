@@ -8,7 +8,8 @@ import { createProduct, deleteProductImage, deleteProductWithImages, registerPro
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { buildProductImageStoragePath, prepareProductImage } from "@/features/products/product-image-upload";
 import { PRIMARY_BUTTON_CLASS } from "@/components/panel/panel-styles";
-import { PRODUCT_AUDIENCES, PRODUCT_CATEGORIES, PRODUCT_CONDITIONS, PRODUCT_SIZES, type ProductCondition } from "@/features/products/types";
+import { categoriesFor, isCategoryAllowed } from "@/features/products/section-categories";
+import { PRODUCT_AUDIENCES, PRODUCT_CONDITIONS, PRODUCT_SIZES, type ProductAudience, type ProductCondition } from "@/features/products/types";
 
 export type EditableProduct = {
   id: string;
@@ -46,6 +47,13 @@ export function ProductEditor({ sellerId, product }: { sellerId: string; product
   const [description, setDescription] = useState(product?.description ?? "");
   const [category, setCategory] = useState(product?.category ?? "tops");
   const [audience, setAudience] = useState(product?.audience ?? "women");
+
+  // Changing "Para" relabels the categories; one that doesn't exist there (Vestidos under
+  // Hombre) is cleared so she picks again instead of saving something the server refuses.
+  function changeAudience(next: string) {
+    setAudience(next);
+    if (!isCategoryAllowed(category, next as ProductAudience)) setCategory("");
+  }
   const [size, setSize] = useState(product?.size ?? "M");
   const [condition, setCondition] = useState(product?.condition ?? "like_new");
   const [price, setPrice] = useState(product ? (product.price_mxn / 100).toFixed(2) : "");
@@ -256,17 +264,20 @@ export function ProductEditor({ sellerId, product }: { sellerId: string; product
           <textarea id="product-description" value={description} onChange={(event) => setDescription(event.target.value)} maxLength={5000} rows={4} placeholder="Tela, cómo le queda, si tiene algún detalle…" className="mt-2 w-full border border-stone-300 bg-white p-3 text-sm leading-6 outline-none focus:border-stone-900" />
         </div>
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+          {/* "Para" comes first: it decides the category words (and Hombre has no dresses). */}
           <div>
-            <label htmlFor="product-category" className={label}>Categoría</label>
-            <select id="product-category" value={category} onChange={(event) => setCategory(event.target.value)} className={field}>
-              {PRODUCT_CATEGORIES.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
+            <label htmlFor="product-audience" className={label}>Para</label>
+            <select id="product-audience" value={audience} onChange={(event) => changeAudience(event.target.value)} className={field}>
+              {PRODUCT_AUDIENCES.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
             </select>
           </div>
           <div>
-            <label htmlFor="product-audience" className={label}>Para</label>
-            <select id="product-audience" value={audience} onChange={(event) => setAudience(event.target.value)} className={field}>
-              {PRODUCT_AUDIENCES.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
+            <label htmlFor="product-category" className={label}>Categoría</label>
+            <select id="product-category" value={category} onChange={(event) => setCategory(event.target.value)} required aria-describedby={category ? undefined : "product-category-hint"} className={field}>
+              {!category && <option value="" disabled>Elige una categoría</option>}
+              {categoriesFor(audience as ProductAudience).map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
             </select>
+            {!category && <p id="product-category-hint" role="status" className="mt-1 text-xs text-amber-800">Esa categoría no existe para {PRODUCT_AUDIENCES.find((item) => item.value === audience)?.label ?? "esta sección"}. Elige otra.</p>}
           </div>
           <div>
             <label htmlFor="product-size" className={label}>Talla</label>

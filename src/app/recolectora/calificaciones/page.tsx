@@ -1,6 +1,6 @@
 import { requireCourier } from "@/features/couriers/require-courier";
 
-export const metadata = { title: "Calificaciones | Closets Monterrey" };
+export const metadata = { title: "Calificaciones | BZRS Monterrey" };
 
 type Rated = { id: string; closed_at: string | null; courier_rating: number | null; buyer_municipality: string | null; seller: { store_name: string } | null };
 
@@ -35,12 +35,12 @@ export default async function CourierRatingsPage() {
         </div>
       </div>
       {rated.length === 0 ? (
-        <p className="mt-6 text-sm text-stone-600">Todavía no tienes calificaciones. Las clientas califican de 1 a 5 estrellas después de recibir.</p>
+        <p className="mt-6 text-sm text-stone-600">Todavía no tienes calificaciones. La clientela califica de 1 a 5 estrellas después de recibir.</p>
       ) : (
         <ul className="mt-6 divide-y divide-stone-200 border-y border-stone-200">
           {rated.map((delivery) => (
             <li key={delivery.id} className="flex flex-wrap items-baseline justify-between gap-2 py-3 text-sm text-stone-700">
-              <span>{delivery.seller?.store_name ?? "Vendedora"} → {delivery.buyer_municipality ?? "—"}{delivery.closed_at ? ` · ${dateFormat.format(new Date(delivery.closed_at))}` : ""}</span>
+              <span>{delivery.seller?.store_name ?? "Tienda"} → {delivery.buyer_municipality ?? "—"}{delivery.closed_at ? ` · ${dateFormat.format(new Date(delivery.closed_at))}` : ""}</span>
               <span aria-label={`${delivery.courier_rating} de 5 estrellas`} className="text-stone-900">{"★".repeat(delivery.courier_rating!)}<span className="text-stone-300">{"★".repeat(5 - delivery.courier_rating!)}</span></span>
             </li>
           ))}

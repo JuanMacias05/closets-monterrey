@@ -22,7 +22,7 @@ describe("parseAddPerson", () => {
 
 describe("arrivalLabel", () => {
   it("tells whether she signed up herself or an admin added her", () => {
-    expect(arrivalLabel(null)).toBe("Se registró sola");
-    expect(arrivalLabel("10000000-0000-4000-8000-000000000004")).toBe("Agregada por admin");
+    expect(arrivalLabel(null)).toBe("Registro: por su cuenta");
+    expect(arrivalLabel("10000000-0000-4000-8000-000000000004")).toBe("Registro: lo hizo un admin");
   });
 });

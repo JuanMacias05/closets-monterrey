@@ -11,6 +11,7 @@ import { DepositPayment } from "@/components/shop/deposit-payment";
 import { ProofPurgedNote } from "@/components/shop/proof-purged-note";
 import { SupportRequestForm } from "@/components/shop/support-request-form";
 import { RateCourier } from "@/components/shop/rate-courier";
+import { RateSeller } from "@/components/shop/rate-seller";
 import {
   buyerCourierNotice,
   canPayDeposit,
@@ -30,7 +31,7 @@ import { reservationNoticeMessage, whatsappLink } from "@/features/shop/whatsapp
 import { proofReviewCutoff } from "@/features/support/support-contact";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
-export const metadata = { title: "Mi cuenta | Closets Monterrey" };
+export const metadata = { title: "Mi cuenta | BZRS Monterrey" };
 
 type ReservationRow = {
   id: string; status: string; items_total_mxn: number; deposit_percent: number; deposit_mxn: number;
@@ -38,7 +39,7 @@ type ReservationRow = {
   delivery_method: string; delivery_address: string | null; delivery_fee_mxn: number; delivery_status: string;
   delivery_fee_estimate_mxn: number | null; delivery_fee_adjusted_at: string | null;
   point: { name: string } | null;
-  courier_fee_payment: string | null; courier_whatsapp: string | null; buyer_municipality: string | null; courier_rating: number | null;
+  courier_fee_payment: string | null; courier_whatsapp: string | null; buyer_municipality: string | null; courier_rating: number | null; seller_rating: number | null;
   courier: { full_name: string } | null;
   courier_id: string | null; courier_accepted_at: string | null;
   requests: CourierRequestRow[] | null;
@@ -61,7 +62,7 @@ export default async function AccountPage() {
   const [{ data: buyer }, { data: rows }] = await Promise.all([
     supabase.from("buyer_profiles").select("full_name,facebook_url").eq("id", user.id).maybeSingle(),
     supabase.from("reservations")
-      .select("id,status,items_total_mxn,deposit_percent,deposit_mxn,deposit_clabe,seller_whatsapp,expires_at,created_at,delivery_method,delivery_address,delivery_fee_mxn,delivery_status,point:delivery_points(name),courier_fee_payment,courier_whatsapp,buyer_municipality,courier_rating,courier:couriers(full_name),courier_id,courier_accepted_at,requests:courier_requests(id,status,requested_at,expires_at,resolved_at,rejection_reason,courier_id,courier:couriers(full_name)),seller:profiles!reservations_seller_id_fkey(id,store_name,home_delivery_enabled,home_delivery_origin,home_delivery_note),items:reservation_items(price_mxn,product:products(name,slug)),deposit_oxxo_card,proof_path,proof_method,proof_reference,proof_submitted_at,proof_rejected_at,proof_rejection_reason,proof_purged_at,delivery_fee_estimate_mxn,delivery_fee_adjusted_at")
+      .select("id,status,items_total_mxn,deposit_percent,deposit_mxn,deposit_clabe,seller_whatsapp,expires_at,created_at,delivery_method,delivery_address,delivery_fee_mxn,delivery_status,point:delivery_points(name),courier_fee_payment,courier_whatsapp,buyer_municipality,courier_rating,seller_rating,courier:couriers(full_name),courier_id,courier_accepted_at,requests:courier_requests(id,status,requested_at,expires_at,resolved_at,rejection_reason,courier_id,courier:couriers(full_name)),seller:profiles!reservations_seller_id_fkey(id,store_name,home_delivery_enabled,home_delivery_origin,home_delivery_note),items:reservation_items(price_mxn,product:products(name,slug)),deposit_oxxo_card,proof_path,proof_method,proof_reference,proof_submitted_at,proof_rejected_at,proof_rejection_reason,proof_purged_at,delivery_fee_estimate_mxn,delivery_fee_adjusted_at")
       .eq("buyer_id", user.id)
       .order("created_at", { ascending: false }),
   ]);
@@ -104,17 +105,17 @@ export default async function AccountPage() {
           <Link href="/favoritos" className="flex min-h-11 items-center text-pine underline underline-offset-4">Mis favoritos</Link>
           <Link href="/carrito" className="flex min-h-11 items-center text-pine underline underline-offset-4">Mi carrito</Link>
           <Link href="/cuenta/mensajes" className="flex min-h-11 items-center text-pine underline underline-offset-4">Mensajes{unreadChats > 0 ? ` (${unreadChats})` : ""}</Link>
-          <Link href="/recolectoras" className="flex min-h-11 items-center text-pine underline underline-offset-4">Recolectoras</Link>
+          <Link href="/recolectoras" className="flex min-h-11 items-center text-pine underline underline-offset-4">Recolección</Link>
         </nav>
         <div className="mt-2"><NotificationsToggle /></div>
 
         {/* Courier answers arrive while she's away (no push yet for this list): one line per
             reservation that changed, linking to it. */}
         {notices.length > 0 && (
-          <section aria-label="Novedades de tus recolectoras" className="mt-6 space-y-2">
+          <section aria-label="Novedades de tu recolección" className="mt-6 space-y-2">
             {notices.map(({ reservation, notice }) => (
               <a key={reservation.id} href={`#apartado-${reservation.id}`} className={`block border-l-4 p-3 text-sm ${NOTICE_STYLES[notice.tone]}`}>
-                <strong>{notice.title}</strong> · {reservation.seller?.store_name ?? "Vendedora"}
+                <strong>{notice.title}</strong> · {reservation.seller?.store_name ?? "Tienda"}
               </a>
             ))}
           </section>
@@ -134,9 +135,9 @@ export default async function AccountPage() {
                 return (
                   <li key={reservation.id} id={`apartado-${reservation.id}`} className={`border p-5 ${pending ? "border-pine border-2" : "border-stone-200"}`}>
                     <div className="flex flex-wrap items-center justify-between gap-2">
-                      <p className="font-medium text-stone-900">{reservation.seller?.store_name ?? "Vendedora"}</p>
+                      <p className="font-medium text-stone-900">{reservation.seller?.store_name ?? "Tienda"}</p>
                       <span className={`px-2 py-1 font-condensed text-sm font-bold uppercase ${pending && reservation.proof_rejected_at ? "bg-red-50 text-red-800" : "bg-stone-100 text-stone-800"}`}>
-                        {pending && courierState.kind === "waiting" ? "Esperando a la recolectora"
+                        {pending && courierState.kind === "waiting" ? "Esperando a quien recolecta"
                           : pending && courierState.kind === "needs_choice" ? "Elige otra entrega"
                           : pending && reservation.proof_rejected_at ? "Comprobante rechazado"
                           : pending && reservation.proof_submitted_at ? "Comprobante en revisión"
@@ -152,8 +153,8 @@ export default async function AccountPage() {
                       <strong>Entrega:</strong>{" "}
                       {reservation.delivery_method === "pickup_point" ? `Punto fijo · ${reservation.point?.name ?? ""}`
                         : reservation.delivery_method === "home_delivery" ? `A domicilio · ${reservation.delivery_address ?? ""} (envío ${formatPriceMXN(reservation.delivery_fee_mxn)}, se paga al recibir)`
-                        : reservation.delivery_method === "courier" ? `Recolectora ✓ ${courierName} · ${reservation.delivery_address ?? ""} (tarifa ${formatPriceMXN(reservation.delivery_fee_mxn)}, ${reservation.courier_fee_payment === "with_deposit" ? "incluida en tu anticipo" : "se la pagas al recibir"})`
-                        : "La acuerdas con la vendedora por WhatsApp"}
+                        : reservation.delivery_method === "courier" ? `Recolección ✓ ${courierName} · ${reservation.delivery_address ?? ""} (tarifa ${formatPriceMXN(reservation.delivery_fee_mxn)}, ${reservation.courier_fee_payment === "with_deposit" ? "incluida en tu anticipo" : "se la pagas al recibir"})`
+                        : "La acuerdas con la tienda por WhatsApp"}
                     </p>
                     {!["expired", "cancelled", "no_show"].includes(reservation.status) && <TrackingSteps steps={trackingSteps(reservation)} current={trackingStep(reservation)} />}
                     <p className="mt-2 text-sm text-stone-700">Total {formatPriceMXN(reservation.items_total_mxn)} · anticipo {reservation.deposit_percent} %: <strong className="text-stone-900">{formatPriceMXN(reservation.deposit_mxn)}</strong></p>
@@ -167,7 +168,7 @@ export default async function AccountPage() {
                         {courierState.kind === "accepted" && <NoticeBox notice={courierNotice(courierState, reservation)!} />}
                         <DepositPayment
                           reservationId={reservation.id}
-                          sellerName={reservation.seller?.store_name ?? "La vendedora"}
+                          sellerName={reservation.seller?.store_name ?? "La tienda"}
                           depositMxn={reservation.deposit_mxn}
                           clabe={reservation.deposit_clabe}
                           oxxoCard={reservation.deposit_oxxo_card}
@@ -221,19 +222,23 @@ export default async function AccountPage() {
                     {reservation.status === "completed" && reservation.delivery_method === "courier" && reservation.courier && reservation.courier_rating === null && (
                       <RateCourier reservationId={reservation.id} courierName={reservation.courier.full_name} />
                     )}
-                    {reservation.status === "completed" && reservation.courier_rating !== null && <p className="mt-2 text-sm text-stone-600">Calificaste a la recolectora con {reservation.courier_rating} ★</p>}
+                    {reservation.status === "completed" && reservation.courier_rating !== null && <p className="mt-2 text-sm text-stone-600">Calificaste a quien recolecta con {reservation.courier_rating} ★</p>}
+                    {reservation.status === "completed" && reservation.seller_rating === null && reservation.seller && (
+                      <RateSeller reservationId={reservation.id} storeName={reservation.seller.store_name} />
+                    )}
+                    {reservation.status === "completed" && reservation.seller_rating !== null && <p className="mt-2 text-sm text-stone-600">Calificaste a la tienda con {reservation.seller_rating} ★</p>}
                     {reservation.status === "confirmed" && (
                       <p className="mt-3 text-sm text-stone-700">
-                        La vendedora confirmó tu anticipo. Acuerden la entrega en Mensajes; el resto se paga en la entrega.
+                        La tienda confirmó tu anticipo. Acuerden la entrega en Mensajes; el resto se paga en la entrega.
                         {reservation.seller_whatsapp && <> También por <a href={`https://wa.me/${reservation.seller_whatsapp.replace("+", "")}`} className="text-pine underline underline-offset-4">WhatsApp</a>.</>}
-                        {reservation.delivery_method === "courier" && reservation.courier_whatsapp && <> Tu recolectora: <a href={`https://wa.me/${reservation.courier_whatsapp.replace("+", "")}`} className="text-pine underline underline-offset-4">WhatsApp {reservation.courier_whatsapp}</a>.</>}
+                        {reservation.delivery_method === "courier" && reservation.courier_whatsapp && <> Quien recolecta: <a href={`https://wa.me/${reservation.courier_whatsapp.replace("+", "")}`} className="text-pine underline underline-offset-4">WhatsApp {reservation.courier_whatsapp}</a>.</>}
                       </p>
                     )}
                     {(chats.get(reservation.id)?.order || chats.get(reservation.id)?.delivery) && (
                       <div className="mt-3 flex flex-wrap gap-2">
-                        {chats.get(reservation.id)?.order && <ChatLink href={`/cuenta/mensajes/${chats.get(reservation.id)!.order!.id}`} label="Mensajes con la vendedora" unread={chats.get(reservation.id)!.order!.unread} />}
+                        {chats.get(reservation.id)?.order && <ChatLink href={`/cuenta/mensajes/${chats.get(reservation.id)!.order!.id}`} label="Mensajes con la tienda" unread={chats.get(reservation.id)!.order!.unread} />}
                         {/* Opens when the courier accepts (20261126000200). */}
-                        {chats.get(reservation.id)?.delivery && <ChatLink href={`/cuenta/mensajes/${chats.get(reservation.id)!.delivery!.id}`} label="Mensajes con la recolectora" unread={chats.get(reservation.id)!.delivery!.unread} />}
+                        {chats.get(reservation.id)?.delivery && <ChatLink href={`/cuenta/mensajes/${chats.get(reservation.id)!.delivery!.id}`} label="Mensajes con quien recolecta" unread={chats.get(reservation.id)!.delivery!.unread} />}
                       </div>
                     )}
                   </li>
@@ -245,14 +250,14 @@ export default async function AccountPage() {
 
         <section className="mt-12 border-t border-stone-200 pt-8" aria-labelledby="mis-datos">
           <h2 id="mis-datos" className="font-condensed text-2xl font-bold uppercase text-stone-900">Mis datos</h2>
-          <p className="mt-1 mb-4 text-sm text-stone-600">Las vendedoras ven tu nombre, tu Facebook y tu celular solo cuando les apartas.</p>
+          <p className="mt-1 mb-4 text-sm text-stone-600">Las tiendas ven tu nombre, tu Facebook y tu celular solo cuando les apartas.</p>
           <BuyerProfileForm fullName={buyer?.full_name ?? ""} facebookUrl={buyer?.facebook_url ?? ""} />
         </section>
 
         {buyer && (
           <section className="mt-12 border-t border-stone-200 pt-8" aria-labelledby="borrar-cuenta">
             <h2 id="borrar-cuenta" className="font-condensed text-2xl font-bold uppercase text-stone-900">Borrar mi cuenta</h2>
-            <p className="mt-1 mb-4 text-sm text-stone-600">Si ya no quieres usar Closets Monterrey, puedes borrar tu cuenta y tus datos.</p>
+            <p className="mt-1 mb-4 text-sm text-stone-600">Si ya no quieres usar BZRS Monterrey, puedes borrar tu cuenta y tus datos.</p>
             <DeleteAccountButton />
           </section>
         )}
@@ -319,7 +324,7 @@ function HomeDeliveryFee({ reservation }: { reservation: ReservationRow }) {
   if (change) {
     return (
       <p className="mt-2 border-l-4 border-amber-600 bg-amber-50 p-3 text-sm text-amber-900" data-testid="delivery-fee-change">
-        <strong>La vendedora ajustó el envío de {formatPriceMXN(change.fromMxn)} a {formatPriceMXN(change.toMxn)}.</strong>{" "}
+        <strong>La tienda ajustó el envío de {formatPriceMXN(change.fromMxn)} a {formatPriceMXN(change.toMxn)}.</strong>{" "}
         Nuevo total con envío: <strong>{totalWithShipping}</strong>.
         {stillOpen && " Si no estás de acuerdo, puedes cancelar el apartado antes de pagar el anticipo."}
       </p>
@@ -328,15 +333,15 @@ function HomeDeliveryFee({ reservation }: { reservation: ReservationRow }) {
   return (
     <p className="mt-1 text-sm text-stone-700">
       Total con envío: <strong className="text-stone-900">{totalWithShipping}</strong>
-      {stillOpen && reservation.delivery_fee_estimate_mxn !== null && " · el envío es aproximado: la vendedora puede ajustarlo antes de que pagues el anticipo."}
+      {stillOpen && reservation.delivery_fee_estimate_mxn !== null && " · el envío es aproximado: la tienda puede ajustarlo antes de que pagues el anticipo."}
     </p>
   );
 }
 
-// With a courier the hand-off to her is its own visible step ("Con la recolectora").
+// With a courier the hand-off to her is its own visible step ("En recolección").
 function trackingSteps(reservation: ReservationRow): string[] {
   const steps: string[] = DELIVERY_STATUS_STEPS.map((step) => step.label);
-  if (reservation.delivery_method === "courier") steps.splice(2, 0, "Con la recolectora");
+  if (reservation.delivery_method === "courier") steps.splice(2, 0, "En recolección");
   return steps;
 }
 

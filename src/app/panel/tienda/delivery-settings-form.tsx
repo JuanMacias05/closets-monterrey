@@ -66,7 +66,7 @@ export function DeliverySettingsForm(props: DeliverySettingsProps) {
     <form onSubmit={submit} aria-labelledby="delivery-settings-title" className="space-y-5 border border-stone-200 bg-white p-5">
       <div>
         <h2 id="delivery-settings-title" className="font-condensed text-xl font-bold uppercase text-stone-900">Dónde entregas</h2>
-        <p className="mt-1 text-sm text-stone-600">Aplica a todas tus prendas. Si no marcas nada, tus clientas acuerdan la entrega contigo por WhatsApp.</p>
+        <p className="mt-1 text-sm text-stone-600">Aplica a todas tus prendas. Si no marcas nada, tu clientela acuerda la entrega contigo por WhatsApp.</p>
       </div>
       <fieldset>
         <legend className="block text-xs uppercase tracking-[0.16em] text-stone-600">Puntos fijos a los que llegas</legend>
@@ -86,7 +86,7 @@ export function DeliverySettingsForm(props: DeliverySettingsProps) {
           Ofrezco envío a domicilio
         </label>
         {homeDelivery && !props.homeDeliveryOrigin && props.homeDeliveryEnabled && (
-          <p className="bg-amber-50 p-3 text-sm text-amber-900">Tus clientas no ven el envío a domicilio hasta que elijas desde qué municipio envías.</p>
+          <p className="bg-amber-50 p-3 text-sm text-amber-900">Tu clientela no ve el envío a domicilio hasta que elijas desde qué municipio envías.</p>
         )}
         {homeDelivery && (
           <div className="grid gap-4 sm:grid-cols-2">
@@ -95,7 +95,7 @@ export function DeliverySettingsForm(props: DeliverySettingsProps) {
               <label htmlFor="home-note" className="block text-xs text-stone-600">Zonas (opcional)</label>
               <input id="home-note" value={homeNote} onChange={(event) => setHomeNote(event.target.value)} maxLength={200} placeholder="Ej. Monterrey y San Nicolás" className="mt-1 min-h-11 w-full border-b border-stone-400 bg-transparent px-1 text-base" />
             </div>
-            <p className="text-xs text-stone-600 sm:col-span-2">El costo del envío sale de las tarifas de Closets Monterrey: tu clienta ve un precio aproximado según su municipio y el tuyo. Si su dirección queda lejos, puedes ajustarlo en Apartados antes de que te pague el anticipo.</p>
+            <p className="text-xs text-stone-600 sm:col-span-2">El costo del envío sale de las tarifas de BZRS Monterrey: tu cliente ve un precio aproximado según su municipio y el tuyo. Si su dirección queda lejos, puedes ajustarlo en Apartados antes de que te pague el anticipo.</p>
           </div>
         )}
       </fieldset>

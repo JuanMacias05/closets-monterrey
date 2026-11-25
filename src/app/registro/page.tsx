@@ -1,8 +1,9 @@
+import { BrandWordmark } from "@/components/brand/brand-wordmark";
 import Link from "next/link";
 import { SignUpFlow } from "@/components/auth/sign-up-flow";
 import { safeNextPath } from "@/features/auth/next-path";
 
-export const metadata = { title: "Crear cuenta | Closets Monterrey" };
+export const metadata = { title: "Crear cuenta | BZRS Monterrey" };
 
 // One sign-up for everyone: the account buys; selling and delivering are checkboxes after the
 // SMS code (they start pending). ?next= still brings her back where she was.
@@ -14,7 +15,7 @@ export default async function SignUpPage({ searchParams }: { searchParams: Promi
     <main className="flex min-h-screen items-center justify-center bg-[#faf9f6] px-4 py-12">
       <section className="w-full max-w-md border border-stone-200 bg-white px-6 py-9 sm:px-10 sm:py-12">
         <div className="flex items-center justify-between gap-4">
-          <Link href="/" className="whitespace-nowrap font-serif text-lg tracking-tight text-stone-800">Closets Monterrey</Link>
+          <Link href="/" className="text-lg text-stone-800"><BrandWordmark /></Link>
           <Link href="/" aria-label="Volver a la tienda" className="inline-flex min-h-11 items-center whitespace-nowrap text-xs uppercase tracking-[0.14em] text-stone-600 underline-offset-4 hover:underline">
             ← <span className="ml-1 sm:hidden">Tienda</span><span className="ml-1 hidden sm:inline">Volver a la tienda</span>
           </Link>

@@ -4,7 +4,7 @@ import { RequestActivityForm } from "@/components/accounts/request-activity-form
 import { StoreHeader } from "@/components/store/store-header";
 import { getViewer } from "@/features/viewer/get-viewer";
 
-export const metadata = { title: "Quiero entregar | Closets Monterrey" };
+export const metadata = { title: "Quiero entregar | BZRS Monterrey" };
 
 export default async function WantToDeliverPage() {
   const viewer = await getViewer();
@@ -18,7 +18,7 @@ export default async function WantToDeliverPage() {
           <p className="mt-4 text-sm text-stone-700">Ya pediste entregar. <Link href="/recolectora" className="text-pine underline underline-offset-4">Ir a tus entregas</Link></p>
         ) : (
           <>
-            <p className="mt-3 max-w-xl text-sm leading-6 text-stone-600">Te citamos para revisar tu identificación en persona. Después apareces como recolectora verificada y te llegan solicitudes.</p>
+            <p className="mt-3 max-w-xl text-sm leading-6 text-stone-600">Te citamos para revisar tu identificación en persona. Después apareces con tu identidad verificada y te llegan solicitudes.</p>
             <RequestActivityForm activity="deliver" suggestedName={viewer.name === "Mi cuenta" ? "" : viewer.name} />
           </>
         )}

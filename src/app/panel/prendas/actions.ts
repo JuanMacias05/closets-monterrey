@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { PRODUCT_AUDIENCES, PRODUCT_CATEGORIES, PRODUCT_CONDITIONS, PRODUCT_SIZES, type ProductAudience, type ProductCondition } from "@/features/products/types";
+import { isCategoryAllowed } from "@/features/products/section-categories";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 type Result = { ok: true } | { ok: false; error: string };
@@ -34,11 +35,15 @@ async function getSellerContext() {
   return { ok: true as const, supabase, userId: user.id };
 }
 
+const MEN_DRESS_ERROR = "Para Hombre no hay categoría Vestidos. Elige otra categoría.";
+
 function validProductInput(input: ProductInput) {
   return input && typeof input.name === "string" && input.name.trim().length > 0 && input.name.trim().length <= 100
     && typeof input.description === "string" && input.description.length <= 5000
     && PRODUCT_CATEGORIES.some((item) => item.value === input.category)
     && (input.audience === undefined || PRODUCT_AUDIENCES.some((item) => item.value === input.audience))
+    // Hombre has no dresses: checked here too, not only in the form's options.
+    && isCategoryAllowed(input.category, (input.audience ?? "women") as ProductAudience)
     && PRODUCT_SIZES.some((item) => item === input.size)
     && PRODUCT_CONDITIONS.some((item) => item.value === input.condition)
     && Number.isSafeInteger(input.price_mxn) && input.price_mxn >= 0 && input.price_mxn <= 100_000_000
@@ -62,6 +67,7 @@ function revalidateProducts() {
 export async function createProduct(input: ProductInput): Promise<CreateProductResult> {
   const context = await getSellerContext();
   if (!context.ok) return context;
+  if (input && input.audience === "men" && input.category === "dresses") return { ok: false, error: MEN_DRESS_ERROR };
   if (!validProductInput(input)) return { ok: false, error: "Revisa los datos de la prenda." };
 
   const { data, error } = await context.supabase.from("products").insert({
@@ -78,11 +84,12 @@ export async function createProduct(input: ProductInput): Promise<CreateProductR
 export async function updateProduct(productId: string, input: ProductInput): Promise<Result> {
   const context = await getSellerContext();
   if (!context.ok) return context;
+  if (input && input.audience === "men" && input.category === "dresses") return { ok: false, error: MEN_DRESS_ERROR };
   if (!/^[0-9a-f-]{36}$/i.test(productId) || !validProductInput(input)) return { ok: false, error: "Revisa los datos de la prenda." };
 
   const { data: owned } = await context.supabase.from("products").select("id")
     .eq("id", productId).eq("seller_id", context.userId).maybeSingle();
-  if (!owned) return { ok: false, error: "No encontramos esa prenda en tu tienda." };
+  if (!owned) return { ok: false, error: "No encontramos esa prenda en tu bazar." };
 
   const { error } = await context.supabase.from("products").update(productValues(input))
     .eq("id", productId).eq("seller_id", context.userId);
@@ -103,7 +110,7 @@ export async function setProductPrice(productId: string, priceInCents: number): 
   }
   const { data: owned } = await context.supabase.from("products").select("id,sale_status")
     .eq("id", productId).eq("seller_id", context.userId).maybeSingle();
-  if (!owned) return { ok: false, error: "No encontramos esa prenda en tu tienda." };
+  if (!owned) return { ok: false, error: "No encontramos esa prenda en tu bazar." };
   if (owned.sale_status !== "available") return { ok: false, error: "Solo puedes cambiar el precio de una prenda disponible." };
   const { error } = await context.supabase.from("products").update({ price_mxn: priceInCents })
     .eq("id", productId).eq("seller_id", context.userId);
@@ -120,7 +127,7 @@ export async function setProductSaleStatus(productId: string, status: "available
   }
   const { data: owned } = await context.supabase.from("products").select("id")
     .eq("id", productId).eq("seller_id", context.userId).maybeSingle();
-  if (!owned) return { ok: false, error: "No encontramos esa prenda en tu tienda." };
+  if (!owned) return { ok: false, error: "No encontramos esa prenda en tu bazar." };
   const { error } = await context.supabase.from("products").update({
     sale_status: status, sold_at: status === "sold" ? new Date().toISOString() : null, reserved_at: null,
   }).eq("id", productId).eq("seller_id", context.userId);
@@ -143,7 +150,7 @@ export async function registerProductImage(input: {
   }
   const { data: owned } = await context.supabase.from("products").select("id")
     .eq("id", input.productId).eq("seller_id", context.userId).maybeSingle();
-  if (!owned) return { ok: false, error: "No encontramos esa prenda en tu tienda." };
+  if (!owned) return { ok: false, error: "No encontramos esa prenda en tu bazar." };
   const { count, error: countError } = await context.supabase.from("product_images").select("id", { count: "exact", head: true }).eq("product_id", input.productId);
   if (countError) return { ok: false, error: "No pudimos preparar la foto." };
   const { data, error } = await context.supabase.from("product_images").insert({
@@ -167,7 +174,7 @@ export async function reorderProductImages(productId: string, imageIds: string[]
   }
   const { data: owned } = await context.supabase.from("products").select("id")
     .eq("id", productId).eq("seller_id", context.userId).maybeSingle();
-  if (!owned) return { ok: false, error: "No encontramos esa prenda en tu tienda." };
+  if (!owned) return { ok: false, error: "No encontramos esa prenda en tu bazar." };
   const { error } = await context.supabase.rpc("reorder_product_images", { target_product_id: productId, ordered_image_ids: imageIds });
   if (error) return { ok: false, error: "No pudimos reordenar las fotos." };
   revalidatePath(`/panel/prendas/${productId}`);
@@ -220,7 +227,7 @@ export async function deleteProductWithImages(productId: string): Promise<Result
   if (!/^[0-9a-f-]{36}$/i.test(productId)) return { ok: false, error: "No encontramos esa prenda." };
   const { data: product } = await context.supabase.from("products").select("id")
     .eq("id", productId).eq("seller_id", context.userId).maybeSingle();
-  if (!product) return { ok: false, error: "No encontramos esa prenda en tu tienda." };
+  if (!product) return { ok: false, error: "No encontramos esa prenda en tu bazar." };
   const { data: images, error: imagesError } = await context.supabase.from("product_images")
     .select("source,storage_path").eq("product_id", productId);
   if (imagesError) return { ok: false, error: "No pudimos preparar las fotos para borrar." };

@@ -9,7 +9,7 @@ const configuredSiteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? process.env.VERCEL
 
 export const metadata: Metadata = {
   metadataBase: new URL(configuredSiteUrl.startsWith("http") ? configuredSiteUrl : `https://${configuredSiteUrl}`),
-  title: "Closets Monterrey",
+  title: "BZRS Monterrey",
   description: "Marketplace de moda de segunda mano en Monterrey.",
 };
 

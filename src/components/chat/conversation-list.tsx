@@ -17,7 +17,7 @@ export function ConversationList({ conversations, empty }: { conversations: Conv
                 <span className="flex flex-wrap items-baseline justify-between gap-2">
                   <span className="flex flex-wrap items-center gap-2">
                     <span className={`text-stone-900 ${conversation.unread > 0 ? "font-semibold" : "font-medium"}`}>{conversation.title}</span>
-                    <span className={`px-1.5 py-0.5 font-condensed text-xs font-bold uppercase ${conversation.roleLabel === "Entrega" ? "bg-[#e6eee9] text-pine" : conversation.roleLabel === "Como vendedora" ? "bg-amber-100 text-amber-900" : "bg-stone-100 text-stone-700"}`}>{conversation.roleLabel}</span>
+                    <span className={`px-1.5 py-0.5 font-condensed text-xs font-bold uppercase ${conversation.roleLabel === "Entrega" ? "bg-[#e6eee9] text-pine" : conversation.roleLabel === "Venta" ? "bg-amber-100 text-amber-900" : "bg-stone-100 text-stone-700"}`}>{conversation.roleLabel}</span>
                   </span>
                   {conversation.lastMessageAt && <span className="text-xs text-stone-500">{messageTimeLabel(conversation.lastMessageAt)}</span>}
                 </span>

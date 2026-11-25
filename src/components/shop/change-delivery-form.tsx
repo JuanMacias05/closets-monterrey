@@ -72,7 +72,7 @@ export function ChangeDeliveryForm({ reservationId, options, itemsTotalMxn, depo
       <CheckoutSummary label="Resumen con la nueva entrega" itemsTotalMxn={itemsTotalMxn} depositPercent={depositPercent} summary={summary} quote={quote} />
       <div className="flex flex-wrap items-center gap-3">
         <button type="button" onClick={save} disabled={busy} className="press min-h-12 bg-pine px-6 font-condensed text-base font-bold uppercase text-white disabled:opacity-60">
-          {busy ? "Guardando…" : summary.method === "courier" ? "Pedir a esta recolectora" : "Guardar entrega"}
+          {busy ? "Guardando…" : summary.method === "courier" ? "Pedir a esta persona" : "Guardar entrega"}
         </button>
         {!startOpen && <button type="button" onClick={() => setOpen(false)} disabled={busy} className="min-h-11 text-sm text-stone-700 underline underline-offset-4">Cancelar</button>}
       </div>

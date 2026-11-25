@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { MunicipalitySelect } from "@/components/shop/municipality-select";
 import { WEEKDAYS_SHORT } from "@/features/couriers/constants";
 import { formatPriceMXN } from "@/features/products/format-price";
@@ -9,7 +10,7 @@ const radio = "flex min-h-11 items-center gap-3 text-sm text-stone-800";
 const smallLabel = "block text-xs uppercase tracking-[0.14em] text-stone-600";
 
 // Step 2 of reserving ("Entrega"), and what a buyer fills in again on /cuenta when her courier
-// says no. First "¿Necesitas una recolectora?"; then either the couriers who reach her
+// says no. First "¿Necesitas recolección?"; then either the couriers who reach her
 // municipality, or the seller's own options (fixed point, home delivery priced by zone).
 export function DeliveryStep({ idPrefix, options, draft, onChange, excludedCourierIds = [], allowCourier = true }: {
   idPrefix: string;
@@ -29,8 +30,8 @@ export function DeliveryStep({ idPrefix, options, draft, onChange, excludedCouri
     <div className="flex flex-col gap-4">
       {offersCourier && (
         <fieldset>
-          <legend className="font-condensed text-base font-bold uppercase text-stone-900">¿Necesitas una recolectora?</legend>
-          <p className="mt-1 text-sm text-stone-600">Una recolectora verificada recoge tus prendas con la vendedora en un punto fijo y te las lleva a tu municipio. Ella acepta o rechaza cada entrega.</p>
+          <legend className="font-condensed text-base font-bold uppercase text-stone-900">¿Necesitas recolección?</legend>
+          <p className="mt-1 text-sm text-stone-600">Una persona verificada recoge tus prendas en la tienda, en un punto fijo, y te las lleva a tu municipio. Acepta o rechaza cada entrega. <Link href="/recolectoras" className="text-pine underline underline-offset-4">Ver quién entrega</Link></p>
           <div className="mt-2 flex flex-col sm:flex-row sm:gap-6">
             <label className={radio}>
               <input type="radio" name={`${idPrefix}-wants-courier`} checked={!wantsCourier} onChange={() => set({ wantsCourier: false })} className="size-4 accent-pine" />
@@ -38,7 +39,7 @@ export function DeliveryStep({ idPrefix, options, draft, onChange, excludedCouri
             </label>
             <label className={radio}>
               <input type="radio" name={`${idPrefix}-wants-courier`} checked={wantsCourier} onChange={() => set({ wantsCourier: true })} className="size-4 accent-pine" />
-              Sí, quiero una recolectora
+              Sí, quiero recolección
             </label>
           </div>
         </fieldset>
@@ -62,7 +63,7 @@ export function DeliveryStep({ idPrefix, options, draft, onChange, excludedCouri
 
 function SellerOptions({ idPrefix, options, draft, set }: { idPrefix: string; options: SellerDeliveryOptions; draft: DeliveryDraft; set: (patch: Partial<DeliveryDraft>) => void }) {
   if (offersOnlyArranged(options)) {
-    return <p className="text-sm text-stone-700">Esta vendedora acuerda la entrega contigo por WhatsApp después de apartar.</p>;
+    return <p className="text-sm text-stone-700">Esta tienda acuerda la entrega contigo por WhatsApp después de apartar.</p>;
   }
   const homeFee = homeFeeFor(options, draft.municipality);
   const homeFees = options.homeDelivery ? Object.values(options.homeDelivery.feesByMunicipality) : [];
@@ -96,7 +97,7 @@ function SellerOptions({ idPrefix, options, draft, set }: { idPrefix: string; op
           {homeFee !== null && (
             <p className="text-sm text-stone-800">Envío aprox. <strong>{formatPriceMXN(homeFee)}</strong> <span className="text-stone-600">(de {options.homeDelivery.origin} a {draft.municipality})</span></p>
           )}
-          <p className="text-xs text-stone-600">Es un precio aproximado según tu municipio. La vendedora puede ajustarlo antes de que le pagues el anticipo (por ejemplo, si tu dirección queda lejos) y lo verías en tu cuenta. Se paga al recibir, junto con el resto.</p>
+          <p className="text-xs text-stone-600">Es un precio aproximado según tu municipio. La tienda puede ajustarlo antes de que le pagues el anticipo (por ejemplo, si tu dirección queda lejos) y lo verías en tu cuenta. Se paga al recibir, junto con el resto.</p>
         </div>
       )}
     </fieldset>
@@ -113,12 +114,12 @@ function CourierPicker({ idPrefix, options, draft, set, excludedCourierIds }: {
       <MunicipalitySelect id={`${idPrefix}-municipality`} label="Tu municipio" value={draft.municipality} onChange={(municipality) => set({ municipality, courierId: "" })} />
       {draft.municipality && here.length === 0 && (
         <p className="text-sm text-stone-700">
-          Ninguna recolectora{excludedCourierIds.length > 0 ? " disponible" : ""} cubre {draft.municipality} para esta vendedora todavía. Elige &ldquo;No, gracias&rdquo; para ver las otras formas de entrega.
+          Nadie{excludedCourierIds.length > 0 ? " más" : ""} recolecta en {draft.municipality} para esta tienda todavía. Elige &ldquo;No, gracias&rdquo; para ver las otras formas de entrega.
         </p>
       )}
       {here.length > 0 && (
         <fieldset>
-          <legend className={smallLabel}>Recolectoras que llegan a {draft.municipality}</legend>
+          <legend className={smallLabel}>Quién recolecta en {draft.municipality}</legend>
           <ul className="mt-2 grid gap-2 sm:grid-cols-2">
             {here.map((courier) => (
               <li key={courier.id}>
@@ -133,11 +134,11 @@ function CourierPicker({ idPrefix, options, draft, set, excludedCourierIds }: {
           <legend className={smallLabel}>¿Cómo pagas la tarifa de {formatPriceMXN(chosen.feeMxn)}?</legend>
           <label className={radio}>
             <input type="radio" name={`${idPrefix}-fee`} checked={draft.feePayment === "on_delivery"} onChange={() => set({ feePayment: "on_delivery" })} className="size-4 accent-pine" />
-            A la recolectora al recibir (efectivo o transferencia)
+            A quien recolecta, al recibir (efectivo o transferencia)
           </label>
           <label className={radio}>
             <input type="radio" name={`${idPrefix}-fee`} checked={draft.feePayment === "with_deposit"} onChange={() => set({ feePayment: "with_deposit" })} className="size-4 accent-pine" />
-            Incluida en mi anticipo a la vendedora
+            Incluida en mi anticipo a la tienda
           </label>
         </fieldset>
       )}
@@ -155,7 +156,7 @@ function CourierChoice({ name, courier, checked, onPick }: { name: string; couri
       <span className="min-w-0 space-y-0.5">
         <span className="flex flex-wrap items-center gap-2">
           <strong className="text-stone-900">{courier.fullName}</strong>
-          <span className="bg-pine px-1.5 py-0.5 font-condensed text-xs font-bold uppercase text-white">✓ Verificada</span>
+          <span className="bg-pine px-1.5 py-0.5 font-condensed text-xs font-bold uppercase text-white">✓ Identidad verificada</span>
         </span>
         <span className="block font-semibold text-stone-900">{formatPriceMXN(courier.feeMxn)} por entrega</span>
         <span className="block">

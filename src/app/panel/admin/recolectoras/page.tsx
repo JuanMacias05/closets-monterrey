@@ -7,9 +7,9 @@ import { formatPriceMXN } from "@/features/products/format-price";
 import { isAdminUser } from "@/features/viewer/is-admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
-export const metadata = { title: "Recolectoras | Closets Monterrey" };
+export const metadata = { title: "Recolección | BZRS Monterrey" };
 
-const statusLabels: Record<string, string> = { pending: "En revisión", approved: "Verificada", suspended: "Suspendida" };
+const statusLabels: Record<string, string> = { pending: "En revisión", approved: "Identidad verificada", suspended: "Cuenta suspendida" };
 
 export default async function AdminCouriersPage() {
   const supabase = await createSupabaseServerClient();
@@ -33,12 +33,12 @@ export default async function AdminCouriersPage() {
     <section>
       <div className="flex flex-wrap items-end justify-between gap-3 border-b border-stone-200 pb-5">
         <div>
-          <h1 className="font-serif text-3xl tracking-tight text-stone-900">Verificar recolectoras</h1>
-          <p className="mt-2 max-w-xl text-sm text-stone-600">Verifica a cada recolectora revisando su INE y comprobante de domicilio <strong>en persona</strong>, o agrega tú a alguien que ya revisaste. No subas identificaciones a la app.</p>
+          <h1 className="font-serif text-3xl tracking-tight text-stone-900">Verificar quién entrega</h1>
+          <p className="mt-2 max-w-xl text-sm text-stone-600">Verifica a cada persona revisando su INE y comprobante de domicilio <strong>en persona</strong>, o agrega tú a alguien que ya revisaste. No subas identificaciones a la app.</p>
         </div>
         <AddPersonForm defaultActivity="deliver" />
       </div>
-      {sorted.length === 0 ? <p className="py-6 text-sm text-stone-600">Aún no hay recolectoras registradas.</p> : (
+      {sorted.length === 0 ? <p className="py-6 text-sm text-stone-600">Aún nadie se registró para entregar.</p> : (
         <ul className="divide-y divide-stone-200">
           {sorted.map((courier) => (
             <li key={courier.id} className="flex flex-col gap-3 py-5 sm:flex-row sm:items-center sm:justify-between">

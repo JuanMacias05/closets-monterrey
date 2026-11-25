@@ -51,25 +51,25 @@ async function login(page: Page, phone: string, expectedPath: RegExp) {
   await expect(page).toHaveURL(expectedPath, { timeout: 20_000 });
 }
 
-// From the dress's page to "Apartar y pedir recolectora" with Lupita, fee inside the deposit.
+// From the dress's page to "Apartar y pedir recolección" with Lupita, fee inside the deposit.
 async function reserveWithLupita(page: Page) {
   await page.goto(`/prendas/${PRODUCT_SLUG}`);
   await page.getByRole("button", { name: "Agregar al carrito" }).click();
   await expect(page.getByRole("link", { name: /En tu carrito/ })).toBeVisible({ timeout: SERVER_ACTION_TIMEOUT });
   await page.goto("/carrito");
   await page.getByRole("button", { name: "Elegir entrega" }).click();
-  await page.getByRole("radio", { name: "Sí, quiero una recolectora" }).check();
+  await page.getByRole("radio", { name: "Sí, quiero recolección" }).check();
   await page.getByLabel("Tu municipio", { exact: true }).selectOption("Apodaca");
-  await expect(page.getByText("Ninguna recolectora cubre Apodaca")).toBeVisible();
+  await expect(page.getByText("Nadie recolecta en Apodaca")).toBeVisible();
   await page.getByLabel("Tu municipio", { exact: true }).selectOption("Monterrey");
   await page.getByRole("radio", { name: /Lupita Recolectora/ }).check();
-  await page.getByRole("radio", { name: "Incluida en mi anticipo a la vendedora" }).check();
+  await page.getByRole("radio", { name: "Incluida en mi anticipo a la tienda" }).check();
   await page.getByLabel("Dirección de entrega").fill("Calle Hidalgo 123, Centro, Monterrey");
   // 20% of $650 = $130, plus the $45 courier fee carried in the deposit.
   await expect(page.getByTestId("checkout-deposit")).toHaveText("$175.00 MXN");
   await page.getByRole("button", { name: "Continuar al anticipo" }).click();
   await expect(page.getByText(/Tiene 2 horas para aceptar/)).toBeVisible();
-  await page.getByRole("button", { name: "Apartar y pedir recolectora" }).click();
+  await page.getByRole("button", { name: "Apartar y pedir recolección" }).click();
   await expect(page).toHaveURL(/\/cuenta/, { timeout: SERVER_ACTION_TIMEOUT });
 }
 
@@ -111,10 +111,10 @@ test("a courier rejects a request, accepts the next, and everyone coordinates in
 
   // 3. The buyer sees why, can't ask Lupita again, and switches to a fixed point instead.
   await page.reload();
-  await expect(page.getByText("Tu recolectora no aceptó").first()).toBeVisible();
+  await expect(page.getByText("Quien recolecta no aceptó").first()).toBeVisible();
   await expect(page.getByText(/“No paso por ahí ese día”/)).toBeVisible();
-  await page.getByRole("radio", { name: "Sí, quiero una recolectora" }).check();
-  await expect(page.getByText(/Ninguna recolectora disponible cubre Monterrey/)).toBeVisible();
+  await page.getByRole("radio", { name: "Sí, quiero recolección" }).check();
+  await expect(page.getByText(/Nadie más recolecta en Monterrey/)).toBeVisible();
   await page.getByRole("radio", { name: "No, gracias" }).check();
   await page.getByRole("radio", { name: /Estación Padre Mier/ }).check();
   await page.getByRole("button", { name: "Guardar entrega" }).click();
@@ -136,7 +136,7 @@ test("a courier rejects a request, accepts the next, and everyone coordinates in
   await expect(page.getByText("000000000000000000")).toBeVisible();
 
   // 5. The buyer writes to the seller in the chat.
-  await page.getByRole("link", { name: /Mensajes con la vendedora/ }).first().click();
+  await page.getByRole("link", { name: /Mensajes con la tienda/ }).first().click();
   // The dev server compiles each chat page on its first visit.
   await expect(page.getByRole("heading", { name: "Closet de Renata" })).toBeVisible({ timeout: 20_000 });
   await page.getByLabel("Escribe un mensaje").fill("Hola, ¿me confirmas cuando lo recoja Lupita?");
@@ -145,8 +145,8 @@ test("a courier rejects a request, accepts the next, and everyone coordinates in
 
   // 5b. And to her courier, with a photo of her front door (the seller is not in this chat).
   await page.goto("/cuenta");
-  await page.getByRole("link", { name: /Mensajes con la recolectora/ }).first().click();
-  await expect(page.getByRole("heading", { name: "Recolectora Lupita Recolectora" })).toBeVisible({ timeout: 20_000 });
+  await page.getByRole("link", { name: /Mensajes con quien recolecta/ }).first().click();
+  await expect(page.getByRole("heading", { name: /Recolección · Lupita Recolectora/ })).toBeVisible({ timeout: 20_000 });
   await page.locator('input[type="file"][id^="chat-photo-"]').setInputFiles("e2e/fixtures/store-photo.png");
   await expect(page.getByRole("img", { name: "Foto por enviar" })).toBeVisible();
   await page.getByLabel("Escribe un mensaje").fill("Así es mi fachada, portón verde.");
@@ -177,7 +177,7 @@ test("a courier rejects a request, accepts the next, and everyone coordinates in
   await card.getByRole("button", { name: "Confirmar anticipo" }).click();
   const confirmed = seller.getByRole("listitem").filter({ hasText: "Compradora Recolectora" }).filter({ hasText: "Anticipo confirmado" }).first();
   await expect(confirmed).toBeVisible({ timeout: SERVER_ACTION_TIMEOUT });
-  await confirmed.getByRole("link", { name: /Mensajes con la recolectora/ }).click();
+  await confirmed.getByRole("link", { name: /Mensajes con quien recolecta/ }).click();
   await seller.getByLabel("Escribe un mensaje").fill("Lupita, te espero en Padre Mier a las 6.");
   await seller.getByRole("button", { name: "Enviar" }).click();
   await expect(seller.getByRole("list", { name: "Mensajes" }).getByText("Lupita, te espero en Padre Mier a las 6.")).toBeVisible({ timeout: SERVER_ACTION_TIMEOUT });
@@ -186,7 +186,7 @@ test("a courier rejects a request, accepts the next, and everyone coordinates in
   // 7. Lupita reads the seller and the buyer (with her photo), collects and delivers with the PIN.
   await courier.goto("/recolectora");
   const job = courier.getByRole("listitem").filter({ hasText: "Compradora Recolectora" }).first();
-  await job.getByRole("link", { name: /Mensajes con la clienta/ }).click();
+  await job.getByRole("link", { name: /Mensajes con tu cliente/ }).click();
   await expect(courier.getByText("Así es mi fachada, portón verde.")).toBeVisible({ timeout: 20_000 });
   await courier.getByRole("button", { name: "Ver foto de compradora recolectora en grande" }).click();
   const enlarged = courier.getByRole("dialog", { name: "Foto de Compradora Recolectora" });
@@ -194,7 +194,7 @@ test("a courier rejects a request, accepts the next, and everyone coordinates in
   await courier.keyboard.press("Escape");
   await expect(enlarged).toHaveCount(0);
   await courier.goto("/recolectora");
-  await job.getByRole("link", { name: /Mensajes con la vendedora/ }).click();
+  await job.getByRole("link", { name: /Mensajes con la tienda/ }).click();
   await expect(courier.getByText("Lupita, te espero en Padre Mier a las 6.")).toBeVisible({ timeout: 20_000 });
   await courier.goto("/recolectora");
   await job.getByRole("button", { name: "Ya la recogí" }).click();
@@ -211,6 +211,6 @@ test("a courier rejects a request, accepts the next, and everyone coordinates in
   await courierContext.close();
 
   await page.reload();
-  await page.getByRole("button", { name: "5 de 5 estrellas" }).click();
-  await expect(page.getByText("Calificaste a la recolectora con 5 ★")).toBeVisible();
+  await page.getByRole("button", { name: "5 de 5 estrellas", exact: true }).click();
+  await expect(page.getByText("Calificaste a quien recolecta con 5 ★")).toBeVisible();
 });

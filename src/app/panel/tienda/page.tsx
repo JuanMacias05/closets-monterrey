@@ -24,15 +24,15 @@ export default async function StoreSettingsPage() {
       .maybeSingle(),
   ]);
 
-  if (profileError || settingsError) throw new Error("No pudimos cargar los datos de tu tienda.");
+  if (profileError || settingsError) throw new Error("No pudimos cargar los datos de tu bazar.");
   if (!profile || !settings) notFound();
 
   return (
     <section className="mx-auto max-w-2xl">
       <div className="mb-8 border-b border-stone-200 pb-5">
-        <p className="text-[10px] uppercase tracking-[0.22em] text-stone-500">Tu tienda</p>
-        <h1 className="mt-2 font-serif text-3xl tracking-tight text-stone-900">Edita tu tienda</h1>
-        <p className="mt-3 text-sm leading-6 text-stone-600">Tu nombre y tu foto salen en tu tienda y en cada prenda. El WhatsApp, la CLABE y la tarjeta para OXXO no son públicos: solo los ve quien te aparta una prenda (y la recolectora, tu WhatsApp, si lleva el pedido).</p>
+        <p className="text-[10px] uppercase tracking-[0.22em] text-stone-500">Tu bazar</p>
+        <h1 className="mt-2 font-serif text-3xl tracking-tight text-stone-900">Edita tu bazar</h1>
+        <p className="mt-3 text-sm leading-6 text-stone-600">Tu nombre y tu foto salen en tu bazar y en cada prenda. El WhatsApp, la CLABE y la tarjeta para OXXO no son públicos: solo los ve quien te aparta una prenda (y quien recolecta, tu WhatsApp, si lleva el pedido).</p>
       </div>
       <StoreSettingsForm
         sellerId={authData.user.id}
