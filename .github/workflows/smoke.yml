@@ -1,0 +1,56 @@
+name: Smoke de producción
+
+# Runs the read-only production smoke (playwright.smoke.config.ts) after every successful Vercel
+# production deploy, and on demand. The HTML report is published to GitHub Pages even when tests
+# fail: a red run is exactly when the report is needed.
+on:
+  deployment_status:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One Pages publication at a time; a newer deploy's run waits instead of being cancelled.
+concurrency:
+  group: smoke-produccion
+  cancel-in-progress: false
+
+jobs:
+  smoke:
+    # Vercel posts a deployment_status for every preview too; only production runs the smoke.
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.deployment_status.state == 'success' &&
+       startsWith(github.event.deployment.environment, 'Production'))
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - id: smoke
+        run: npm run test:smoke
+        continue-on-error: true
+        env:
+          # The fixed production domain, not the deploy's own URL: Vercel can protect per-deploy
+          # URLs, and the smoke would read a 401 page instead of the store.
+          SMOKE_BASE_URL: https://closets-monterrey-nl.vercel.app
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: playwright-report-smoke
+      - id: deploy
+        uses: actions/deploy-pages@v4
+      - name: Fail the run when the smoke failed
+        if: steps.smoke.outcome == 'failure'
+        run: |
+          echo "::error::El smoke de producción falló. Reporte: ${{ steps.deploy.outputs.page_url }}"
+          exit 1
