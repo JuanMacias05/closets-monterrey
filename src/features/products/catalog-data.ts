@@ -5,6 +5,8 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export const CATALOG_PAGE_SIZE = 24;
 
+const PAGE_PAST_THE_END = "PGRST103";
+
 // The home page shows only new arrivals: garments published in the last NEW_ARRIVALS_DAYS.
 // With fewer than NEW_ARRIVALS_MINIMUM of them the page would look empty, so it falls back to
 // the whole catalog (newest first), which is what a quiet week should still show.
@@ -87,6 +89,13 @@ export async function getCatalogPage(filters: CatalogFilters, pageSize = CATALOG
 
   const start = (filters.page - 1) * pageSize;
   const { data, count, error } = await query.range(start, start + pageSize - 1);
+
+  // PostgREST answers a range past the last row with PGRST103 (HTTP 416) instead of an empty
+  // list. That is an old ?page=N link after garments sold, not the catalog being down: hand back
+  // an empty page and let the page send the shopper to page 1.
+  if (error?.code === PAGE_PAST_THE_END) {
+    return { products: [], total: 0, error: null };
+  }
 
   if (error) {
     return { products: [], total: 0, error: "No pudimos conectar con el catálogo. Revisa las migraciones y vuelve a intentar." };

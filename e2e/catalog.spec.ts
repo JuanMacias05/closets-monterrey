@@ -11,6 +11,13 @@ test("renders the catalog and its product cards", async ({ page }) => {
   await expect(page.getByText("Vendida").first()).toBeVisible();
 });
 
+test("a page past the end of the catalog sends the shopper back to its first page", async ({ page }) => {
+  await page.goto("/?ver=todo&page=5");
+
+  await expect(page).toHaveURL(/\/\?ver=todo$/);
+  await expect(page.getByTestId("product-grid").locator("article")).toHaveCount(19);
+});
+
 test("updates the shareable URL and results after filtering", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("button", { name: "Filtros" }).click();

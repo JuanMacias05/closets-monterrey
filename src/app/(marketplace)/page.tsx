@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { CatalogFiltersPanel } from "@/components/catalog/catalog-filters";
 import { CatalogGrid } from "@/components/catalog/catalog-grid";
 import { StoreFooter } from "@/components/store/store-footer";
@@ -10,7 +11,7 @@ import { getShopState } from "@/features/shop/shop-state";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getViewer } from "@/features/viewer/get-viewer";
 import { countNewArrivals, getCatalogPage, NEW_ARRIVALS_MINIMUM, newArrivalsSince } from "@/features/products/catalog-data";
-import { parseCatalogFilters, type CatalogSearchParams } from "@/features/products/catalog-filters";
+import { buildCatalogQueryString, parseCatalogFilters, type CatalogSearchParams } from "@/features/products/catalog-filters";
 import { categoryLabel } from "@/features/products/section-categories";
 
 export const metadata: Metadata = {
@@ -32,6 +33,12 @@ export default async function HomePage({
   const showingNewOnly = isPlainHome && (await countNewArrivals(newSince)) >= NEW_ARRIVALS_MINIMUM;
   const filters = showingNewOnly ? { ...parsed, newSince } : parsed;
   const [result, viewer, shop, deliveryPoints, couriers] = await Promise.all([getCatalogPage(filters), getViewer(), getShopState(), getDeliveryPoints(), getCourierDirectory()]);
+  // A page past the end (an old shared link after garments sold) lands on page 1 of the same
+  // catalog, keeping its search and filters, instead of an empty page.
+  if (parsed.page > 1 && result.products.length === 0 && !result.error) {
+    const firstPage = buildCatalogQueryString(parsed, 1);
+    redirect(firstPage ? `/?${firstPage}` : "/");
+  }
   const heading = filters.q ? `“${filters.q}”` : filters.audience === "women" ? "Mujer" : filters.audience === "men" ? "Hombre" : filters.showAll ? "Todo el catálogo" : showingNewOnly ? "Nuevo en tienda" : "Prendas en tienda";
   const viewerId = viewer.kind === "guest" ? undefined : viewer.userId;
 
